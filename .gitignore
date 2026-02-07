@@ -9,6 +9,11 @@ sdk/dist/
 sdk/node_modules/
 bridge/node_modules/
 bridge/dist/
+frontend/node_modules/
+frontend/.next/
+frontend/src/generated/
+**/tsconfig.tsbuildinfo
+**/next-env.d.ts
 
 # Environment files (contain secrets)
 **/.env

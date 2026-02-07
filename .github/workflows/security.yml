@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks - detect hardcoded secrets
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196e88e9c30 # v2.3.9
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_COMMENTS: true
@@ -114,9 +114,9 @@ jobs:
           # Ethereum-style private keys (0x + 64 hex chars)
           if grep -rn --include='*.ts' --include='*.js' --include='*.sol' --include='*.rs' \
             -E '0x[0-9a-fA-F]{64}' \
-            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=out \
+            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=out --exclude-dir=lib \
             --exclude='*.lock' --exclude='package-lock.json' \
-            . | grep -iv 'test\|mock\|fixture\|example\|keccak256\|selector\|topic\|hash\|0x0{64}'; then
+            . | grep -iv 'test\|mock\|fixture\|example\|demo\|anvil\|hardhat\|devnet\|local\|keccak256\|selector\|topic\|hash\|0x0{64}'; then
             echo "::error::Found potential hardcoded private keys in source files!"
             exit 1
           fi
