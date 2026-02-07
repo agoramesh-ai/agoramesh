@@ -547,7 +547,8 @@ describe('Agent Discovery E2E', () => {
           // DHT endpoint - return 404 so it falls through to IPFS
           return Promise.resolve({ ok: false, status: 404 });
         }
-        if (url.includes('ipfs.io') || url.includes('QmTestCID123')) {
+        const parsed = new URL(url, 'http://localhost');
+        if (parsed.hostname === 'ipfs.io' || url.includes('QmTestCID123')) {
           // IPFS gateway - return the capability card
           return Promise.resolve({
             ok: true,
@@ -631,7 +632,8 @@ describe('Agent Discovery E2E', () => {
           // DHT endpoint - return 404 so it falls through to IPFS
           return Promise.resolve({ ok: false, status: 404 });
         }
-        if (url.includes('custom-gateway.io')) {
+        const parsed = new URL(url, 'http://localhost');
+        if (parsed.hostname === 'custom-gateway.io') {
           // Custom IPFS gateway - return the capability card
           return Promise.resolve({
             ok: true,
