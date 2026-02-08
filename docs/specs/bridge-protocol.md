@@ -102,7 +102,7 @@ Content-Type: application/json
 }
 ```
 
-**Response (202 Accepted):**
+**Response (200 OK):**
 ```json
 {
   "accepted": true,
@@ -126,11 +126,8 @@ Check task status.
 ```json
 {
   "status": "running",
-  "task": {
-    "taskId": "task-123",
-    "type": "prompt",
-    "startedAt": "2026-02-01T19:30:00Z"
-  }
+  "taskId": "task-123",
+  "type": "prompt"
 }
 ```
 
@@ -205,10 +202,11 @@ The bridge supports two configuration methods that merge together to produce the
 
 ### Merge Behavior
 
-1. Env vars provide the base `AgentConfig` (name, description, skills as strings, pricing, workspace).
+1. Env vars provide the base `AgentConfig` (name, description, skills as strings, pricing, workspace, security settings).
 2. If `agent-card.config.json` exists in the working directory, the bridge loads and validates it with Zod.
 3. JSON config fields override env var equivalents. Fields present only in JSON are added.
-4. The `buildCapabilityCard()` method assembles the final card: if `richSkills` are defined they replace the basic string-based `skills` array; if `payment` is defined it replaces the default `per_request` pricing.
+4. **Security-critical fields** (`privateKey`, `workspaceDir`, `allowedCommands`) are excluded from the JSON schema and can only be set via environment variables.
+5. The `buildCapabilityCard()` method assembles the final card: if `richSkills` are defined they replace the basic string-based `skills` array; if `payment` is defined it replaces the default `per_request` pricing.
 
 ### JSON Config File (`agent-card.config.json`)
 

@@ -259,6 +259,59 @@ contract ERC8004AdapterTest is Test {
         assertEq(validations.length, 0);
     }
 
+    // ============ Metadata - registeredAt ============
+
+    function test_GetMetadata_RegisteredAt() public {
+        bytes memory result = adapter.getMetadata(aliceTokenId, "registeredAt");
+        uint256 decoded = abi.decode(result, (uint256));
+        // registeredAt should be the block.timestamp when alice registered
+        assertTrue(decoded > 0, "registeredAt should be non-zero");
+    }
+
+    // ============ ValueOverflow Tests ============
+
+    function test_GetSummary_Reputation_OverflowTransactions() public {
+        // Mock getReputation to return transactions > type(uint64).max
+        bytes32 didHash = aliceDid;
+        uint256 hugeTransactions = uint256(type(uint64).max) + 1;
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(registry.getReputation.selector, didHash),
+            abi.encode(uint256(5000), hugeTransactions, uint256(10000))
+        );
+
+        address[] memory clients = new address[](0);
+        vm.expectRevert(ERC8004Adapter.ValueOverflow.selector);
+        adapter.getSummary(aliceTokenId, clients, "", "");
+    }
+
+    function test_GetSummary_Reputation_OverflowScore() public {
+        // Mock getReputation to return score > int128.max
+        bytes32 didHash = aliceDid;
+        uint256 hugeScore = uint256(uint128(type(int128).max)) + 1;
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(registry.getReputation.selector, didHash),
+            abi.encode(hugeScore, uint256(10), uint256(10000))
+        );
+
+        address[] memory clients = new address[](0);
+        vm.expectRevert(ERC8004Adapter.ValueOverflow.selector);
+        adapter.getSummary(aliceTokenId, clients, "", "");
+    }
+
+    // ============ Constructor - ZeroAddress Tests ============
+
+    function test_Constructor_ZeroTrustRegistry_Reverts() public {
+        vm.expectRevert(ERC8004Adapter.ZeroAddress.selector);
+        new ERC8004Adapter(address(0), address(agentToken));
+    }
+
+    function test_Constructor_ZeroAgentToken_Reverts() public {
+        vm.expectRevert(ERC8004Adapter.ZeroAddress.selector);
+        new ERC8004Adapter(address(registry), address(0));
+    }
+
     // ============ Convenience Tests ============
 
     function test_GetAgentIdByDid() public {

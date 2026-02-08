@@ -442,10 +442,39 @@ export class BridgeServer {
             const task = TaskInputSchema.parse(message.payload);
             console.log(`[Bridge] WS task ${task.taskId}: ${task.type}`);
 
+            // Validate escrow if escrowId provided and escrowClient configured
+            if (task.escrowId && this.escrowClient && this.providerDid) {
+              const escrowId = BigInt(task.escrowId);
+              const validation = await this.escrowClient.validateEscrow(escrowId, this.providerDid);
+
+              if (!validation.valid) {
+                console.log(`[Bridge] WS escrow validation failed: ${validation.error}`);
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  code: ErrorCode.PAYMENT_REQUIRED,
+                  message: `Escrow validation failed: ${validation.error}`,
+                }));
+                return;
+              }
+              console.log(`[Bridge] WS escrow ${task.escrowId} validated successfully`);
+            }
+
             this.pendingTasks.set(task.taskId, task);
             this.taskWebSockets.set(task.taskId, ws);
             const result = await this.executeTask(task);
             this.pendingTasks.delete(task.taskId);
+
+            // Confirm delivery on-chain if escrow was used
+            if (task.escrowId && this.escrowClient && result.status === 'completed') {
+              try {
+                const escrowId = BigInt(task.escrowId);
+                const output = result.output || '';
+                const txHash = await this.escrowClient.confirmDelivery(escrowId, output);
+                console.log(`[Bridge] WS delivery confirmed on-chain: ${txHash}`);
+              } catch (error) {
+                console.error(`[Bridge] WS failed to confirm delivery on-chain:`, error);
+              }
+            }
 
             ws.send(JSON.stringify({ type: 'result', payload: result }));
           }

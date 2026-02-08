@@ -56,7 +56,7 @@ const SkillSchema = z.object({
 
 const ProviderSchema = z.object({
   name: z.string(),
-  url: z.string().optional(),
+  url: z.string().url().optional(),
   contact: z.string().optional(),
 });
 
@@ -128,9 +128,10 @@ export const AgentCardConfigSchema = z.object({
   description: z.string().optional(),
   skills: z.array(z.string()).optional(),
   pricePerTask: z.number().optional(),
-  // privateKey intentionally excluded — use env vars for secrets
-  workspaceDir: z.string().optional(),
-  allowedCommands: z.array(z.string()).optional(),
+  // Security-critical fields intentionally excluded — use env vars only:
+  //   privateKey      — secret credential
+  //   workspaceDir    — controls filesystem access boundary
+  //   allowedCommands — controls which binaries the executor can spawn
   taskTimeout: z.number().optional(),
 
   // --- RichAgentConfig extensions ---
@@ -146,9 +147,9 @@ export const AgentCardConfigSchema = z.object({
   trust: TrustInfoSchema.optional(),
   defaultInputModes: z.array(z.string()).optional(),
   defaultOutputModes: z.array(z.string()).optional(),
-  documentationUrl: z.string().optional(),
-  termsOfServiceUrl: z.string().optional(),
-  privacyPolicyUrl: z.string().optional(),
+  documentationUrl: z.string().url().optional(),
+  termsOfServiceUrl: z.string().url().optional(),
+  privacyPolicyUrl: z.string().url().optional(),
 });
 
 /** Inferred type from the config Zod schema */

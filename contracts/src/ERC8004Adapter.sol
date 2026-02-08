@@ -27,6 +27,9 @@ contract ERC8004Adapter is
     /// @notice Reverted when a uint256 value overflows during type narrowing
     error ValueOverflow();
 
+    /// @notice Reverted when a zero address is provided to the constructor
+    error ZeroAddress();
+
     // ============ State Variables ============
 
     /// @notice Reference to the AgentMesh TrustRegistry contract
@@ -41,6 +44,8 @@ contract ERC8004Adapter is
     /// @param _trustRegistry Address of the deployed TrustRegistry contract
     /// @param _agentToken Address of the deployed AgentToken contract
     constructor(address _trustRegistry, address _agentToken) {
+        if (_trustRegistry == address(0)) revert ZeroAddress();
+        if (_agentToken == address(0)) revert ZeroAddress();
         trustRegistry = ITrustRegistry(_trustRegistry);
         agentToken = AgentToken(_agentToken);
     }
