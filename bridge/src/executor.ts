@@ -144,14 +144,19 @@ export class ClaudeExecutor {
    */
   private runClaudeCode(taskId: string, prompt: string, cwd: string, timeout: number): Promise<string> {
     return new Promise((resolve, reject) => {
-      // Spustí: claude -p "prompt" --output-format text
+      // Spustí: claude -p "prompt" --output-format text --max-turns 30
       // SECURITY: shell: false prevents command injection via prompt
-      const proc = spawn('claude', ['-p', prompt, '--output-format', 'text'], {
+      // stdio: stdin must be 'ignore' to prevent claude from waiting for EOF
+      const proc = spawn('claude', [
+        '-p', prompt,
+        '--output-format', 'text',
+        '--max-turns', '30',
+      ], {
         cwd,
         shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          // Zakáže interaktivní mód
           CI: 'true',
         },
       });
