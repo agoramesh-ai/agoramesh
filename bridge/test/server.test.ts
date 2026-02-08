@@ -63,24 +63,27 @@ describe('BridgeServer', () => {
       expect(res.body.description).toBe('Test agent for unit tests');
     });
 
-    it('returns capability card with skills', async () => {
+    it('returns capability card with skills as A2A v1.0 objects', async () => {
       const res = await request(app).get('/.well-known/agent.json');
 
-      expect(res.body.skills).toEqual(['coding', 'debugging']);
+      expect(res.body.skills).toEqual([
+        { id: 'coding', name: 'coding' },
+        { id: 'debugging', name: 'debugging' },
+      ]);
     });
 
-    it('returns pricing info', async () => {
+    it('returns payment info with defaultPricing', async () => {
       const res = await request(app).get('/.well-known/agent.json');
 
-      expect(res.body.pricing.model).toBe('per-task');
-      expect(res.body.pricing.price).toBe('0.01 USDC');
+      expect(res.body.payment.defaultPricing.model).toBe('per_request');
+      expect(res.body.payment.defaultPricing.amount).toBe('0.01');
+      expect(res.body.payment.defaultPricing.currency).toBe('USDC');
     });
 
-    it('returns endpoints', async () => {
+    it('returns protocolVersion', async () => {
       const res = await request(app).get('/.well-known/agent.json');
 
-      expect(res.body.endpoints.task).toBe('/task');
-      expect(res.body.endpoints.ws).toBe('/ws');
+      expect(res.body.protocolVersion).toBe('1.0');
     });
 
     it('returns version', async () => {

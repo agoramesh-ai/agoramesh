@@ -11,8 +11,8 @@
 
 import { createPublicClient, createWalletClient, http, keccak256, toHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { base, baseSepolia } from 'viem/chains';
-import { EscrowNotFoundError, EscrowOperationError, type Result, success, failure } from './errors';
+import { base, baseSepolia, foundry } from 'viem/chains';
+import { EscrowNotFoundError, EscrowOperationError, type Result, success, failure } from './errors.js';
 
 /**
  * Escrow state enum matching the Solidity contract
@@ -141,8 +141,11 @@ export class EscrowClient {
   constructor(config: EscrowConfig) {
     this.config = config;
 
-    // Determine chain
-    const chain = config.chainId === 84532 ? baseSepolia : base;
+    // Determine chain (31337 = local Anvil for development)
+    const chain =
+      config.chainId === 31337 ? foundry
+      : config.chainId === 84532 ? baseSepolia
+      : base;
 
     // Create public client for reads
     this.publicClient = createPublicClient({

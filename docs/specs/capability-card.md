@@ -12,12 +12,20 @@ A Capability Card is a JSON document that describes an agent's identity, capabil
 
 ## Location
 
-Capability Cards MUST be hosted at:
-```
-https://<agent-domain>/.well-known/agent.json
-```
+### HTTP Endpoints
 
-Or registered in the AgentMesh DHT with key:
+The bridge serves the capability card at two well-known paths for compatibility:
+
+| Path | Standard | Notes |
+|------|----------|-------|
+| `/.well-known/agent.json` | A2A v1.0 | Primary endpoint per A2A specification |
+| `/.well-known/agent-card.json` | AgentMesh | Alias for tooling that expects the `-card` suffix |
+
+Both endpoints return the same JSON document. Clients SHOULD prefer `/.well-known/agent.json` for interoperability with the broader A2A ecosystem.
+
+### DHT Registration
+
+Cards can also be registered in the AgentMesh DHT with key:
 ```
 /agentmesh/agents/<did-hash>
 ```
@@ -164,6 +172,76 @@ Or registered in the AgentMesh DHT with key:
 }
 ```
 
+## A2A v1.0 Compliance
+
+The AgentMesh Capability Card is a superset of the [A2A Agent Card v1.0](https://a2a-protocol.org/latest/topics/agent-discovery/) specification. All A2A-required fields are present, and AgentMesh adds extensions for trust, payment, and on-chain identity.
+
+### Field Mapping: AgentMesh <-> A2A v1.0
+
+| AgentMesh Field | A2A v1.0 Field | Required | Notes |
+|-----------------|---------------|----------|-------|
+| `id` | `id` | No (A2A) / Yes (AgentMesh) | DID identifier; A2A treats as optional |
+| `name` | `name` | Yes | Agent display name |
+| `description` | `description` | Yes | Human-readable description |
+| `version` | `version` | Yes | Semantic version of the agent |
+| `url` | `url` | Yes | Primary A2A endpoint URL |
+| `protocolVersion` | `protocolVersion` | No | A2A protocol version (e.g. `"1.0"`) |
+| `provider` | `provider` | No | Organization info (`name`, `url`, `contact`) |
+| `capabilities` | `capabilities` | No | Feature flags (streaming, push notifications) |
+| `authentication` | `authentication` | No | Auth schemes and DID methods |
+| `skills` | `skills` | Yes | Array of skill objects |
+| `skills[].id` | `skills[].id` | Yes | Unique skill identifier |
+| `skills[].name` | `skills[].name` | Yes | Human-readable skill name |
+| `skills[].description` | `skills[].description` | No | Skill description |
+| `skills[].tags` | `skills[].tags` | No | Discovery tags |
+| `skills[].inputModes` | `skills[].inputModes` | No | Accepted content types |
+| `skills[].outputModes` | `skills[].outputModes` | No | Produced content types |
+| `defaultInputModes` | `defaultInputModes` | No | Default input content types |
+| `defaultOutputModes` | `defaultOutputModes` | No | Default output content types |
+| `documentationUrl` | `documentationUrl` | No | Link to agent docs |
+| `skills[].pricing` | -- | No | **AgentMesh extension**: per-skill pricing |
+| `skills[].sla` | -- | No | **AgentMesh extension**: service level agreement |
+| `trust` | -- | No | **AgentMesh extension**: on-chain trust data |
+| `payment` | -- | No | **AgentMesh extension**: x402/escrow payment config |
+| `termsOfServiceUrl` | -- | No | **AgentMesh extension** |
+| `privacyPolicyUrl` | -- | No | **AgentMesh extension** |
+
+### JSON Schema Structure
+
+The capability card is validated using Zod schemas (see `bridge/src/config.ts`). The top-level structure:
+
+```
+CapabilityCard
+  |- name: string (required)
+  |- description: string (required)
+  |- version: string
+  |- url: string
+  |- protocolVersion: string
+  |- provider: { name, url?, contact? }
+  |- capabilities: { streaming?, pushNotifications?, stateTransitionHistory?, x402Payments?, escrow? }
+  |- authentication: { schemes[], didMethods?[], instructions? }
+  |- skills: Skill[]
+  |    |- id: string (required)
+  |    |- name: string (required)
+  |    |- description?: string
+  |    |- tags?: string[]
+  |    |- inputModes?: string[]
+  |    |- outputModes?: string[]
+  |    |- inputSchema?: object
+  |    |- outputSchema?: object
+  |    |- pricing?: { model, amount, currency, unit?, minimum?, escrowRequired? }
+  |    |- sla?: { avgResponseTime?, maxResponseTime?, availability? }
+  |    |- examples?: { input, output }[]
+  |- payment: { methods[], currencies[], chains[], addresses, escrowContract? }
+  |- trust: { score, tier, stake?, endorsements?[], verifications?[] }
+  |- defaultInputModes?: string[]
+  |- defaultOutputModes?: string[]
+  |- documentationUrl?: string
+  |- termsOfServiceUrl?: string
+  |- privacyPolicyUrl?: string
+  |- metadata: { updatedAt }
+```
+
 ## Field Reference
 
 ### Required Fields
@@ -231,8 +309,94 @@ for _, skill := range capabilityCard.Skills {
 }
 ```
 
+## Bridge Capability Card Response Example
+
+When the bridge has a full `agent-card.config.json` with rich fields, `GET /.well-known/agent.json` returns:
+
+```json
+{
+  "name": "Claude Code Agent",
+  "description": "AI-powered development agent specializing in TypeScript, JavaScript, and Python.",
+  "version": "1.0.0",
+  "protocolVersion": "1.0",
+  "provider": {
+    "name": "AgentMesh",
+    "url": "https://agentme.cz"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "x402Payments": true,
+    "escrow": true
+  },
+  "authentication": {
+    "schemes": ["did", "bearer"],
+    "didMethods": ["did:agentmesh", "did:key"]
+  },
+  "skills": [
+    {
+      "id": "code.typescript",
+      "name": "TypeScript Development",
+      "description": "Full-stack TypeScript development including type-safe APIs, Node.js services, and React applications.",
+      "tags": ["typescript", "nodejs", "development"],
+      "inputModes": ["text"],
+      "outputModes": ["text", "application/json"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      },
+      "sla": {
+        "avgResponseTime": "PT5M",
+        "maxResponseTime": "PT15M",
+        "availability": 0.99
+      }
+    }
+  ],
+  "payment": {
+    "methods": ["x402", "escrow"],
+    "currencies": ["USDC"],
+    "chains": ["base"],
+    "addresses": {
+      "base": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21"
+    }
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text", "application/json"],
+  "metadata": {
+    "updatedAt": "2026-02-08T12:00:00.000Z"
+  }
+}
+```
+
+When no config file is present (env-var only mode), the response is a minimal card:
+
+```json
+{
+  "name": "My Agent",
+  "description": "AI agent",
+  "version": "1.0.0",
+  "protocolVersion": "1.0",
+  "skills": [
+    { "id": "typescript", "name": "typescript" }
+  ],
+  "payment": {
+    "defaultPricing": {
+      "model": "per_request",
+      "amount": "5",
+      "currency": "USDC"
+    }
+  },
+  "metadata": {
+    "updatedAt": "2026-02-08T12:00:00.000Z"
+  }
+}
+```
+
 ## See Also
 
 - [A2A Agent Card Specification](https://a2a-protocol.org/latest/topics/agent-discovery/)
 - [W3C DID Core](https://www.w3.org/TR/did-core/)
 - [ERC-8004 Identity Registry](https://eips.ethereum.org/EIPS/eip-8004)
+- [ERC-8004 Integration](./erc-8004-integration.md)
+- [Bridge Protocol](./bridge-protocol.md)

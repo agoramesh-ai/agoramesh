@@ -822,11 +822,15 @@ describe('E2E: Agent card and health check', () => {
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('e2e-test-agent');
     expect(res.body.description).toBe('Integration test agent for end-to-end workflows');
-    expect(res.body.skills).toEqual(['coding', 'debugging', 'testing']);
-    expect(res.body.pricing.model).toBe('per-task');
-    expect(res.body.pricing.price).toBe('0.01 USDC');
-    expect(res.body.endpoints.task).toBe('/task');
-    expect(res.body.endpoints.ws).toBe('/ws');
+    expect(res.body.skills).toEqual([
+      { id: 'coding', name: 'coding' },
+      { id: 'debugging', name: 'debugging' },
+      { id: 'testing', name: 'testing' },
+    ]);
+    expect(res.body.payment.defaultPricing.model).toBe('per_request');
+    expect(res.body.payment.defaultPricing.amount).toBe('0.01');
+    expect(res.body.payment.defaultPricing.currency).toBe('USDC');
+    expect(res.body.protocolVersion).toBe('1.0');
     expect(res.body.version).toBe('1.0.0');
   });
 

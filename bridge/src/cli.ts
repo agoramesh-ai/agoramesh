@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import 'dotenv/config';
-import { BridgeServer } from './server.js';
+import { BridgeServer, BridgeServerConfig } from './server.js';
 import { AgentConfig } from './types.js';
+import { EscrowClient, didToHash } from './escrow.js';
+import { loadAgentCardConfig } from './config.js';
 
 function loadConfig(): AgentConfig {
   const required = (key: string): string => {
@@ -30,11 +32,33 @@ async function main() {
   console.log('🚀 AgentMesh Bridge - Claude Code Worker');
   console.log('=========================================\n');
 
-  const config = loadConfig();
+  const envConfig = loadConfig();
+  const jsonConfig = loadAgentCardConfig();
+  const config = { ...envConfig, ...jsonConfig };
   const port = parseInt(process.env.BRIDGE_PORT || '3402', 10);
   const host = process.env.BRIDGE_HOST || '127.0.0.1';
 
-  const server = new BridgeServer({ ...config, host });
+  const serverConfig: BridgeServerConfig = { ...config, host };
+
+  // Optional escrow integration
+  const escrowAddress = process.env.ESCROW_ADDRESS;
+  const escrowRpcUrl = process.env.ESCROW_RPC_URL;
+  const providerDid = process.env.PROVIDER_DID;
+
+  if (escrowAddress && escrowRpcUrl && providerDid) {
+    const chainId = parseInt(process.env.ESCROW_CHAIN_ID || '8453', 10);
+    serverConfig.escrowClient = new EscrowClient({
+      escrowAddress: escrowAddress as `0x${string}`,
+      rpcUrl: escrowRpcUrl,
+      privateKey: config.privateKey as `0x${string}`,
+      chainId,
+    });
+    serverConfig.providerDid = didToHash(providerDid);
+    console.log(`[Bridge] Escrow enabled: ${escrowAddress} (chain ${chainId})`);
+    console.log(`[Bridge] Provider DID: ${providerDid}`);
+  }
+
+  const server = new BridgeServer(serverConfig);
 
   // Graceful shutdown
   async function shutdown(): Promise<void> {

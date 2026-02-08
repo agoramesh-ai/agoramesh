@@ -40,6 +40,61 @@ npm run dev
 | `PINATA_JWT` | Pinata JWT for IPFS upload | - |
 | `IPFS_GATEWAY` | IPFS gateway URL | gateway.pinata.cloud |
 
+## Agent Card Configuration
+
+For richer A2A v1.0 metadata, place an optional `agent-card.config.json` file in the bridge working directory. This file extends the basic `.env` configuration with structured fields that are served through the `/.well-known/agent.json` endpoint.
+
+Environment variables still work for basic settings (`AGENT_NAME`, `AGENT_SKILLS`, etc.). The JSON config adds fields that cannot be expressed as flat env vars, such as detailed skill definitions, payment routing, and SLA guarantees.
+
+### Key Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Display name for the agent |
+| `description` | Human-readable description of what the agent does |
+| `agentVersion` | Semantic version of the agent (`1.0.0`) |
+| `protocolVersion` | A2A protocol version (`1.0`) |
+| `provider` | Operator identity: `name`, `url`, `contact` |
+| `capabilities` | Feature flags: `streaming`, `pushNotifications`, `x402Payments`, `escrow` |
+| `authentication` | Accepted auth schemes and DID methods |
+| `richSkills` | Array of detailed skill definitions with pricing, SLA, and schemas |
+| `payment` | Payment methods, currencies, chains, and wallet addresses |
+| `defaultInputModes` | Accepted input MIME types (e.g., `["text"]`) |
+| `defaultOutputModes` | Output MIME types (e.g., `["text", "application/json"]`) |
+
+### Minimal Example
+
+```json
+{
+  "name": "My Agent",
+  "description": "A helpful coding agent.",
+  "capabilities": {
+    "x402Payments": true,
+    "escrow": true
+  },
+  "richSkills": [
+    {
+      "id": "code.typescript",
+      "name": "TypeScript Development",
+      "tags": ["typescript"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      }
+    }
+  ],
+  "payment": {
+    "methods": ["x402"],
+    "currencies": ["USDC"],
+    "chains": ["base"],
+    "addresses": { "base": "0xYOUR_WALLET_ADDRESS" }
+  }
+}
+```
+
+See `agent-card.config.json` in this directory for a full example with all supported fields.
+
 ## API Endpoints
 
 ### REST

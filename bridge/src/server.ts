@@ -8,7 +8,7 @@ import type { AddressInfo } from 'net';
 import { timingSafeEqual, createHmac, randomBytes } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
-import { TaskInput, TaskInputSchema, TaskResult, AgentConfig } from './types.js';
+import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig } from './types.js';
 import { EscrowClient } from './escrow.js';
 
 // HMAC key for timing-safe comparison - derived once at startup from random bytes
@@ -111,7 +111,7 @@ export interface CorsConfig {
 /**
  * Extended configuration for BridgeServer with optional escrow support
  */
-export interface BridgeServerConfig extends AgentConfig {
+export interface BridgeServerConfig extends RichAgentConfig {
   /** Optional escrow client for payment validation */
   escrowClient?: EscrowClient;
   /** Provider DID (hashed) for escrow validation */
@@ -306,22 +306,11 @@ export class BridgeServer {
     });
 
     // Agent info (A2A compatible capability card)
-    this.app.get('/.well-known/agent.json', (_req: Request, res: Response) => {
-      res.json({
-        name: this.config.name,
-        description: this.config.description,
-        skills: this.config.skills,
-        pricing: {
-          model: 'per-task',
-          price: `${this.config.pricePerTask} USDC`,
-        },
-        endpoints: {
-          task: '/task',
-          ws: '/ws',
-        },
-        version: '1.0.0',
-      });
-    });
+    const agentCardHandler = (_req: Request, res: Response) => {
+      res.json(this.buildCapabilityCard());
+    };
+    this.app.get('/.well-known/agent.json', agentCardHandler);
+    this.app.get('/.well-known/agent-card.json', agentCardHandler);
 
     // Submit task (REST API)
     this.app.post('/task', async (req: Request, res: Response) => {
@@ -497,6 +486,83 @@ export class BridgeServer {
       ws.send(message);
     }
     this.taskWebSockets.delete(result.taskId);
+  }
+
+  /**
+   * Build a full A2A v1.0 capability card from the bridge configuration.
+   *
+   * When rich config fields (agentId, richSkills, provider, etc.) are present
+   * the card includes all A2A metadata. Otherwise it falls back to a minimal
+   * but valid card derived from the basic AgentConfig fields.
+   */
+  private buildCapabilityCard(): Record<string, unknown> {
+    const cfg = this.config;
+
+    // Build skills array: prefer richSkills, fall back to basic string[] skills
+    const skills = cfg.richSkills
+      ? cfg.richSkills
+      : cfg.skills.map((s) => ({ id: s, name: s }));
+
+    // Build payment section
+    const payment: Record<string, unknown> = cfg.payment
+      ? { ...cfg.payment }
+      : {
+          defaultPricing: {
+            model: 'per_request',
+            amount: String(cfg.pricePerTask),
+            currency: 'USDC',
+          },
+        };
+
+    const card: Record<string, unknown> = {
+      name: cfg.name,
+      description: cfg.description,
+      version: cfg.agentVersion ?? '1.0.0',
+      skills,
+      payment,
+      metadata: {
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    // Add optional rich fields when present
+    if (cfg.agentId) {
+      card.id = cfg.agentId;
+    }
+    if (cfg.url) {
+      card.url = cfg.url;
+    }
+    card.protocolVersion = cfg.protocolVersion ?? '1.0';
+
+    if (cfg.provider) {
+      card.provider = cfg.provider;
+    }
+    if (cfg.capabilities) {
+      card.capabilities = cfg.capabilities;
+    }
+    if (cfg.authentication) {
+      card.authentication = cfg.authentication;
+    }
+    if (cfg.trust) {
+      card.trust = cfg.trust;
+    }
+    if (cfg.defaultInputModes) {
+      card.defaultInputModes = cfg.defaultInputModes;
+    }
+    if (cfg.defaultOutputModes) {
+      card.defaultOutputModes = cfg.defaultOutputModes;
+    }
+    if (cfg.documentationUrl) {
+      card.documentationUrl = cfg.documentationUrl;
+    }
+    if (cfg.termsOfServiceUrl) {
+      card.termsOfServiceUrl = cfg.termsOfServiceUrl;
+    }
+    if (cfg.privacyPolicyUrl) {
+      card.privacyPolicyUrl = cfg.privacyPolicyUrl;
+    }
+
+    return card;
   }
 
   start(port: number): Promise<void> {

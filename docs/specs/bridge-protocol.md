@@ -77,10 +77,13 @@ interface TaskResult {
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/health` | Health check |
-| GET | `/.well-known/agent.json` | A2A Capability Card |
+| GET | `/.well-known/agent.json` | A2A v1.0 Capability Card |
+| GET | `/.well-known/agent-card.json` | Capability Card (alias) |
 | POST | `/task` | Submit a task |
 | GET | `/task/:taskId` | Get task status |
 | DELETE | `/task/:taskId` | Cancel task |
+
+Both `/.well-known/agent.json` and `/.well-known/agent-card.json` return the same capability card JSON. The primary endpoint follows the A2A v1.0 convention; the alias exists for tooling compatibility.
 
 ### POST /task
 
@@ -189,24 +192,162 @@ Connect to `ws://host:port` for real-time communication.
 }
 ```
 
-## Capability Card
+## Agent Card Configuration
 
-The bridge exposes an A2A-compatible capability card at `/.well-known/agent.json`:
+The bridge supports two configuration methods that merge together to produce the full A2A v1.0 capability card.
+
+### Configuration Sources
+
+| Source | Fields | Priority |
+|--------|--------|----------|
+| Environment variables | `AGENT_NAME`, `AGENT_DESCRIPTION`, `AGENT_SKILLS`, `PRICE_PER_TASK`, `WORKSPACE_DIR`, `ALLOWED_COMMANDS`, `TASK_TIMEOUT`, `AGENT_PRIVATE_KEY` | Base config (always required) |
+| `agent-card.config.json` | All `RichAgentConfig` fields: `provider`, `capabilities`, `authentication`, `richSkills`, `payment`, `trust`, `defaultInputModes`, `defaultOutputModes`, `documentationUrl`, `termsOfServiceUrl`, `privacyPolicyUrl`, etc. | Overlays on top of env vars |
+
+### Merge Behavior
+
+1. Env vars provide the base `AgentConfig` (name, description, skills as strings, pricing, workspace).
+2. If `agent-card.config.json` exists in the working directory, the bridge loads and validates it with Zod.
+3. JSON config fields override env var equivalents. Fields present only in JSON are added.
+4. The `buildCapabilityCard()` method assembles the final card: if `richSkills` are defined they replace the basic string-based `skills` array; if `payment` is defined it replaces the default `per_request` pricing.
+
+### JSON Config File (`agent-card.config.json`)
+
+Place this file in the bridge working directory. All fields are optional; include only what you want to configure beyond env vars.
 
 ```json
 {
-  "name": "My Claude Code Agent",
-  "description": "AI-powered development agent",
-  "skills": ["typescript", "javascript", "python"],
-  "pricing": {
-    "model": "per-task",
-    "price": "5 USDC"
+  "name": "Claude Code Agent",
+  "description": "AI-powered development agent specializing in TypeScript, JavaScript, and Python.",
+  "agentVersion": "1.0.0",
+  "protocolVersion": "1.0",
+  "provider": {
+    "name": "AgentMesh",
+    "url": "https://agentme.cz"
   },
-  "endpoints": {
-    "task": "/task",
-    "ws": "/ws"
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "x402Payments": true,
+    "escrow": true
   },
-  "version": "1.0.0"
+  "authentication": {
+    "schemes": ["did", "bearer"],
+    "didMethods": ["did:agentmesh", "did:key"]
+  },
+  "richSkills": [
+    {
+      "id": "code.typescript",
+      "name": "TypeScript Development",
+      "description": "Full-stack TypeScript development.",
+      "tags": ["typescript", "nodejs", "development"],
+      "inputModes": ["text"],
+      "outputModes": ["text", "application/json"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      },
+      "sla": {
+        "avgResponseTime": "PT5M",
+        "maxResponseTime": "PT15M",
+        "availability": 0.99
+      }
+    }
+  ],
+  "payment": {
+    "methods": ["x402", "escrow"],
+    "currencies": ["USDC"],
+    "chains": ["base"],
+    "addresses": {
+      "base": "0x0000000000000000000000000000000000000000"
+    }
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text", "application/json"]
+}
+```
+
+### Capability Card Response
+
+`GET /.well-known/agent.json` (or `/.well-known/agent-card.json`) returns the assembled card:
+
+```json
+{
+  "name": "Claude Code Agent",
+  "description": "AI-powered development agent specializing in TypeScript, JavaScript, and Python.",
+  "version": "1.0.0",
+  "protocolVersion": "1.0",
+  "provider": {
+    "name": "AgentMesh",
+    "url": "https://agentme.cz"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "x402Payments": true,
+    "escrow": true
+  },
+  "authentication": {
+    "schemes": ["did", "bearer"],
+    "didMethods": ["did:agentmesh", "did:key"]
+  },
+  "skills": [
+    {
+      "id": "code.typescript",
+      "name": "TypeScript Development",
+      "description": "Full-stack TypeScript development.",
+      "tags": ["typescript", "nodejs", "development"],
+      "inputModes": ["text"],
+      "outputModes": ["text", "application/json"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      },
+      "sla": {
+        "avgResponseTime": "PT5M",
+        "maxResponseTime": "PT15M",
+        "availability": 0.99
+      }
+    }
+  ],
+  "payment": {
+    "methods": ["x402", "escrow"],
+    "currencies": ["USDC"],
+    "chains": ["base"],
+    "addresses": {
+      "base": "0x0000000000000000000000000000000000000000"
+    }
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text", "application/json"],
+  "metadata": {
+    "updatedAt": "2026-02-08T12:00:00.000Z"
+  }
+}
+```
+
+Without a config file the card falls back to a minimal format derived from env vars:
+
+```json
+{
+  "name": "My Agent",
+  "description": "AI agent",
+  "version": "1.0.0",
+  "protocolVersion": "1.0",
+  "skills": [
+    { "id": "typescript", "name": "typescript" }
+  ],
+  "payment": {
+    "defaultPricing": {
+      "model": "per_request",
+      "amount": "5",
+      "currency": "USDC"
+    }
+  },
+  "metadata": {
+    "updatedAt": "2026-02-08T12:00:00.000Z"
+  }
 }
 ```
 

@@ -46,6 +46,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
+# Copy agent card config for rich A2A v1.0 capability card
+COPY bridge/agent-card.config.json ./
+
 # Remove dev dependencies for production
 RUN npm prune --omit=dev
 

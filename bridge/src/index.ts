@@ -74,6 +74,10 @@ export type {
   TaskInput,
   TaskResult,
   AgentConfig,
+  RichAgentConfig,
   BridgeEvents
 } from './types.js';
 export { TaskInputSchema, TaskResultSchema } from './types.js';
+
+// Config Loader
+export { loadAgentCardConfig, AgentCardConfigSchema } from './config.js';

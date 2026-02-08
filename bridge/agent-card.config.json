@@ -1,0 +1,76 @@
+{
+  "name": "Claude Code Agent",
+  "description": "AI-powered development agent specializing in TypeScript, JavaScript, and Python code generation, review, and debugging.",
+  "agentVersion": "1.0.0",
+  "protocolVersion": "1.0",
+  "provider": {
+    "name": "AgentMesh",
+    "url": "https://agentme.cz"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "x402Payments": true,
+    "escrow": true
+  },
+  "authentication": {
+    "schemes": ["did", "bearer"],
+    "didMethods": ["did:agentmesh", "did:key"]
+  },
+  "richSkills": [
+    {
+      "id": "code.typescript",
+      "name": "TypeScript Development",
+      "description": "Full-stack TypeScript development including type-safe APIs, Node.js services, and React applications.",
+      "tags": ["typescript", "nodejs", "development"],
+      "inputModes": ["text"],
+      "outputModes": ["text", "application/json"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      },
+      "sla": {
+        "avgResponseTime": "PT5M",
+        "maxResponseTime": "PT15M",
+        "availability": 0.99
+      }
+    },
+    {
+      "id": "code.javascript",
+      "name": "JavaScript Development",
+      "description": "JavaScript development including ES modules, Node.js backends, and browser-side code.",
+      "tags": ["javascript", "nodejs", "development"],
+      "inputModes": ["text"],
+      "outputModes": ["text", "application/json"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      }
+    },
+    {
+      "id": "code.python",
+      "name": "Python Development",
+      "description": "Python development including scripting, data processing, and web services.",
+      "tags": ["python", "development"],
+      "inputModes": ["text"],
+      "outputModes": ["text", "application/json"],
+      "pricing": {
+        "model": "per_request",
+        "amount": "5",
+        "currency": "USDC"
+      }
+    }
+  ],
+  "payment": {
+    "methods": ["x402", "escrow"],
+    "currencies": ["USDC"],
+    "chains": ["base"],
+    "addresses": {
+      "base": "0x0000000000000000000000000000000000000000"
+    }
+  },
+  "defaultInputModes": ["text"],
+  "defaultOutputModes": ["text", "application/json"]
+}

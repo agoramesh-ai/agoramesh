@@ -12,6 +12,7 @@ import "../src/CrossChainTrustSync.sol";
 import "../src/VerifiedNamespaces.sol";
 import "../src/AgentToken.sol";
 import "../src/NFTBoundReputation.sol";
+import "../src/ERC8004Adapter.sol";
 
 /// @title DeployLocal - Deploy all contracts to local Anvil with MockUSDC
 /// @notice Deploys MockUSDC, mints test tokens, then deploys all AgentMesh contracts.
@@ -32,6 +33,7 @@ contract DeployLocal is Script {
         address namespaces;
         address agentToken;
         address nftReputation;
+        address erc8004Adapter;
     }
 
     function run() external {
@@ -82,6 +84,9 @@ contract DeployLocal is Script {
         c.nftReputation = address(new NFTBoundReputation(c.agentToken, c.usdc, admin));
         console.log("NFTBoundReputation:", c.nftReputation);
 
+        c.erc8004Adapter = address(new ERC8004Adapter(c.trustRegistry, c.agentToken));
+        console.log("ERC8004Adapter:", c.erc8004Adapter);
+
         // 3. Configure roles
         TrustRegistry registry = TrustRegistry(c.trustRegistry);
         NFTBoundReputation nftRep = NFTBoundReputation(c.nftReputation);
@@ -114,7 +119,8 @@ contract DeployLocal is Script {
         vm.serializeAddress(obj, "crossChain", c.crossChain);
         vm.serializeAddress(obj, "namespaces", c.namespaces);
         vm.serializeAddress(obj, "agentToken", c.agentToken);
-        string memory json = vm.serializeAddress(obj, "nftReputation", c.nftReputation);
+        vm.serializeAddress(obj, "nftReputation", c.nftReputation);
+        string memory json = vm.serializeAddress(obj, "erc8004Adapter", c.erc8004Adapter);
 
         string memory outputPath = string.concat(outputDir, "/local.json");
         vm.writeJson(json, outputPath);

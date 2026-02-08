@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+import type {
+  Skill,
+  CapabilityCard,
+  PaymentConfig,
+  Authentication,
+  Provider,
+} from '@agentmesh/sdk';
+
 // === Validation constants ===
 
 /** Maximum prompt length (100KB) to prevent DoS attacks */
@@ -87,6 +95,46 @@ export interface AgentConfig {
   workspaceDir: string;
   allowedCommands: string[];
   taskTimeout: number;
+}
+
+/**
+ * Extended agent configuration with full A2A v1.0 capability card fields.
+ *
+ * All new fields are optional so that existing env-var-based configuration
+ * continues to work unchanged. A JSON config file can supply these richer
+ * fields to generate a complete A2A Capability Card.
+ */
+export interface RichAgentConfig extends AgentConfig {
+  /** Agent DID (Decentralized Identifier) */
+  agentId?: string;
+  /** Semantic version of the agent implementation */
+  agentVersion?: string;
+  /** Primary A2A endpoint URL */
+  url?: string;
+  /** A2A protocol version (e.g. "1.0") */
+  protocolVersion?: string;
+  /** Provider / organization information */
+  provider?: Provider;
+  /** Agent capabilities (streaming, push notifications, etc.) */
+  capabilities?: CapabilityCard['capabilities'];
+  /** Authentication configuration */
+  authentication?: Authentication;
+  /** Rich skill definitions with full A2A metadata (alongside basic string[] skills) */
+  richSkills?: Skill[];
+  /** Payment configuration */
+  payment?: PaymentConfig;
+  /** Trust metadata (score, tier, endorsements, verifications) */
+  trust?: CapabilityCard['trust'];
+  /** Default accepted input content types */
+  defaultInputModes?: string[];
+  /** Default output content types */
+  defaultOutputModes?: string[];
+  /** URL to agent documentation */
+  documentationUrl?: string;
+  /** URL to terms of service */
+  termsOfServiceUrl?: string;
+  /** URL to privacy policy */
+  privacyPolicyUrl?: string;
 }
 
 // === Bridge events ===
