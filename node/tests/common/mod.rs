@@ -78,6 +78,8 @@ impl TestServer {
             listen_address: self.addr.clone(),
             cors_enabled: true,
             cors_origins: vec!["*".to_string()],
+            trust_proxy: false,
+            admin_token: None,
         };
 
         let server = ApiServer::with_state(api_config, self.state.clone());
@@ -130,6 +132,7 @@ pub fn create_test_state() -> AppState {
         rate_limiter: Arc::new(RateLimitService::new(RateLimitConfig::default())),
         metrics: Arc::new(MetricsService::new(MetricsConfig::default())),
         hybrid_search: None,
+        api_token: None,
     }
 }
 
@@ -147,6 +150,7 @@ pub fn create_test_state_with_rate_limit(config: RateLimitConfig) -> AppState {
         rate_limiter: Arc::new(RateLimitService::new(config)),
         metrics: Arc::new(MetricsService::new(MetricsConfig::default())),
         hybrid_search: None,
+        api_token: None,
     }
 }
 

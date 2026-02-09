@@ -31,12 +31,19 @@ npm run dev
 |----------|-------------|---------|
 | `AGENT_PRIVATE_KEY` | ETH private key (for payments) | **required** |
 | `BRIDGE_PORT` | Server port | 3402 |
+| `BRIDGE_REQUIRE_AUTH` | Require auth/payment for tasks | true in production |
+| `BRIDGE_API_TOKEN` | Static API token for task auth | - |
 | `WORKSPACE_DIR` | Working directory for tasks | cwd |
 | `ALLOWED_COMMANDS` | Allowed commands | claude,git,npm,node |
 | `TASK_TIMEOUT` | Max task duration (seconds) | 300 |
 | `AGENT_NAME` | Agent name | Claude Code Agent |
 | `AGENT_SKILLS` | Skills (comma-separated) | typescript,javascript |
 | `AGENT_PRICE_PER_TASK` | Price per task (USDC) | 5 |
+| `X402_ENABLED` | Require x402 payment for tasks | false |
+| `X402_USDC_ADDRESS` | USDC contract address for x402 | - |
+| `X402_PAY_TO` | Recipient wallet for x402 | derived from private key |
+| `X402_NETWORK` | x402 network (CAIP-2) | eip155:8453 |
+| `X402_VALIDITY_PERIOD` | Payment validity window (seconds) | 300 |
 | `PINATA_JWT` | Pinata JWT for IPFS upload | - |
 | `IPFS_GATEWAY` | IPFS gateway URL | gateway.pinata.cloud |
 
@@ -108,6 +115,7 @@ curl http://localhost:3402/.well-known/agent.json
 
 # Submit task
 curl -X POST http://localhost:3402/task \
+  -H "Authorization: Bearer $BRIDGE_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "taskId": "task-123",
@@ -164,6 +172,7 @@ ws.on('message', (data) => {
 2. **Restrict ALLOWED_COMMANDS** to only what you need
 3. **Set WORKSPACE_DIR** to an isolated directory
 4. **Use TASK_TIMEOUT** to protect against runaway processes
+5. **Enable auth** using `BRIDGE_API_TOKEN` and/or x402 payment (`X402_*`)
 
 For production we recommend a Docker sandbox:
 

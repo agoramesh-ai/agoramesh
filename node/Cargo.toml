@@ -49,6 +49,9 @@ metrics-exporter-prometheus = "0.16"
 # Error handling
 thiserror = "2.0"
 
+# Cryptographic utilities
+subtle = "2.6"
+
 # Utilities
 futures = "0.3"
 async-trait = "0.1"

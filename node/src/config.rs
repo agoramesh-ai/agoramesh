@@ -67,6 +67,14 @@ pub struct ApiConfig {
 
     /// Allowed CORS origins.
     pub cors_origins: Vec<String>,
+
+    /// Trust proxy headers (X-Forwarded-For, X-Real-IP) for client IPs.
+    #[serde(default)]
+    pub trust_proxy: bool,
+
+    /// Optional admin token required for agent registration.
+    #[serde(default)]
+    pub admin_token: Option<String>,
 }
 
 /// Trust layer configuration.
@@ -127,6 +135,8 @@ impl Default for NodeConfig {
                 listen_address: "0.0.0.0:8080".to_string(),
                 cors_enabled: true,
                 cors_origins: vec!["*".to_string()],
+                trust_proxy: false,
+                admin_token: None,
             },
             trust: TrustConfig {
                 min_trust_score: 0.5,

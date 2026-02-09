@@ -8,16 +8,18 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
+    http::{header, HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
     response::IntoResponse,
     routing::get,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::RwLock;
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 
 use crate::config::ApiConfig;
 use crate::discovery::{CapabilityCard, DiscoveryService};
@@ -75,6 +77,8 @@ pub struct AppState {
     pub metrics: Arc<MetricsService>,
     /// Optional semantic search service.
     pub hybrid_search: Option<Arc<RwLock<HybridSearch>>>,
+    /// Optional admin token for agent registration.
+    pub api_token: Option<String>,
 }
 
 /// Semantic search result with scores.
@@ -95,7 +99,7 @@ pub struct SemanticSearchResult {
 /// API server.
 pub struct ApiServer {
     /// API configuration.
-    _config: ApiConfig,
+    config: ApiConfig,
     /// Shared application state.
     state: AppState,
 }
@@ -117,6 +121,7 @@ pub struct ApiError {
 impl ApiServer {
     /// Create a new API server.
     pub fn new(config: ApiConfig) -> Self {
+        let api_token = normalize_api_token(config.admin_token.clone());
         let state = AppState {
             discovery: Arc::new(DiscoveryService::new()),
             trust: Arc::new(TrustService::new(
@@ -129,17 +134,22 @@ impl ApiServer {
             rate_limiter: Arc::new(RateLimitService::new(RateLimitConfig::default())),
             metrics: Arc::new(MetricsService::new(MetricsConfig::default())),
             hybrid_search: None,
+            api_token,
         };
         Self {
-            _config: config,
+            config,
             state,
         }
     }
 
     /// Create a new API server with custom state.
     pub fn with_state(config: ApiConfig, state: AppState) -> Self {
+        let mut state = state;
+        if state.api_token.is_none() {
+            state.api_token = normalize_api_token(config.admin_token.clone());
+        }
         Self {
-            _config: config,
+            config,
             state,
         }
     }
@@ -147,7 +157,8 @@ impl ApiServer {
     /// Build the router with all routes.
     pub fn router(&self) -> Router {
         // Create rate limit layer
-        let rate_limit_layer = RateLimitLayer::new(self.state.rate_limiter.clone());
+        let rate_limit_layer = RateLimitLayer::new(self.state.rate_limiter.clone())
+            .with_trust_proxy(self.config.trust_proxy);
 
         // Routes that are rate limited (API endpoints)
         // Note: /agents/semantic must come BEFORE /agents/{did} to avoid being captured
@@ -168,10 +179,16 @@ impl ApiServer {
             .route("/.well-known/agent.json", get(agent_card_handler));
 
         // Combine all routes
-        Router::new()
+        let mut router = Router::new()
             .merge(unrestricted_routes)
             .merge(rate_limited_routes)
-            .with_state(self.state.clone())
+            .with_state(self.state.clone());
+
+        if let Some(cors_layer) = build_cors_layer(&self.config) {
+            router = router.layer(cors_layer);
+        }
+
+        router
     }
 
     /// Start the API server.
@@ -184,12 +201,96 @@ impl ApiServer {
 
         tracing::info!("API server listening on {}", listen_addr);
 
-        axum::serve(listener, router)
+        axum::serve(
+            listener,
+            router.into_make_service_with_connect_info::<SocketAddr>(),
+        )
             .await
             .map_err(|e| crate::error::Error::Api(e.to_string()))?;
 
         Ok(())
     }
+}
+
+fn normalize_api_token(token: Option<String>) -> Option<String> {
+    token.and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn build_cors_layer(config: &ApiConfig) -> Option<CorsLayer> {
+    if !config.cors_enabled {
+        return None;
+    }
+
+    let mut cors = CorsLayer::new();
+    if config.cors_origins.iter().any(|origin| origin == "*") {
+        cors = cors.allow_origin(Any);
+    } else if !config.cors_origins.is_empty() {
+        let origins: Vec<HeaderValue> = config
+            .cors_origins
+            .iter()
+            .filter_map(|origin| origin.parse::<HeaderValue>().ok())
+            .collect();
+        if !origins.is_empty() {
+            cors = cors.allow_origin(AllowOrigin::list(origins));
+        }
+    }
+
+    cors = cors.allow_methods([
+        Method::GET,
+        Method::POST,
+        Method::DELETE,
+        Method::OPTIONS,
+    ]);
+
+    cors = cors.allow_headers([
+        header::AUTHORIZATION,
+        header::CONTENT_TYPE,
+        HeaderName::from_static("x-api-key"),
+    ]);
+
+    Some(cors)
+}
+
+fn constant_time_eq(a: &str, b: &str) -> bool {
+    use subtle::ConstantTimeEq;
+    if a.len() != b.len() {
+        // Length mismatch leaks length info, but this is unavoidable and
+        // standard practice (same as crypto::timingSafeEqual in Node.js).
+        return false;
+    }
+    a.as_bytes().ct_eq(b.as_bytes()).into()
+}
+
+fn is_admin_request(headers: &HeaderMap, token: &str) -> bool {
+    if let Some(auth_header) = headers.get(header::AUTHORIZATION) {
+        if let Ok(auth_header) = auth_header.to_str() {
+            let bearer_token = auth_header
+                .strip_prefix("Bearer ")
+                .or_else(|| auth_header.strip_prefix("bearer "));
+            if let Some(candidate) = bearer_token {
+                if constant_time_eq(candidate, token) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    if let Some(api_key) = headers.get("x-api-key") {
+        if let Ok(api_key) = api_key.to_str() {
+            if constant_time_eq(api_key, token) {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 /// Health check handler.
@@ -358,8 +459,20 @@ async fn get_agent_handler(
 /// Register agent handler.
 async fn register_agent_handler(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(card): Json<CapabilityCard>,
 ) -> std::result::Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<ApiError>)> {
+    if let Some(token) = state.api_token.as_deref() {
+        if !is_admin_request(&headers, token) {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError {
+                    error: "Unauthorized".to_string(),
+                }),
+            ));
+        }
+    }
+
     match state.discovery.register(&card).await {
         Ok(()) => {
             let did = card
@@ -429,6 +542,7 @@ mod tests {
             metrics: Arc::new(MetricsService::disabled()),
             // No hybrid search by default
             hybrid_search: None,
+            api_token: None,
         }
     }
 
@@ -437,6 +551,8 @@ mod tests {
             listen_address: "127.0.0.1:0".to_string(),
             cors_enabled: false,
             cors_origins: vec![],
+            trust_proxy: false,
+            admin_token: None,
         };
         let server = ApiServer::with_state(config, state);
         TestServer::new(server.router()).unwrap()
@@ -756,6 +872,7 @@ mod tests {
             })),
             metrics: Arc::new(MetricsService::disabled()),
             hybrid_search: None,
+            api_token: None,
         }
     }
 
@@ -966,6 +1083,7 @@ mod tests {
             rate_limiter: Arc::new(RateLimitService::disabled()),
             metrics: Arc::new(MetricsService::disabled()),
             hybrid_search: Some(Arc::new(RwLock::new(hybrid))),
+            api_token: None,
         })
     }
 }

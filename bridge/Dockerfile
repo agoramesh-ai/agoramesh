@@ -69,7 +69,7 @@ EXPOSE 3402
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:3402/health || exit 1
+    CMD wget -qO- http://127.0.0.1:3402/health || exit 1
 
 # Start the bridge
 CMD ["node", "dist/cli.js"]

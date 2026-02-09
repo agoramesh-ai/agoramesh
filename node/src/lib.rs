@@ -45,7 +45,7 @@ pub use metrics::{
     metrics_middleware, InFlightGuard, MetricNames, MetricsConfig, MetricsService, Timer,
 };
 pub use multichain::{ChainConfig, ChainInfo, MultiChainClient, MultiChainConfig};
-pub use network::{NetworkEvent, NetworkManager, SwarmCommand};
+pub use network::{validate_network_config, NetworkEvent, NetworkManager, SwarmCommand};
 pub use persistence::{PersistenceConfig, PersistenceManager};
 pub use rate_limit::{
     headers as rate_limit_headers, RateLimitConfig, RateLimitLayer, RateLimitResult,

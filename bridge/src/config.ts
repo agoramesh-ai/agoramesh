@@ -132,6 +132,8 @@ export const AgentCardConfigSchema = z.object({
   //   privateKey      — secret credential
   //   workspaceDir    — controls filesystem access boundary
   //   allowedCommands — controls which binaries the executor can spawn
+  //   apiToken        — task authentication token
+  //   requireAuth     — whether to enforce auth/payment
   taskTimeout: z.number().optional(),
 
   // --- RichAgentConfig extensions ---

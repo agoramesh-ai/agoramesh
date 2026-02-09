@@ -119,6 +119,8 @@ if [ ! -f /opt/agentmesh/.env ]; then
     echo "WARNING: /opt/agentmesh/.env does not exist."
     echo "Create it with:"
     echo "  echo 'BRIDGE_AGENT_PRIVATE_KEY=0x...' > /opt/agentmesh/.env"
+    echo "  echo 'BRIDGE_API_TOKEN=change-me' >> /opt/agentmesh/.env"
+    echo "  echo 'AGENTMESH_API_TOKEN=change-me' >> /opt/agentmesh/.env"
     echo "  chmod 600 /opt/agentmesh/.env"
     echo ""
 fi

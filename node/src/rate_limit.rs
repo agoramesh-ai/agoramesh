@@ -12,15 +12,16 @@
 use governor::{
     clock::{Clock, DefaultClock, QuantaInstant},
     middleware::NoOpMiddleware,
-    state::{InMemoryState, NotKeyed},
+    state::keyed::DefaultKeyedStateStore,
     Quota, RateLimiter,
 };
+use std::net::{IpAddr, SocketAddr};
 use std::num::NonZeroU32;
 use std::sync::Arc;
 
 /// Type alias for the rate limiter to reduce complexity.
 type InMemoryRateLimiter =
-    RateLimiter<NotKeyed, InMemoryState, DefaultClock, NoOpMiddleware<QuantaInstant>>;
+    RateLimiter<IpAddr, DefaultKeyedStateStore<IpAddr>, DefaultClock, NoOpMiddleware<QuantaInstant>>;
 
 /// Configuration for rate limiting.
 #[derive(Debug, Clone)]
@@ -82,7 +83,7 @@ impl RateLimitService {
         let limiter = if config.enabled && config.requests_per_second > 0 {
             let quota = Quota::per_second(NonZeroU32::new(config.requests_per_second).unwrap())
                 .allow_burst(NonZeroU32::new(config.burst_size.max(1)).unwrap());
-            Some(Arc::new(RateLimiter::direct(quota)))
+            Some(Arc::new(RateLimiter::keyed(quota)))
         } else {
             None
         };
@@ -102,7 +103,7 @@ impl RateLimitService {
     ///
     /// Returns `RateLimitResult::Allowed` if the request can proceed,
     /// or `RateLimitResult::Limited` if the client should wait.
-    pub fn check(&self) -> RateLimitResult {
+    pub fn check(&self, client_ip: Option<IpAddr>) -> RateLimitResult {
         match &self.limiter {
             None => {
                 // Rate limiting disabled
@@ -113,7 +114,8 @@ impl RateLimitService {
                 }
             }
             Some(limiter) => {
-                match limiter.check() {
+                let key = client_ip.unwrap_or_else(|| IpAddr::from([127, 0, 0, 1]));
+                match limiter.check_key(&key) {
                     Ok(_) => {
                         // Request allowed
                         RateLimitResult::Allowed {
@@ -180,17 +182,27 @@ use tower::{Layer, Service};
 #[derive(Clone)]
 pub struct RateLimitLayer {
     service: Arc<RateLimitService>,
+    trust_proxy: bool,
 }
 
 impl RateLimitLayer {
     /// Create a new rate limit layer.
     pub fn new(service: Arc<RateLimitService>) -> Self {
-        Self { service }
+        Self {
+            service,
+            trust_proxy: false,
+        }
     }
 
     /// Create a rate limit layer with default configuration.
     pub fn default_config() -> Self {
         Self::new(Arc::new(RateLimitService::new(RateLimitConfig::default())))
+    }
+
+    /// Configure whether to trust proxy headers for client IP extraction.
+    pub fn with_trust_proxy(mut self, trust_proxy: bool) -> Self {
+        self.trust_proxy = trust_proxy;
+        self
     }
 }
 
@@ -201,6 +213,7 @@ impl<S> Layer<S> for RateLimitLayer {
         RateLimitMiddleware {
             inner,
             limiter: self.service.clone(),
+            trust_proxy: self.trust_proxy,
         }
     }
 }
@@ -210,6 +223,7 @@ impl<S> Layer<S> for RateLimitLayer {
 pub struct RateLimitMiddleware<S> {
     inner: S,
     limiter: Arc<RateLimitService>,
+    trust_proxy: bool,
 }
 
 impl<S> Service<Request<Body>> for RateLimitMiddleware<S>
@@ -228,9 +242,11 @@ where
     fn call(&mut self, request: Request<Body>) -> Self::Future {
         let limiter = self.limiter.clone();
         let mut inner = self.inner.clone();
+        let trust_proxy = self.trust_proxy;
 
         Box::pin(async move {
-            match limiter.check() {
+            let client_ip = extract_client_ip(&request, trust_proxy);
+            match limiter.check(client_ip) {
                 RateLimitResult::Allowed {
                     remaining,
                     limit,
@@ -281,6 +297,56 @@ where
             }
         })
     }
+}
+
+fn extract_client_ip(request: &Request<Body>, trust_proxy: bool) -> Option<IpAddr> {
+    if trust_proxy {
+        if let Some(ip) = extract_header_ip(request.headers().get("x-forwarded-for"), true) {
+            return Some(ip);
+        }
+        if let Some(ip) = extract_header_ip(request.headers().get("x-real-ip"), false) {
+            return Some(ip);
+        }
+    }
+
+    request
+        .extensions()
+        .get::<axum::extract::ConnectInfo<SocketAddr>>()
+        .map(|info| info.0.ip())
+}
+
+fn extract_header_ip(
+    value: Option<&axum::http::HeaderValue>,
+    allow_multiple: bool,
+) -> Option<IpAddr> {
+    let value = value?.to_str().ok()?;
+    let candidate = if allow_multiple {
+        value.split(',').next().unwrap_or_default()
+    } else {
+        value
+    };
+    parse_ip_candidate(candidate)
+}
+
+fn parse_ip_candidate(value: &str) -> Option<IpAddr> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() || trimmed.eq_ignore_ascii_case("unknown") {
+        return None;
+    }
+
+    if let Ok(ip) = trimmed.parse::<IpAddr>() {
+        return Some(ip);
+    }
+
+    if let Ok(sock) = trimmed.parse::<SocketAddr>() {
+        return Some(sock.ip());
+    }
+
+    if let Some(stripped) = trimmed.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
+        return stripped.parse::<IpAddr>().ok();
+    }
+
+    None
 }
 
 /// Create a rate limited 429 response (for use in handlers).
@@ -370,7 +436,7 @@ mod tests {
             enabled: true,
         });
 
-        let result = service.check();
+        let result = service.check(Some(IpAddr::from([127, 0, 0, 1])));
 
         match result {
             RateLimitResult::Allowed { limit, .. } => {
@@ -389,10 +455,11 @@ mod tests {
             burst_size: 5,
             enabled: true,
         });
+        let ip = IpAddr::from([127, 0, 0, 1]);
 
         // Should allow burst_size requests quickly
         for i in 0..5 {
-            let result = service.check();
+            let result = service.check(Some(ip));
             assert!(
                 matches!(result, RateLimitResult::Allowed { .. }),
                 "Request {} should be allowed within burst",
@@ -408,14 +475,15 @@ mod tests {
             burst_size: 3,
             enabled: true,
         });
+        let ip = IpAddr::from([127, 0, 0, 1]);
 
         // Exhaust the burst
         for _ in 0..3 {
-            let _ = service.check();
+            let _ = service.check(Some(ip));
         }
 
         // Next request should be limited
-        let result = service.check();
+        let result = service.check(Some(ip));
         match result {
             RateLimitResult::Limited {
                 retry_after_secs,
@@ -436,10 +504,11 @@ mod tests {
     #[test]
     fn test_check_always_allows_when_disabled() {
         let service = RateLimitService::disabled();
+        let ip = IpAddr::from([127, 0, 0, 1]);
 
         // Even many requests should be allowed
         for _ in 0..1000 {
-            let result = service.check();
+            let result = service.check(Some(ip));
             assert!(
                 matches!(result, RateLimitResult::Allowed { .. }),
                 "Disabled limiter should always allow"
@@ -454,12 +523,13 @@ mod tests {
             burst_size: 1,
             enabled: true,
         });
+        let ip = IpAddr::from([127, 0, 0, 1]);
 
         // First request allowed
-        let _ = service.check();
+        let _ = service.check(Some(ip));
 
         // Second request should be limited with retry_after
-        let result = service.check();
+        let result = service.check(Some(ip));
         match result {
             RateLimitResult::Limited {
                 retry_after_secs, ..

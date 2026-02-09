@@ -1,6 +1,6 @@
 services:
   node:
-    image: ghcr.io/timutti/agentmesh-node:latest
+    image: ghcr.io/timutti/agentmesh-node:0.1.0
     command:
       - ./agentmesh
       - start
@@ -16,16 +16,21 @@ services:
       - agentmesh_data:/app/data
     environment:
       - RUST_LOG=info
+      - AGENTMESH_TRUST_PROXY=true
+      - AGENTMESH_API_TOKEN=${AGENTMESH_API_TOKEN}
+      - AGENTMESH_CORS_ORIGINS=${AGENTMESH_CORS_ORIGINS}
     restart: unless-stopped
     mem_limit: 2g
 
   bridge:
-    image: ghcr.io/timutti/agentmesh-bridge:latest
+    image: ghcr.io/timutti/agentmesh-bridge:0.1.0
     ports:
       - "127.0.0.1:3402:3402"
     environment:
       - BRIDGE_HOST=0.0.0.0
       - NODE_ENV=production
+      - BRIDGE_REQUIRE_AUTH=true
+      - BRIDGE_API_TOKEN=${BRIDGE_API_TOKEN}
       - API_ENDPOINT=http://node:8080
       - AGENT_PRIVATE_KEY=${BRIDGE_AGENT_PRIVATE_KEY}
       - RPC_URL=https://sepolia.base.org

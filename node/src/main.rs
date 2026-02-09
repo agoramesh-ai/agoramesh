@@ -3,6 +3,7 @@
 //! Command-line interface for running an AgentMesh node.
 
 use clap::{Parser, Subcommand};
+use std::env;
 use std::path::Path;
 use tokio::signal;
 use tracing::{error, info, warn};
@@ -11,7 +12,7 @@ use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 use agentmesh_node::{
     ApiServer, AppState, DiscoveryService, EmbeddingService, HybridSearch, MetricsConfig,
     MetricsService, NetworkConfig, NetworkManager, NodeConfig, RateLimitConfig, RateLimitService,
-    Result, TrustService,
+    Result, TrustService, validate_network_config,
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -26,6 +27,9 @@ struct HealthResponse {
     peers: u64,
     uptime: u64,
 }
+
+const DEFAULT_API_ADDR: &str = "0.0.0.0:8080";
+const DEFAULT_P2P_ADDR: &str = "/ip4/0.0.0.0/tcp/9000";
 
 #[derive(Parser)]
 #[command(name = "agentmesh")]
@@ -88,6 +92,120 @@ fn init_logging(verbose: bool) {
         .init();
 }
 
+fn parse_env_bool(value: &str) -> Option<bool> {
+    match value.trim().to_lowercase().as_str() {
+        "true" | "1" | "yes" => Some(true),
+        "false" | "0" | "no" => Some(false),
+        _ => None,
+    }
+}
+
+fn env_bool(name: &str) -> Option<bool> {
+    let value = env::var(name).ok()?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    match parse_env_bool(trimmed) {
+        Some(parsed) => Some(parsed),
+        None => {
+            warn!("Invalid value for {}: {}", name, trimmed);
+            None
+        }
+    }
+}
+
+fn env_string(name: &str) -> Option<String> {
+    let value = env::var(name).ok()?;
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+fn env_u64(name: &str) -> Option<u64> {
+    let value = env_string(name)?;
+    match value.parse::<u64>() {
+        Ok(parsed) => Some(parsed),
+        Err(_) => {
+            warn!("Invalid value for {}: {}", name, value);
+            None
+        }
+    }
+}
+
+fn env_csv(name: &str) -> Option<Vec<String>> {
+    let value = env_string(name)?;
+    let values: Vec<String> = value
+        .split(',')
+        .map(|item| item.trim())
+        .filter(|item| !item.is_empty())
+        .map(|item| item.to_string())
+        .collect();
+    if values.is_empty() {
+        None
+    } else {
+        Some(values)
+    }
+}
+
+fn normalize_token(value: Option<String>) -> Option<String> {
+    value.and_then(|token| {
+        let trimmed = token.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+fn apply_env_overrides(config: &mut NodeConfig) {
+    if let Some(listen_address) = env_string("AGENTMESH_API_LISTEN") {
+        config.api.listen_address = listen_address;
+    }
+    if let Some(cors_enabled) = env_bool("AGENTMESH_CORS_ENABLED") {
+        config.api.cors_enabled = cors_enabled;
+    }
+    if let Some(cors_origins) = env_csv("AGENTMESH_CORS_ORIGINS") {
+        config.api.cors_origins = cors_origins;
+    }
+    if let Some(trust_proxy) = env_bool("AGENTMESH_TRUST_PROXY") {
+        config.api.trust_proxy = trust_proxy;
+    }
+    if let Some(admin_token) = env_string("AGENTMESH_API_TOKEN") {
+        config.api.admin_token = normalize_token(Some(admin_token));
+    }
+
+    if let Some(listen_addresses) = env_csv("AGENTMESH_P2P_LISTEN") {
+        config.network.listen_addresses = listen_addresses;
+    }
+    if let Some(bootstrap_peers) = env_csv("AGENTMESH_P2P_BOOTSTRAP") {
+        config.network.bootstrap_peers = bootstrap_peers;
+    }
+
+    if let Some(chain_rpc) = env_string("AGENTMESH_CHAIN_RPC") {
+        config.blockchain.rpc_url = chain_rpc;
+    }
+    if let Some(chain_id) = env_u64("AGENTMESH_CHAIN_ID") {
+        config.blockchain.chain_id = chain_id;
+    }
+    if let Some(trust_registry_address) = env_string("AGENTMESH_TRUST_REGISTRY_ADDRESS") {
+        config.blockchain.trust_registry_address = Some(trust_registry_address);
+    }
+    if let Some(escrow_address) = env_string("AGENTMESH_ESCROW_ADDRESS") {
+        config.blockchain.escrow_address = Some(escrow_address);
+    }
+
+    if let Some(data_dir) = env_string("AGENTMESH_DATA_DIR") {
+        config.persistence.data_dir = data_dir;
+    }
+
+    config.api.admin_token = normalize_token(config.api.admin_token.clone());
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -110,23 +228,41 @@ async fn main() -> Result<()> {
             info!("Starting AgentMesh node...");
 
             // 1. Load configuration (or use defaults with CLI overrides)
-            let config = if Path::new(&cli.config).exists() {
+            let mut config = if Path::new(&cli.config).exists() {
                 info!("Loading configuration from: {}", cli.config);
                 NodeConfig::load(&cli.config)?
             } else {
                 info!("Using default configuration");
                 NodeConfig::default()
             };
+            apply_env_overrides(&mut config);
+
+            let api_addr = if api_addr == DEFAULT_API_ADDR {
+                config.api.listen_address.clone()
+            } else {
+                api_addr.clone()
+            };
+
+            let listen_addresses = if p2p_addr == DEFAULT_P2P_ADDR {
+                if config.network.listen_addresses.is_empty() {
+                    vec![p2p_addr.clone()]
+                } else {
+                    config.network.listen_addresses.clone()
+                }
+            } else {
+                vec![p2p_addr.clone()]
+            };
 
             // Create network config with CLI overrides
             let network_config = NetworkConfig {
-                listen_addresses: vec![p2p_addr.clone()],
+                listen_addresses,
                 bootstrap_peers: config.network.bootstrap_peers.clone(),
                 max_connections: config.network.max_connections,
             };
 
-            info!("P2P address: {}", p2p_addr);
+            info!("P2P address: {}", network_config.listen_addresses.join(", "));
             info!("API address: {}", api_addr);
+            validate_network_config(&network_config)?;
 
             // 2. Initialize P2P network
             info!("Initializing P2P network...");
@@ -179,6 +315,7 @@ async fn main() -> Result<()> {
                 rate_limiter: Arc::new(RateLimitService::new(RateLimitConfig::default())),
                 metrics: Arc::new(MetricsService::new(MetricsConfig::default())),
                 hybrid_search: shared_hybrid_search,
+                api_token: config.api.admin_token.clone(),
             };
 
             // 6. Start HTTP API server in background with shared state
@@ -186,6 +323,8 @@ async fn main() -> Result<()> {
                 listen_address: api_addr.clone(),
                 cors_enabled: config.api.cors_enabled,
                 cors_origins: config.api.cors_origins.clone(),
+                trust_proxy: config.api.trust_proxy,
+                admin_token: config.api.admin_token.clone(),
             };
             let api_server = ApiServer::with_state(api_config, app_state);
             let api_addr_clone = api_addr.clone();

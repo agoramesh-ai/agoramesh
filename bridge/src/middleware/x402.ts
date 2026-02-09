@@ -11,7 +11,7 @@ import { Request, Response, NextFunction } from 'express';
 import { recoverMessageAddress, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { randomUUID } from 'crypto';
-import { PaymentParseError, type Result, success, failure } from '../errors';
+import { PaymentParseError, type Result, success, failure } from '../errors.js';
 
 // Nonce store for replay protection
 const usedNonces = new Map<string, number>(); // nonce -> timestamp
@@ -225,7 +225,8 @@ export async function verifyPaymentSignature(
  */
 export function validatePaymentBasic(
   payload: PaymentPayload,
-  requirement: PaymentRequirement
+  requirement: PaymentRequirement,
+  validityPeriodSecs: number = 300
 ): { valid: boolean; error?: string } {
   // Check scheme matches
   if (payload.scheme !== requirement.scheme) {
@@ -251,8 +252,7 @@ export function validatePaymentBasic(
 
   // Check payment is not expired
   const now = Math.floor(Date.now() / 1000);
-  if (payload.timestamp + 300 < now) {
-    // Payment older than 5 minutes
+  if (payload.timestamp + validityPeriodSecs < now) {
     return { valid: false, error: 'Payment expired' };
   }
 
@@ -268,10 +268,11 @@ export function validatePaymentBasic(
  */
 export async function validatePaymentFull(
   payload: PaymentPayload,
-  requirement: PaymentRequirement
+  requirement: PaymentRequirement,
+  validityPeriodSecs: number = 300
 ): Promise<{ valid: boolean; error?: string }> {
   // First do basic validation
-  const basicValidation = validatePaymentBasic(payload, requirement);
+  const basicValidation = validatePaymentBasic(payload, requirement, validityPeriodSecs);
   if (!basicValidation.valid) {
     return basicValidation;
   }
@@ -291,11 +292,12 @@ export async function validatePaymentFull(
  */
 export function validatePayment(
   payload: PaymentPayload,
-  requirement: PaymentRequirement
+  requirement: PaymentRequirement,
+  validityPeriodSecs?: number
 ): { valid: boolean; error?: string } {
   // For backward compatibility, delegate to basic validation
   // New code should use validatePaymentFull
-  return validatePaymentBasic(payload, requirement);
+  return validatePaymentBasic(payload, requirement, validityPeriodSecs);
 }
 
 /**
@@ -367,7 +369,7 @@ export function createX402Middleware(config: X402Config) {
     usedNonces.set(payment.nonce, Date.now());
 
     // Use full validation with signature verification
-    const validation = await validatePaymentFull(payment, requirement);
+    const validation = await validatePaymentFull(payment, requirement, config.validityPeriod);
 
     if (!validation.valid) {
       // Do NOT roll back nonce - prevents replay attacks where attacker

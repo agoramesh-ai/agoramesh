@@ -79,7 +79,7 @@ Configuration is loaded from a TOML file (default: `config.toml`). See `config.l
 |---------|-------------|
 | `[identity]` | Key file path and optional DID |
 | `[network]` | Listen addresses, bootstrap peers, max connections |
-| `[api]` | HTTP listen address, CORS settings |
+| `[api]` | HTTP listen address, CORS settings, proxy trust, admin token |
 | `[trust]` | Minimum trust score, stake requirements |
 | `[blockchain]` | Chain ID, RPC URL, contract addresses |
 | `[persistence]` | RocksDB storage configuration |
@@ -92,6 +92,17 @@ Logging is controlled via the `RUST_LOG` environment variable (uses `tracing-sub
 ```bash
 RUST_LOG=info ./target/release/agentmesh start
 RUST_LOG=debug ./target/release/agentmesh start
+```
+
+Common overrides:
+
+```bash
+AGENTMESH_API_LISTEN=0.0.0.0:8080
+AGENTMESH_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001
+AGENTMESH_CORS_ENABLED=true
+AGENTMESH_CORS_ORIGINS=https://example.com
+AGENTMESH_TRUST_PROXY=true
+AGENTMESH_API_TOKEN=change-me
 ```
 
 ### Example Configuration
@@ -109,6 +120,8 @@ max_connections = 50
 listen_address = "0.0.0.0:8080"
 cors_enabled = true
 cors_origins = ["*"]
+trust_proxy = false
+# admin_token = "change-me"
 
 [trust]
 min_trust_score = 0.5

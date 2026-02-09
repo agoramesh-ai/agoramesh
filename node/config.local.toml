@@ -13,6 +13,8 @@ max_connections = 50
 listen_address = "0.0.0.0:8080"
 cors_enabled = true
 cors_origins = ["*"]
+trust_proxy = false
+# admin_token = ""
 
 [trust]
 min_trust_score = 0.0

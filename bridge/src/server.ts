@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -10,6 +10,7 @@ import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
 import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig } from './types.js';
 import { EscrowClient } from './escrow.js';
+import { createX402Middleware, type X402Config } from './middleware/x402.js';
 
 // HMAC key for timing-safe comparison - derived once at startup from random bytes
 const COMPARE_KEY = randomBytes(32);
@@ -71,8 +72,11 @@ function createSafeErrorResponse(
   error: unknown,
   context: string
 ): SafeErrorResponse {
-  // Log full error details server-side only
-  console.error(`[Bridge] Error in ${context}:`, error);
+  const errorSummary =
+    error instanceof Error
+      ? error.stack || `${error.name}: ${error.message}`
+      : String(error);
+  console.error(`[Bridge] Error in ${context}: ${errorSummary}`);
 
   if (error instanceof ZodError) {
     return sanitizeZodError(error);
@@ -122,6 +126,12 @@ export interface BridgeServerConfig extends RichAgentConfig {
   cors?: CorsConfig;
   /** WebSocket authentication token (if set, connections require this token) */
   wsAuthToken?: string;
+  /** Require auth/payment for task execution (defaults to true in production) */
+  requireAuth?: boolean;
+  /** Static API token for task authentication (Bearer or x-api-key) */
+  apiToken?: string;
+  /** Optional x402 payment configuration for task authentication */
+  x402?: X402Config;
   /** JSON body size limit (default: '1mb') */
   bodyLimit?: string;
   /** Host to bind to (default: '127.0.0.1') */
@@ -143,9 +153,27 @@ export class BridgeServer {
   private taskWebSockets: Map<string, WebSocket> = new Map();
   private escrowClient?: EscrowClient;
   private providerDid?: `0x${string}`;
+  private requireAuth: boolean;
+  private apiToken?: string;
+  private x402Config?: X402Config;
 
   constructor(config: BridgeServerConfig) {
     this.config = config;
+    this.apiToken = config.apiToken?.trim() || undefined;
+    this.x402Config = config.x402;
+    this.requireAuth = config.requireAuth ?? process.env.NODE_ENV === 'production';
+
+    if (this.requireAuth && !this.apiToken && !this.x402Config) {
+      throw new Error('Bridge auth required: set BRIDGE_API_TOKEN or x402 config');
+    }
+
+    if (this.requireAuth && !this.config.wsAuthToken && this.apiToken) {
+      this.config.wsAuthToken = this.apiToken;
+    }
+
+    if (this.requireAuth && !this.config.wsAuthToken) {
+      throw new Error('WebSocket auth token required when task auth is enabled');
+    }
     this.app = express();
 
     // Trust first proxy (nginx) for correct client IP in rate limiting and logs
@@ -191,6 +219,47 @@ export class BridgeServer {
     this.setupWebSocket();
   }
 
+  private isApiTokenValid(req: Request): boolean {
+    if (!this.apiToken) {
+      return false;
+    }
+
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const [scheme, token] = authHeader.split(' ');
+      if (scheme === 'Bearer' && token && safeCompare(token, this.apiToken)) {
+        return true;
+      }
+    }
+
+    const apiKey = req.headers['x-api-key'];
+    if (typeof apiKey === 'string' && safeCompare(apiKey, this.apiToken)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private createTaskAuthMiddleware() {
+    if (!this.requireAuth && !this.apiToken && !this.x402Config) {
+      return (_req: Request, _res: Response, next: NextFunction) => next();
+    }
+
+    const x402Middleware = this.x402Config ? createX402Middleware(this.x402Config) : null;
+
+    return (req: Request, res: Response, next: NextFunction) => {
+      if (this.apiToken && this.isApiTokenValid(req)) {
+        return next();
+      }
+
+      if (x402Middleware) {
+        return x402Middleware(req, res, next);
+      }
+
+      return res.status(401).json({ error: 'Unauthorized' });
+    };
+  }
+
   /**
    * Setup security headers using helmet
    */
@@ -229,7 +298,13 @@ export class BridgeServer {
       cors({
         origin: corsConfig.origins ?? 'http://localhost:3402',
         methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'x-payment', 'x-client-did'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'x-api-key',
+          'x-payment',
+          'x-client-did',
+        ],
       })
     );
   }
@@ -316,7 +391,8 @@ export class BridgeServer {
     this.app.get('/.well-known/agent-card.json', agentCardHandler);
 
     // Submit task (REST API)
-    this.app.post('/task', async (req: Request, res: Response) => {
+    const taskAuthMiddleware = this.createTaskAuthMiddleware();
+    this.app.post('/task', taskAuthMiddleware, async (req: Request, res: Response) => {
       try {
         const task = TaskInputSchema.parse(req.body);
 
@@ -377,6 +453,9 @@ export class BridgeServer {
 
     // Get task status
     this.app.get('/task/:taskId', (req: Request, res: Response) => {
+      if (this.requireAuth && this.apiToken && !this.isApiTokenValid(req)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
       const task = this.pendingTasks.get(req.params.taskId);
       if (!task) {
         return res.status(404).json({ error: 'Task not found or completed' });
@@ -395,6 +474,9 @@ export class BridgeServer {
 
     // Cancel task
     this.app.delete('/task/:taskId', (req: Request, res: Response) => {
+      if (this.requireAuth && this.apiToken && !this.isApiTokenValid(req)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
       const task = this.pendingTasks.get(req.params.taskId);
       if (!task) {
         return res.status(404).json({ error: 'Task not found' });

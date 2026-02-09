@@ -4,6 +4,8 @@ import { BridgeServer, BridgeServerConfig } from './server.js';
 import { AgentConfig } from './types.js';
 import { EscrowClient, didToHash } from './escrow.js';
 import { loadAgentCardConfig } from './config.js';
+import { privateKeyToAccount } from 'viem/accounts';
+import type { X402Config } from './middleware/x402.js';
 
 function loadConfig(): AgentConfig {
   const required = (key: string): string => {
@@ -28,6 +30,11 @@ function loadConfig(): AgentConfig {
   };
 }
 
+function parseBool(value?: string): boolean {
+  if (!value) return false;
+  return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes';
+}
+
 async function main() {
   console.log('🚀 AgentMesh Bridge - Claude Code Worker');
   console.log('=========================================\n');
@@ -37,8 +44,17 @@ async function main() {
   const config = { ...envConfig, ...jsonConfig };
   const port = parseInt(process.env.BRIDGE_PORT || '3402', 10);
   const host = process.env.BRIDGE_HOST || '127.0.0.1';
+  const requireAuth = process.env.BRIDGE_REQUIRE_AUTH
+    ? parseBool(process.env.BRIDGE_REQUIRE_AUTH)
+    : process.env.NODE_ENV === 'production';
+  const apiToken = process.env.BRIDGE_API_TOKEN;
 
-  const serverConfig: BridgeServerConfig = { ...config, host };
+  const serverConfig: BridgeServerConfig = {
+    ...config,
+    host,
+    requireAuth,
+    apiToken,
+  };
 
   // Optional escrow integration
   const escrowAddress = process.env.ESCROW_ADDRESS;
@@ -56,6 +72,29 @@ async function main() {
     serverConfig.providerDid = didToHash(providerDid);
     console.log(`[Bridge] Escrow enabled: ${escrowAddress} (chain ${chainId})`);
     console.log(`[Bridge] Provider DID: ${providerDid}`);
+  }
+
+  const x402Enabled = parseBool(process.env.X402_ENABLED);
+  if (x402Enabled) {
+    const usdcAddress = process.env.X402_USDC_ADDRESS;
+    if (!usdcAddress) {
+      console.error('❌ Missing required env: X402_USDC_ADDRESS');
+      process.exit(1);
+    }
+
+    const payTo = process.env.X402_PAY_TO
+      || privateKeyToAccount(config.privateKey as `0x${string}`).address;
+    const validityPeriod = parseInt(process.env.X402_VALIDITY_PERIOD || '300', 10);
+
+    const x402Config: X402Config = {
+      payTo,
+      usdcAddress: usdcAddress as `0x${string}`,
+      priceUsdc: config.pricePerTask,
+      network: process.env.X402_NETWORK || 'eip155:8453',
+      validityPeriod,
+    };
+
+    serverConfig.x402 = x402Config;
   }
 
   const server = new BridgeServer(serverConfig);
