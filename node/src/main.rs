@@ -10,9 +10,9 @@ use tracing::{error, info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 use agentmesh_node::{
-    ApiServer, AppState, DiscoveryService, EmbeddingService, HybridSearch, MetricsConfig,
-    MetricsService, NetworkConfig, NetworkManager, NodeConfig, RateLimitConfig, RateLimitService,
-    Result, TrustService, validate_network_config,
+    validate_network_config, ApiServer, AppState, DiscoveryService, EmbeddingService, HybridSearch,
+    MetricsConfig, MetricsService, NetworkConfig, NetworkManager, NodeConfig, RateLimitConfig,
+    RateLimitService, Result, TrustService,
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -260,7 +260,10 @@ async fn main() -> Result<()> {
                 max_connections: config.network.max_connections,
             };
 
-            info!("P2P address: {}", network_config.listen_addresses.join(", "));
+            info!(
+                "P2P address: {}",
+                network_config.listen_addresses.join(", ")
+            );
             info!("API address: {}", api_addr);
             validate_network_config(&network_config)?;
 

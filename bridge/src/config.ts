@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 
@@ -187,18 +187,21 @@ export function loadAgentCardConfig(
     configPath ?? DEFAULT_CONFIG_FILENAME,
   );
 
-  if (!existsSync(resolvedPath)) {
-    return {};
+  let raw: string;
+  try {
+    const buf = readFileSync(resolvedPath);
+    if (buf.length > MAX_CONFIG_FILE_SIZE) {
+      throw new Error(
+        `Agent card config at ${resolvedPath} is too large (${buf.length} bytes, max ${MAX_CONFIG_FILE_SIZE})`,
+      );
+    }
+    raw = buf.toString('utf-8');
+  } catch (err: unknown) {
+    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return {};
+    }
+    throw err;
   }
-
-  const fileSize = statSync(resolvedPath).size;
-  if (fileSize > MAX_CONFIG_FILE_SIZE) {
-    throw new Error(
-      `Agent card config at ${resolvedPath} is too large (${fileSize} bytes, max ${MAX_CONFIG_FILE_SIZE})`,
-    );
-  }
-
-  const raw = readFileSync(resolvedPath, 'utf-8');
 
   let parsed: unknown;
   try {

@@ -136,10 +136,7 @@ impl ApiServer {
             hybrid_search: None,
             api_token,
         };
-        Self {
-            config,
-            state,
-        }
+        Self { config, state }
     }
 
     /// Create a new API server with custom state.
@@ -148,10 +145,7 @@ impl ApiServer {
         if state.api_token.is_none() {
             state.api_token = normalize_api_token(config.admin_token.clone());
         }
-        Self {
-            config,
-            state,
-        }
+        Self { config, state }
     }
 
     /// Build the router with all routes.
@@ -205,8 +199,8 @@ impl ApiServer {
             listener,
             router.into_make_service_with_connect_info::<SocketAddr>(),
         )
-            .await
-            .map_err(|e| crate::error::Error::Api(e.to_string()))?;
+        .await
+        .map_err(|e| crate::error::Error::Api(e.to_string()))?;
 
         Ok(())
     }
@@ -242,12 +236,7 @@ fn build_cors_layer(config: &ApiConfig) -> Option<CorsLayer> {
         }
     }
 
-    cors = cors.allow_methods([
-        Method::GET,
-        Method::POST,
-        Method::DELETE,
-        Method::OPTIONS,
-    ]);
+    cors = cors.allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS]);
 
     cors = cors.allow_headers([
         header::AUTHORIZATION,

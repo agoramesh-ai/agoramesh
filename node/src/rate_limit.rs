@@ -20,8 +20,12 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 
 /// Type alias for the rate limiter to reduce complexity.
-type InMemoryRateLimiter =
-    RateLimiter<IpAddr, DefaultKeyedStateStore<IpAddr>, DefaultClock, NoOpMiddleware<QuantaInstant>>;
+type InMemoryRateLimiter = RateLimiter<
+    IpAddr,
+    DefaultKeyedStateStore<IpAddr>,
+    DefaultClock,
+    NoOpMiddleware<QuantaInstant>,
+>;
 
 /// Configuration for rate limiting.
 #[derive(Debug, Clone)]
