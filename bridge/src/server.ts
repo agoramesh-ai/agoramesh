@@ -171,7 +171,7 @@ export class BridgeServer {
       this.config.wsAuthToken = this.apiToken;
     }
 
-    if (this.requireAuth && !this.config.wsAuthToken) {
+    if (this.requireAuth && !this.config.wsAuthToken && !this.x402Config) {
       throw new Error('WebSocket auth token required when task auth is enabled');
     }
     this.app = express();
@@ -452,10 +452,7 @@ export class BridgeServer {
     });
 
     // Get task status
-    this.app.get('/task/:taskId', (req: Request, res: Response) => {
-      if (this.requireAuth && this.apiToken && !this.isApiTokenValid(req)) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+    this.app.get('/task/:taskId', taskAuthMiddleware, (req: Request, res: Response) => {
       const task = this.pendingTasks.get(req.params.taskId);
       if (!task) {
         return res.status(404).json({ error: 'Task not found or completed' });
@@ -473,10 +470,7 @@ export class BridgeServer {
     });
 
     // Cancel task
-    this.app.delete('/task/:taskId', (req: Request, res: Response) => {
-      if (this.requireAuth && this.apiToken && !this.isApiTokenValid(req)) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+    this.app.delete('/task/:taskId', taskAuthMiddleware, (req: Request, res: Response) => {
       const task = this.pendingTasks.get(req.params.taskId);
       if (!task) {
         return res.status(404).json({ error: 'Task not found' });
