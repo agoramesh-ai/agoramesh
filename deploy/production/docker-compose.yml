@@ -18,7 +18,7 @@ services:
       - RUST_LOG=info
       - AGENTMESH_TRUST_PROXY=true
       - AGENTMESH_API_TOKEN=${AGENTMESH_API_TOKEN}
-      - AGENTMESH_CORS_ORIGINS=${AGENTMESH_CORS_ORIGINS}
+      - AGENTMESH_CORS_ORIGINS=${AGENTMESH_CORS_ORIGINS:-}
     restart: unless-stopped
     mem_limit: 2g
 
