@@ -5,20 +5,18 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server, IncomingMessage } from 'http';
 import type { AddressInfo } from 'net';
-import { timingSafeEqual, createHmac, randomBytes } from 'crypto';
+import { timingSafeEqual } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
 import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
 
-// HMAC key for timing-safe comparison - derived once at startup from random bytes
-const COMPARE_KEY = randomBytes(32);
-
 function safeCompare(a: string, b: string): boolean {
-  const hmac1 = createHmac('sha256', COMPARE_KEY).update(a).digest();
-  const hmac2 = createHmac('sha256', COMPARE_KEY).update(b).digest();
-  return timingSafeEqual(hmac1, hmac2);
+  if (a.length !== b.length) {
+    return false;
+  }
+  return timingSafeEqual(Buffer.from(a, 'utf-8'), Buffer.from(b, 'utf-8'));
 }
 
 // =============================================================================
