@@ -1,6 +1,6 @@
 services:
   node:
-    image: ghcr.io/timutti/agentmesh-node:0.1.0
+    image: ghcr.io/timutti/agentmesh-node:latest
     command:
       - ./agentmesh
       - start
@@ -23,7 +23,7 @@ services:
     mem_limit: 2g
 
   bridge:
-    image: ghcr.io/timutti/agentmesh-bridge:0.1.0
+    image: ghcr.io/timutti/agentmesh-bridge:latest
     ports:
       - "127.0.0.1:3402:3402"
     environment:
