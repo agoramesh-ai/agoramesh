@@ -28,6 +28,41 @@ struct HealthResponse {
     uptime: u64,
 }
 
+/// Seed trust data entry from AGENTMESH_SEED_TRUST env var.
+#[derive(Debug, serde::Deserialize)]
+struct SeedTrustEntry {
+    did: String,
+    #[serde(default)]
+    stake_amount: u64,
+    #[serde(default)]
+    successful_txs: u64,
+    #[serde(default)]
+    failed_txs: u64,
+    #[serde(default)]
+    endorsement_count: u64,
+    /// Optional endorsers to create trust web entries.
+    /// Each endorser is auto-created with the given reputation parameters
+    /// and a hop-1 endorsement is added to the target agent.
+    #[serde(default)]
+    endorsers: Vec<SeedEndorser>,
+}
+
+/// A seed endorser for bootstrapping trust web data.
+#[derive(Debug, serde::Deserialize)]
+struct SeedEndorser {
+    did: String,
+    #[serde(default)]
+    successful_txs: u64,
+    #[serde(default)]
+    failed_txs: u64,
+    #[serde(default = "default_hop")]
+    hop: u32,
+}
+
+fn default_hop() -> u32 {
+    1
+}
+
 const DEFAULT_API_ADDR: &str = "0.0.0.0:8080";
 const DEFAULT_P2P_ADDR: &str = "/ip4/0.0.0.0/tcp/9000";
 
@@ -203,6 +238,22 @@ fn apply_env_overrides(config: &mut NodeConfig) {
         config.persistence.data_dir = data_dir;
     }
 
+    // Node identity overrides
+    if let Some(did) = env_string("AGENTMESH_NODE_DID") {
+        config.identity.did = Some(did);
+    }
+
+    // Node info overrides (for agent card)
+    if let Some(name) = env_string("AGENTMESH_NODE_NAME") {
+        config.node_info.name = Some(name);
+    }
+    if let Some(description) = env_string("AGENTMESH_NODE_DESCRIPTION") {
+        config.node_info.description = Some(description);
+    }
+    if let Some(url) = env_string("AGENTMESH_NODE_URL") {
+        config.node_info.url = Some(url);
+    }
+
     config.api.admin_token = normalize_token(config.api.admin_token.clone());
 }
 
@@ -306,12 +357,15 @@ async fn main() -> Result<()> {
             // the API semantic-search handler and discovery indexing use the
             // same instance.
             let shared_hybrid_search = discovery.hybrid_search();
+            let discovery = Arc::new(discovery);
+            let trust = Arc::new(TrustService::new(
+                "https://sepolia.base.org".to_string(),
+                None,
+            ));
+
             let app_state = AppState {
-                discovery: Arc::new(discovery),
-                trust: Arc::new(TrustService::new(
-                    "https://sepolia.base.org".to_string(),
-                    None,
-                )),
+                discovery: discovery.clone(),
+                trust: trust.clone(),
                 start_time: Instant::now(),
                 peer_count: peer_count.clone(),
                 node_info: config.get_node_info(),
@@ -337,6 +391,93 @@ async fn main() -> Result<()> {
                     error!("API server error: {}", e);
                 }
             });
+
+            // 6b. Seed agents from AGENTMESH_SEED_AGENTS env var
+            //
+            // Format: JSON array of capability card objects, or a URL to fetch.
+            // Example: AGENTMESH_SEED_AGENTS='[{"name":"Bridge","description":"...","url":"https://bridge.agentme.cz","x-agentmesh":{"did":"did:agentmesh:base-sepolia:agent-001","payment_methods":["x402"]}}]'
+            if let Some(seed_agents_json) = env_string("AGENTMESH_SEED_AGENTS") {
+                match serde_json::from_str::<Vec<agentmesh_node::CapabilityCard>>(&seed_agents_json)
+                {
+                    Ok(cards) => {
+                        for card in &cards {
+                            match discovery.register(card).await {
+                                Ok(()) => {
+                                    let did = card
+                                        .agentmesh
+                                        .as_ref()
+                                        .map(|a| a.did.as_str())
+                                        .unwrap_or("unknown");
+                                    info!("Seed agent registered: {} ({})", card.name, did);
+                                }
+                                Err(e) => {
+                                    warn!("Failed to register seed agent '{}': {}", card.name, e);
+                                }
+                            }
+                        }
+                        info!("Seeded {} agent(s)", cards.len());
+                    }
+                    Err(e) => {
+                        warn!("Failed to parse AGENTMESH_SEED_AGENTS: {}", e);
+                    }
+                }
+            }
+
+            // 6c. Seed trust data from AGENTMESH_SEED_TRUST env var
+            //
+            // Format: JSON array of objects with did, stake_amount, successful_txs, failed_txs, endorsement_count
+            // Example: AGENTMESH_SEED_TRUST='[{"did":"did:agentmesh:base-sepolia:agent-001","stake_amount":7225000000,"successful_txs":184,"failed_txs":16,"endorsement_count":5}]'
+            if let Some(seed_trust_json) = env_string("AGENTMESH_SEED_TRUST") {
+                match serde_json::from_str::<Vec<SeedTrustEntry>>(&seed_trust_json) {
+                    Ok(entries) => {
+                        for entry in &entries {
+                            trust.seed_trust_data(
+                                &entry.did,
+                                entry.stake_amount,
+                                entry.successful_txs,
+                                entry.failed_txs,
+                                entry.endorsement_count,
+                            );
+
+                            // Create endorser trust data and add endorsements
+                            for endorser in &entry.endorsers {
+                                trust.seed_trust_data(
+                                    &endorser.did,
+                                    0,
+                                    endorser.successful_txs,
+                                    endorser.failed_txs,
+                                    0,
+                                );
+                                if let Err(e) = trust
+                                    .add_endorsement_with_hop(
+                                        &endorser.did,
+                                        &entry.did,
+                                        endorser.hop,
+                                    )
+                                    .await
+                                {
+                                    warn!(
+                                        "Failed to add endorsement from {} to {}: {}",
+                                        endorser.did, entry.did, e
+                                    );
+                                }
+                            }
+
+                            info!(
+                                "Seed trust data set for {} (stake={}, txs={}/{}, endorsers={})",
+                                entry.did,
+                                entry.stake_amount,
+                                entry.successful_txs,
+                                entry.failed_txs,
+                                entry.endorsers.len()
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to parse AGENTMESH_SEED_TRUST: {}", e);
+                    }
+                }
+            }
 
             info!("AgentMesh node started successfully");
             info!("Press Ctrl+C to stop");

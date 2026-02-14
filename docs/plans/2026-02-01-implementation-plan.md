@@ -390,7 +390,7 @@ base-sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basesca
 
 ```json
 {
-  "name": "@agentmesh/sdk",
+  "name": "@agentme/sdk",
   "version": "0.1.0",
   "description": "TypeScript SDK for AgentMesh protocol",
   "main": "dist/index.js",

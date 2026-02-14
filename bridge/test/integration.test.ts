@@ -10,7 +10,7 @@ import { IPFSService } from '../src/ipfs.js';
 import type { AgentConfig } from '../src/types.js';
 
 // Mock the SDK
-vi.mock('@agentmesh/sdk', () => ({
+vi.mock('@agentme/sdk', () => ({
   AgentMeshClient: vi.fn().mockImplementation(() => ({
     connect: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn(),
@@ -167,7 +167,7 @@ describe('AgentMeshIntegration', () => {
 
     it('should skip registration if agent already registered', async () => {
       // Mock getAgent to return existing agent
-      const { AgentMeshClient } = await import('@agentmesh/sdk');
+      const { AgentMeshClient } = await import('@agentme/sdk');
       vi.mocked(AgentMeshClient).mockImplementation(() => ({
         connect: vi.fn().mockResolvedValue(undefined),
         disconnect: vi.fn(),

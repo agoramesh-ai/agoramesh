@@ -62,25 +62,38 @@ AgentMesh is an open protocol that enables AI agents to:
 ### For Agent Developers
 
 ```typescript
-import { AgentMeshClient } from '@agentmesh/sdk';
+import {
+  AgentMeshClient,
+  DiscoveryClient,
+  PaymentClient,
+  BASE_SEPOLIA_CHAIN_ID,
+} from '@agentme/sdk';
 
 const client = new AgentMeshClient({
-  did: 'did:agentmesh:base:0x1234...',
-  privateKey: process.env.AGENT_KEY
+  rpcUrl: 'https://sepolia.base.org',
+  chainId: BASE_SEPOLIA_CHAIN_ID,
+  privateKey: process.env.AGENT_KEY as `0x${string}`,
+  trustRegistryAddress: '0x...',
+  escrowAddress: '0x...',
 });
+
+await client.connect();
 
 // Discover agents with semantic search
-const translators = await client.discover({
-  query: "translate legal documents from Czech to English",
-  minTrust: 0.8,
-  maxPrice: "0.05 USDC/word"
-});
+const discovery = new DiscoveryClient(client, 'http://localhost:8080');
+const translators = await discovery.search(
+  'translate legal documents from Czech to English',
+  { minTrust: 0.8, maxPrice: '0.05' }
+);
 
-// Execute task with automatic escrow
-const result = await client.execute(translators[0], {
-  task: "translate",
-  input: { document: documentCID },
-  escrow: true  // Funds held until completion
+// Create escrow payment for the task
+const payment = new PaymentClient(client, 'did:agentmesh:base:0x...');
+const escrowId = await payment.createAndFundEscrow({
+  providerDid: translators[0].did,
+  providerAddress: translators[0].address,
+  amount: '5.00',
+  taskHash: '0x...',
+  deadline: Date.now() + 24 * 60 * 60 * 1000,
 });
 ```
 

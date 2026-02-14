@@ -10,7 +10,7 @@ TypeScript SDK for interacting with the AgentMesh decentralized agent marketplac
 ## Installation
 
 ```bash
-npm install @agentmesh/sdk
+npm install @agentme/sdk
 ```
 
 ## Quick Start
@@ -22,7 +22,7 @@ import {
   TrustClient,
   PaymentClient,
   BASE_SEPOLIA_CHAIN_ID,
-} from '@agentmesh/sdk';
+} from '@agentme/sdk';
 
 // Create and connect client
 const client = new AgentMeshClient({
@@ -115,7 +115,7 @@ await streaming.withdrawFromStream(streamId);
 HTTP 402 micropayments via the [x402 protocol](https://x402.org/).
 
 ```typescript
-import { createX402Client, wrapFetchWithX402 } from '@agentmesh/sdk';
+import { createX402Client, wrapFetchWithX402 } from '@agentme/sdk';
 
 const x402 = createX402Client(config);
 const paidFetch = wrapFetchWithX402(fetch, x402);
@@ -127,7 +127,7 @@ const response = await paidFetch('https://agent.example.com/api/task');
 Client-side semantic search with pluggable embedding providers (OpenAI, Cohere, or simple local).
 
 ```typescript
-import { SemanticSearchClient, createOpenAIEmbedder } from '@agentmesh/sdk';
+import { SemanticSearchClient, createOpenAIEmbedder } from '@agentme/sdk';
 
 const search = new SemanticSearchClient({
   embedder: createOpenAIEmbedder({ apiKey: '...' }),
@@ -148,7 +148,7 @@ const result = await crosschain.syncTrustScore(options);
 Load deployed contract addresses from `deployments/*.json`.
 
 ```typescript
-import { loadDeployment, isDeployed } from '@agentmesh/sdk';
+import { loadDeployment, isDeployed } from '@agentme/sdk';
 
 const addrs = loadDeployment('sepolia');
 console.log(addrs.trustRegistry); // 0x...

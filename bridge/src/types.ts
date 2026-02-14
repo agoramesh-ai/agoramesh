@@ -6,7 +6,7 @@ import type {
   PaymentConfig,
   Authentication,
   Provider,
-} from '@agentmesh/sdk';
+} from '@agentme/sdk';
 
 // === Validation constants ===
 

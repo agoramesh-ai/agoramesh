@@ -16,7 +16,7 @@ import type {
   AgentMeshConfig,
   AgentMeshClient,
   DiscoveryClient,
-} from '@agentmesh/sdk';
+} from '@agentme/sdk';
 
 /**
  * Configuration for AgentMesh integration.
@@ -189,7 +189,7 @@ export class AgentMeshIntegration {
 
     try {
       // Dynamic import to avoid requiring SDK at module load time
-      const { AgentMeshClient, DiscoveryClient } = await import('@agentmesh/sdk');
+      const { AgentMeshClient, DiscoveryClient } = await import('@agentme/sdk');
 
       const clientConfig: AgentMeshConfig = {
         rpcUrl: this.integrationConfig.rpcUrl,

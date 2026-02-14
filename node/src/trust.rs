@@ -172,6 +172,53 @@ impl TrustService {
         }
     }
 
+    /// Seed trust data for an agent.
+    ///
+    /// Used to set initial trust data for known agents (e.g. on startup).
+    /// Uses current timestamp so no decay is applied initially.
+    pub fn seed_trust_data(
+        &self,
+        did: &str,
+        stake_amount: u64,
+        successful_txs: u64,
+        failed_txs: u64,
+        endorsement_count: u64,
+    ) {
+        self.seed_trust_data_with_timestamp(
+            did,
+            stake_amount,
+            successful_txs,
+            failed_txs,
+            endorsement_count,
+            current_timestamp(),
+        );
+    }
+
+    /// Seed trust data with explicit timestamp.
+    pub fn seed_trust_data_with_timestamp(
+        &self,
+        did: &str,
+        stake_amount: u64,
+        successful_txs: u64,
+        failed_txs: u64,
+        endorsement_count: u64,
+        last_activity_timestamp: u64,
+    ) {
+        if let Ok(mut cache) = self.cache.write() {
+            cache.insert(
+                did.to_string(),
+                TrustData {
+                    stake_amount,
+                    successful_transactions: successful_txs,
+                    failed_transactions: failed_txs,
+                    endorsement_count,
+                    last_activity_timestamp,
+                    endorsements: Vec::new(),
+                },
+            );
+        }
+    }
+
     /// Set trust data for testing purposes.
     #[cfg(test)]
     pub fn set_trust_data(
@@ -182,15 +229,7 @@ impl TrustService {
         failed_txs: u64,
         endorsements: u64,
     ) {
-        // Default to current timestamp (no decay)
-        self.set_trust_data_with_timestamp(
-            did,
-            stake_amount,
-            successful_txs,
-            failed_txs,
-            endorsements,
-            current_timestamp(),
-        );
+        self.seed_trust_data(did, stake_amount, successful_txs, failed_txs, endorsements);
     }
 
     /// Set trust data with explicit timestamp for testing decay.
@@ -204,17 +243,13 @@ impl TrustService {
         endorsement_count: u64,
         last_activity_timestamp: u64,
     ) {
-        let mut cache = self.cache.write().unwrap();
-        cache.insert(
-            did.to_string(),
-            TrustData {
-                stake_amount,
-                successful_transactions: successful_txs,
-                failed_transactions: failed_txs,
-                endorsement_count,
-                last_activity_timestamp,
-                endorsements: Vec::new(),
-            },
+        self.seed_trust_data_with_timestamp(
+            did,
+            stake_amount,
+            successful_txs,
+            failed_txs,
+            endorsement_count,
+            last_activity_timestamp,
         );
     }
 

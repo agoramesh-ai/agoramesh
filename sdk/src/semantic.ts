@@ -105,7 +105,7 @@ interface IndexEntry {
  *
  * @example
  * ```typescript
- * import { SemanticSearchClient, createOpenAIEmbedder } from '@agentmesh/sdk';
+ * import { SemanticSearchClient, createOpenAIEmbedder } from '@agentme/sdk';
  *
  * // Create client with OpenAI embeddings
  * const semantic = new SemanticSearchClient({

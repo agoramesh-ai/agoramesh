@@ -16,7 +16,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@agentmesh/sdk": "file:../sdk",
+    "@agentme/sdk": "file:../sdk",
     "@anthropic-ai/sdk": "^0.72.1",
     "cors": "^2.8.6",
     "dotenv": "^16.4.0",

@@ -54,7 +54,7 @@ Agent A (Client)                    Agent B (Provider)
 // TypeScript - Express server with x402 middleware
 import express from 'express';
 import { x402Middleware } from '@x402/express';
-import { AgentMeshTrust } from '@agentmesh/sdk';
+import { AgentMeshTrust } from '@agentme/sdk';
 
 const app = express();
 const trust = new AgentMeshTrust();
@@ -105,7 +105,7 @@ app.listen(4021);
 
 ```typescript
 // TypeScript - Agent client with automatic payment handling
-import { AgentMeshClient, DiscoveryResult } from '@agentmesh/sdk';
+import { AgentMeshClient, DiscoveryResult } from '@agentme/sdk';
 import { wrapAxiosWithPayment, x402Client } from '@x402/axios';
 import { privateKeyToAccount } from 'viem/accounts';
 
@@ -348,7 +348,7 @@ For long-running tasks (transcription, continuous monitoring, etc.):
 
 ```typescript
 // Streaming payment client
-import { StreamingPayment } from '@agentmesh/sdk';
+import { StreamingPayment } from '@agentme/sdk';
 
 const stream = await StreamingPayment.create({
   provider: agentDid,

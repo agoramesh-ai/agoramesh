@@ -13,7 +13,7 @@
  *   TrustClient,
  *   PaymentClient,
  *   BASE_SEPOLIA_CHAIN_ID,
- * } from '@agentmesh/sdk';
+ * } from '@agentme/sdk';
  *
  * // Create and connect client
  * const client = new AgentMeshClient({

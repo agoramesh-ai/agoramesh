@@ -532,7 +532,7 @@ enum AutoResolution {
 
 **Agent SDK (TypeScript primary, Python secondary):**
 ```typescript
-import { AgentMeshClient } from '@agentmesh/sdk';
+import { AgentMeshClient } from '@agentme/sdk';
 
 const client = new AgentMeshClient({
   privateKey: process.env.AGENT_PRIVATE_KEY,

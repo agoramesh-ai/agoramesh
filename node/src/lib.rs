@@ -36,7 +36,7 @@ pub use circuit_breaker::{
 };
 pub use config::{ApiConfig, NetworkConfig, NodeConfig};
 pub use contract::TrustRegistryClient;
-pub use discovery::DiscoveryService;
+pub use discovery::{CapabilityCard, DiscoveryService};
 pub use error::{Error, Result};
 pub use events::{
     ContractEvent, EventListener, EventListenerConfig, EventListenerStats, ReconnectConfig,

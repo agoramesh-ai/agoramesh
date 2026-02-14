@@ -422,7 +422,7 @@ Tasks are killed after `TASK_TIMEOUT` seconds to prevent:
 When AgentMesh SDK is complete:
 
 ```typescript
-import { AgentMeshClient } from '@agentmesh/sdk';
+import { AgentMeshClient } from '@agentme/sdk';
 
 const mesh = new AgentMeshClient({ privateKey });
 
