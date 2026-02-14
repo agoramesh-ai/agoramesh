@@ -1,4 +1,4 @@
-//! W3C DID Document support for AgentMesh.
+//! W3C DID Document support for AgentMe.
 //!
 //! This module provides:
 //! - DID Document creation and validation
@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, Result};
 
-/// DID method for AgentMesh.
-pub const DID_METHOD: &str = "agentmesh";
+/// DID method for AgentMe.
+pub const DID_METHOD: &str = "agentme";
 
 /// DID Document following W3C DID Core 1.0 spec.
 ///
@@ -45,7 +45,7 @@ pub struct DIDDocument {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub service: Option<Vec<ServiceEndpoint>>,
 
-    /// AgentMesh-specific metadata.
+    /// AgentMe-specific metadata.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<DIDMetadata>,
 }
@@ -96,7 +96,7 @@ pub struct ServiceEndpoint {
     pub description: Option<String>,
 }
 
-/// AgentMesh-specific metadata in DID Document.
+/// AgentMe-specific metadata in DID Document.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DIDMetadata {
@@ -202,7 +202,7 @@ impl DIDDocumentBuilder {
             id: format!("{}#capability-card", did),
             service_type: "CapabilityCard".to_string(),
             service_endpoint: url.to_string(),
-            description: Some("AgentMesh Capability Card".to_string()),
+            description: Some("AgentMe Capability Card".to_string()),
         });
         self
     }
@@ -279,12 +279,12 @@ impl DIDDocumentBuilder {
 impl DIDDocument {
     /// Parse a DID string and extract components.
     ///
-    /// Format: `did:agentmesh:{chain}:{identifier}`
+    /// Format: `did:agentme:{chain}:{identifier}`
     pub fn parse_did(did: &str) -> Result<(String, String, String)> {
         let parts: Vec<&str> = did.split(':').collect();
         if parts.len() != 4 {
             return Err(Error::Did(format!(
-                "Invalid DID format: '{}'. Expected did:agentmesh:chain:identifier",
+                "Invalid DID format: '{}'. Expected did:agentme:chain:identifier",
                 did
             )));
         }
@@ -490,18 +490,18 @@ mod tests {
 
     #[test]
     fn test_parse_did_valid() {
-        let result = DIDDocument::parse_did("did:agentmesh:base:abc123");
+        let result = DIDDocument::parse_did("did:agentme:base:abc123");
 
         assert!(result.is_ok());
         let (method, chain, identifier) = result.unwrap();
-        assert_eq!(method, "agentmesh");
+        assert_eq!(method, "agentme");
         assert_eq!(chain, "base");
         assert_eq!(identifier, "abc123");
     }
 
     #[test]
     fn test_parse_did_invalid_format() {
-        let result = DIDDocument::parse_did("did:agentmesh:base");
+        let result = DIDDocument::parse_did("did:agentme:base");
 
         assert!(result.is_err());
         assert!(result
@@ -512,7 +512,7 @@ mod tests {
 
     #[test]
     fn test_parse_did_wrong_scheme() {
-        let result = DIDDocument::parse_did("urn:agentmesh:base:abc");
+        let result = DIDDocument::parse_did("urn:agentme:base:abc");
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("scheme"));
@@ -536,7 +536,7 @@ mod tests {
 
         assert!(doc.is_ok());
         let doc = doc.unwrap();
-        assert_eq!(doc.id, "did:agentmesh:base:test-agent");
+        assert_eq!(doc.id, "did:agentme:base:test-agent");
         assert!(doc
             .context
             .contains(&"https://www.w3.org/ns/did/v1".to_string()));
@@ -652,9 +652,9 @@ mod tests {
         let mut doc = DIDDocumentBuilder::new("base", "test").build().unwrap();
 
         doc.verification_method = Some(vec![VerificationMethod {
-            id: "did:agentmesh:base:test#key-1".to_string(),
+            id: "did:agentme:base:test#key-1".to_string(),
             method_type: "Ed25519VerificationKey2020".to_string(),
-            controller: "did:agentmesh:base:other".to_string(), // Wrong controller
+            controller: "did:agentme:base:other".to_string(), // Wrong controller
             public_key_multibase: Some("z6MkpTHR8VNs...".to_string()),
             public_key_jwk: None,
             blockchain_account_id: None,
@@ -721,7 +721,7 @@ mod tests {
 
         let json = json.unwrap();
         assert!(json.contains("@context"));
-        assert!(json.contains("did:agentmesh:base:test"));
+        assert!(json.contains("did:agentme:base:test"));
     }
 
     #[test]
@@ -763,7 +763,7 @@ mod tests {
 
     #[test]
     fn test_resolution_not_found() {
-        let result = DIDResolutionResult::not_found("did:agentmesh:base:unknown");
+        let result = DIDResolutionResult::not_found("did:agentme:base:unknown");
 
         assert!(result.did_document.is_none());
         assert_eq!(

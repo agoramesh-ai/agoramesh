@@ -6,21 +6,21 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { DiscoveryClient } from './discovery.js';
-import type { AgentMeshClient } from './client.js';
+import type { AgentMeClient } from './client.js';
 import type { CapabilityCard, DiscoveryResult } from './types.js';
 
 // Mock fetch globally
 global.fetch = vi.fn();
 
 /**
- * Mock AgentMeshClient
+ * Mock AgentMeClient
  */
-function createMockClient(): AgentMeshClient {
+function createMockClient(): AgentMeClient {
   return {
     getAgent: vi.fn(),
     getPublicClient: vi.fn(),
     getContractAddresses: vi.fn(() => ({})),
-  } as unknown as AgentMeshClient;
+  } as unknown as AgentMeClient;
 }
 
 /**
@@ -90,7 +90,7 @@ function sampleDiscoveryResult(did: string): DiscoveryResult {
 }
 
 describe('DiscoveryClient', () => {
-  let client: AgentMeshClient;
+  let client: AgentMeClient;
   let discovery: DiscoveryClient;
 
   beforeEach(() => {
@@ -174,7 +174,7 @@ describe('DiscoveryClient', () => {
 
       const nodeResults = [
         {
-          did: 'did:agentmesh:base:agent1',
+          did: 'did:agentme:base:agent1',
           score: 0.9,
           vector_score: 0.85,
           keyword_score: 0.95,
@@ -183,11 +183,11 @@ describe('DiscoveryClient', () => {
             description: 'A test agent',
             url: 'https://agent1.example.com',
             capabilities: [{ id: 'translate', name: 'Translation' }],
-            agentmesh: { did: 'did:agentmesh:base:agent1', trust_score: 0.85 },
+            agentme: { did: 'did:agentme:base:agent1', trust_score: 0.85 },
           },
         },
         {
-          did: 'did:agentmesh:base:agent2',
+          did: 'did:agentme:base:agent2',
           score: 0.8,
           vector_score: 0.75,
           keyword_score: 0.85,
@@ -196,7 +196,7 @@ describe('DiscoveryClient', () => {
             description: 'Another test agent',
             url: 'https://agent2.example.com',
             capabilities: [],
-            agentmesh: { did: 'did:agentmesh:base:agent2', trust_score: 0.7 },
+            agentme: { did: 'did:agentme:base:agent2', trust_score: 0.7 },
           },
         },
       ];
@@ -209,7 +209,7 @@ describe('DiscoveryClient', () => {
       const results = await discovery.search('translate');
 
       expect(results).toHaveLength(2);
-      expect(results[0]!.did).toBe('did:agentmesh:base:agent1');
+      expect(results[0]!.did).toBe('did:agentme:base:agent1');
       expect(results[0]!.name).toBe('Test Agent 1');
       expect(results[0]!.trust.overall).toBe(0.85);
     });
@@ -219,7 +219,7 @@ describe('DiscoveryClient', () => {
 
       const nodeResults = [
         {
-          did: 'did:agentmesh:base:agent1',
+          did: 'did:agentme:base:agent1',
           score: 0.9,
           vector_score: 0.85,
           keyword_score: 0.95,
@@ -228,10 +228,10 @@ describe('DiscoveryClient', () => {
             description: 'An agent with enriched trust',
             url: 'https://agent1.example.com',
             capabilities: [{ id: 'translate', name: 'Translation' }],
-            agentmesh: { did: 'did:agentmesh:base:agent1', trust_score: 0.5 },
+            agentme: { did: 'did:agentme:base:agent1', trust_score: 0.5 },
           },
           trust: {
-            did: 'did:agentmesh:base:agent1',
+            did: 'did:agentme:base:agent1',
             score: 0.92,
             reputation: 0.95,
             stake_score: 0.88,
@@ -239,7 +239,7 @@ describe('DiscoveryClient', () => {
           },
         },
         {
-          did: 'did:agentmesh:base:agent2',
+          did: 'did:agentme:base:agent2',
           score: 0.8,
           vector_score: 0.75,
           keyword_score: 0.85,
@@ -248,9 +248,9 @@ describe('DiscoveryClient', () => {
             description: 'An agent without enriched trust',
             url: 'https://agent2.example.com',
             capabilities: [],
-            agentmesh: { did: 'did:agentmesh:base:agent2', trust_score: 0.7 },
+            agentme: { did: 'did:agentme:base:agent2', trust_score: 0.7 },
           },
-          // No trust field - should fall back to card.agentmesh.trust_score
+          // No trust field - should fall back to card.agentme.trust_score
         },
       ];
 
@@ -269,7 +269,7 @@ describe('DiscoveryClient', () => {
       expect(results[0]!.trust.stake).toBe(0.88);
       expect(results[0]!.trust.endorsement).toBe(0.80);
 
-      // Agent 2: should fall back to card.agentmesh.trust_score
+      // Agent 2: should fall back to card.agentme.trust_score
       expect(results[1]!.trust.overall).toBe(0.7);
       expect(results[1]!.trust.reputation).toBe(0.8);
       expect(results[1]!.trust.stake).toBe(0);
@@ -349,7 +349,7 @@ describe('DiscoveryClient', () => {
 
     it('should try DHT if well-known fails', async () => {
       discovery.setNodeUrl('https://node.example.com');
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
 
       // Well-known fails (not a did:web)
       (global.fetch as Mock).mockResolvedValueOnce({
@@ -357,30 +357,30 @@ describe('DiscoveryClient', () => {
         json: async () => card,
       });
 
-      const result = await discovery.getCapabilityCard('did:agentmesh:base:agent1');
+      const result = await discovery.getCapabilityCard('did:agentme:base:agent1');
 
       expect(result).toBeDefined();
     });
 
     it('should try IPFS if DHT fails', async () => {
       discovery.setNodeUrl('https://node.example.com');
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
 
       // Mock getAgent to return agent with CID
       (client.getAgent as Mock).mockResolvedValueOnce({
-        did: 'did:agentmesh:base:agent1',
+        did: 'did:agentme:base:agent1',
         capabilityCardCID: 'QmTest123',
       });
 
       // Mock fetch responses:
-      // - well-known is skipped for did:agentmesh:* (regex doesn't match, no fetch)
+      // - well-known is skipped for did:agentme:* (regex doesn't match, no fetch)
       // - DHT fetch fails
       // - IPFS gateway fetch succeeds
       (global.fetch as Mock)
         .mockResolvedValueOnce({ ok: false }) // DHT fails
         .mockResolvedValueOnce({ ok: true, json: async () => card }); // IPFS works
 
-      const result = await discovery.getCapabilityCard('did:agentmesh:base:agent1');
+      const result = await discovery.getCapabilityCard('did:agentme:base:agent1');
 
       expect(result).toEqual(card);
     });
@@ -393,7 +393,7 @@ describe('DiscoveryClient', () => {
         .mockResolvedValueOnce({ ok: false })
         .mockResolvedValueOnce({ ok: false });
 
-      const result = await discovery.getCapabilityCard('did:agentmesh:base:unknown');
+      const result = await discovery.getCapabilityCard('did:agentme:base:unknown');
 
       expect(result).toBeNull();
     });
@@ -405,13 +405,13 @@ describe('DiscoveryClient', () => {
 
   describe('announce()', () => {
     it('should throw error when node URL not configured', async () => {
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
       await expect(discovery.announce(card)).rejects.toThrow('Node URL not configured');
     });
 
     it('should POST capability card to agents endpoint', async () => {
       discovery.setNodeUrl('https://node.example.com');
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
 
       (global.fetch as Mock).mockResolvedValueOnce({ ok: true });
 
@@ -425,7 +425,7 @@ describe('DiscoveryClient', () => {
 
     it('should include admin token in Authorization header', async () => {
       discovery.setNodeUrl('https://node.example.com');
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
 
       (global.fetch as Mock).mockResolvedValueOnce({ ok: true });
 
@@ -446,7 +446,7 @@ describe('DiscoveryClient', () => {
       discovery.setNodeUrl('https://node.example.com');
 
       await expect(
-        discovery.unannounce('did:agentmesh:base:agent1')
+        discovery.unannounce('did:agentme:base:agent1')
       ).rejects.toThrow('not yet supported');
     });
   });
@@ -523,7 +523,7 @@ describe('DiscoveryClient', () => {
 
   describe('isAgentAvailable()', () => {
     it('should return true if agent responds to OPTIONS', async () => {
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
 
       (global.fetch as Mock).mockResolvedValueOnce({ ok: true });
 
@@ -533,7 +533,7 @@ describe('DiscoveryClient', () => {
     });
 
     it('should return false if agent is not reachable', async () => {
-      const card = sampleCapabilityCard('did:agentmesh:base:agent1');
+      const card = sampleCapabilityCard('did:agentme:base:agent1');
 
       (global.fetch as Mock).mockRejectedValueOnce(new Error('Network error'));
 

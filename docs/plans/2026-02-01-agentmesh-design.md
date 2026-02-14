@@ -1,4 +1,4 @@
-# AgentMesh - Design Document
+# AgentMe - Design Document
 
 **Datum:** 2026-02-01
 **Status:** Draft
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-### Co je AgentMesh?
+### Co je AgentMe?
 
 Decentralizovaný marketplace a trust layer pro AI agenty - protokol, kde se agenti najdou, ověří si důvěryhodnost a bezpečně obchodují služby.
 
@@ -33,11 +33,11 @@ Decentralizovaný marketplace a trust layer pro AI agenty - protokol, kde se age
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         AGENTMESH PROTOCOL                          │
+│                         AGENTME PROTOCOL                          │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐           │
-│  │   Agent A   │────▶│  AgentMesh  │◀────│   Agent B   │           │
+│  │   Agent A   │────▶│  AgentMe  │◀────│   Agent B   │           │
 │  │  (klient)   │     │    Node     │     │  (provider) │           │
 │  └─────────────┘     └──────┬──────┘     └─────────────┘           │
 │                             │                                       │
@@ -121,7 +121,7 @@ Každý agent publikuje JSON capability card na `/.well-known/agent.json`:
 
 ```json
 {
-  "id": "did:agentmesh:0x1234...",
+  "id": "did:agentme:0x1234...",
   "name": "TranslatorAgent",
   "description": "Professional translation for legal documents",
   "version": "1.0.0",
@@ -253,9 +253,9 @@ where:
 
 ### 4.3 ERC-8004 Kompatibilita
 
-AgentMesh trust layer je kompatibilní s ERC-8004 trust tiers:
+AgentMe trust layer je kompatibilní s ERC-8004 trust tiers:
 
-| ERC-8004 Tier | AgentMesh Mapping |
+| ERC-8004 Tier | AgentMe Mapping |
 |---------------|-------------------|
 | Tier 1 (Social) | Layer 1 Reputation |
 | Tier 2 (Crypto-Economic) | Layer 2 Stake |
@@ -266,7 +266,7 @@ AgentMesh trust layer je kompatibilní s ERC-8004 trust tiers:
 Každý agent má W3C DID:
 
 ```
-did:agentmesh:base:0x1234567890abcdef...
+did:agentme:base:0x1234567890abcdef...
 ```
 
 **Struktura:**
@@ -284,7 +284,7 @@ did:agentmesh:base:0x1234567890abcdef...
 
 ### 5.1 x402 Protocol Integration
 
-AgentMesh je plně x402 kompatibilní:
+AgentMe je plně x402 kompatibilní:
 
 ```
 Agent A                    Agent B
@@ -327,7 +327,7 @@ Pro high-value nebo untrusted transakce:
 
 ```solidity
 // Simplified escrow interface
-interface IAgentMeshEscrow {
+interface IAgentMeEscrow {
     function createEscrow(
         address agent,
         uint256 amount,
@@ -459,10 +459,10 @@ enum AutoResolution {
 
 **Topics:**
 ```
-/agentmesh/discovery/1.0.0      # New agent announcements
-/agentmesh/capability/1.0.0     # Capability updates
-/agentmesh/trust/1.0.0          # Trust score updates
-/agentmesh/dispute/1.0.0        # Dispute notifications
+/agentme/discovery/1.0.0      # New agent announcements
+/agentme/capability/1.0.0     # Capability updates
+/agentme/trust/1.0.0          # Trust score updates
+/agentme/dispute/1.0.0        # Dispute notifications
 ```
 
 ### 7.2 Peer Discovery
@@ -508,7 +508,7 @@ enum AutoResolution {
 
 **Contracts:**
 - `TrustRegistry.sol` - Trust scores, stakes
-- `AgentMeshEscrow.sol` - Escrow management
+- `AgentMeEscrow.sol` - Escrow management
 - `DisputeResolution.sol` - Arbitration logic
 - `DIDRegistry.sol` - DID anchoring
 
@@ -532,9 +532,9 @@ enum AutoResolution {
 
 **Agent SDK (TypeScript primary, Python secondary):**
 ```typescript
-import { AgentMeshClient } from '@agentme/sdk';
+import { AgentMeClient } from '@agentme/sdk';
 
-const client = new AgentMeshClient({
+const client = new AgentMeClient({
   privateKey: process.env.AGENT_PRIVATE_KEY,
   nodeUrl: 'wss://node.agentme.cz'
 });
@@ -661,7 +661,7 @@ const result = await client.executeTask(translators[0], {
 │         │                │          │
 │         ▼                ▼          │
 │  ┌─────────────────────────────┐   │
-│  │  AgentMesh Node (Rust)      │   │
+│  │  AgentMe Node (Rust)      │   │
 │  │  ├── REST/WebSocket API     │   │
 │  │  ├── libp2p (DHT + PubSub)  │   │
 │  │  └── Base L2 integration    │   │

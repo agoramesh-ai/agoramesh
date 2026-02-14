@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AgentMeshClient } from '../../src/client.js';
+import { AgentMeClient } from '../../src/client.js';
 import { DiscoveryClient } from '../../src/discovery.js';
 import type { CapabilityCard, DiscoveryResult } from '../../src/types.js';
 import {
@@ -29,7 +29,7 @@ import {
 } from './setup.js';
 
 describe('Agent Discovery E2E', () => {
-  let client: AgentMeshClient;
+  let client: AgentMeClient;
   let discovery: DiscoveryClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
@@ -49,7 +49,7 @@ describe('Agent Discovery E2E', () => {
     global.fetch = mockFetchResult.mockFetch;
 
     // Create client with test config
-    client = new AgentMeshClient({
+    client = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -159,7 +159,7 @@ describe('Agent Discovery E2E', () => {
     beforeEach(async () => {
       // Announce several test agents
       const translationAgent = createTestCapabilityCard({
-        id: 'did:agentmesh:base:translation',
+        id: 'did:agentme:base:translation',
         name: 'Translation Agent',
         description: 'Professional translation services for legal documents',
         skills: [
@@ -172,7 +172,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       const summaryAgent = createTestCapabilityCard({
-        id: 'did:agentmesh:base:summary',
+        id: 'did:agentme:base:summary',
         name: 'Summary Agent',
         description: 'Summarize long documents quickly',
         skills: [
@@ -185,7 +185,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       const codeAgent = createTestCapabilityCard({
-        id: 'did:agentmesh:base:code',
+        id: 'did:agentme:base:code',
         name: 'Code Agent',
         description: 'Code review and analysis',
         skills: [
@@ -214,7 +214,7 @@ describe('Agent Discovery E2E', () => {
       const results = await discovery.search('Summary Agent');
 
       expect(results).toHaveLength(1);
-      expect(results[0].did).toBe('did:agentmesh:base:summary');
+      expect(results[0].did).toBe('did:agentme:base:summary');
     });
 
     it('should search by skill name', async () => {
@@ -262,7 +262,7 @@ describe('Agent Discovery E2E', () => {
     beforeEach(async () => {
       // Announce test agents with specific tags
       const translationAgent = createTestCapabilityCard({
-        id: 'did:agentmesh:base:translation',
+        id: 'did:agentme:base:translation',
         name: 'Translation Agent',
         skills: [
           createTestSkill({
@@ -273,7 +273,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       const summaryAgent = createTestCapabilityCard({
-        id: 'did:agentmesh:base:summary',
+        id: 'did:agentme:base:summary',
         name: 'Summary Agent',
         skills: [
           createTestSkill({
@@ -452,7 +452,7 @@ describe('Agent Discovery E2E', () => {
   describe('getRecommendations', () => {
     beforeEach(async () => {
       const agent1 = createTestCapabilityCard({
-        id: 'did:agentmesh:base:agent1',
+        id: 'did:agentme:base:agent1',
         name: 'Premium Agent',
         description: 'High quality translation',
         skills: [
@@ -465,7 +465,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       const agent2 = createTestCapabilityCard({
-        id: 'did:agentmesh:base:agent2',
+        id: 'did:agentme:base:agent2',
         name: 'Budget Agent',
         description: 'Affordable translation',
         skills: [
@@ -508,14 +508,14 @@ describe('Agent Discovery E2E', () => {
     it('should fetch capability card from IPFS gateway when CID is available', async () => {
       // Arrange - mock getAgent to return agent with CID
       const testCard = createTestCapabilityCard({
-        id: 'did:agentmesh:base:ipfs-agent',
+        id: 'did:agentme:base:ipfs-agent',
         name: 'IPFS Agent',
         description: 'Agent with IPFS capability card',
       });
 
       // Mock the client.getAgent to return agent info with CID
       vi.spyOn(client, 'getAgent').mockResolvedValue({
-        did: 'did:agentmesh:base:ipfs-agent',
+        did: 'did:agentme:base:ipfs-agent',
         owner: TEST_ADDRESSES.agent,
         capabilityCardCID: 'QmTestCID123',
         active: true,
@@ -523,7 +523,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       // Mock fetch - DHT endpoint returns 404 (not found), IPFS returns the card
-      // getCapabilityCard tries: 1) well-known (N/A for agentmesh DID), 2) DHT, 3) IPFS
+      // getCapabilityCard tries: 1) well-known (N/A for agentme DID), 2) DHT, 3) IPFS
       const mockFetch = vi.fn().mockImplementation((url: string) => {
         if (url.includes('/agents/') && !url.includes('ipfs')) {
           // DHT endpoint - return 404 so it falls through to IPFS
@@ -542,11 +542,11 @@ describe('Agent Discovery E2E', () => {
       global.fetch = mockFetch;
 
       // Act
-      const card = await discovery.getCapabilityCard('did:agentmesh:base:ipfs-agent');
+      const card = await discovery.getCapabilityCard('did:agentme:base:ipfs-agent');
 
       // Assert
       expect(card).not.toBeNull();
-      expect(card?.id).toBe('did:agentmesh:base:ipfs-agent');
+      expect(card?.id).toBe('did:agentme:base:ipfs-agent');
       expect(card?.name).toBe('IPFS Agent');
       // Verify IPFS gateway was called
       expect(mockFetch).toHaveBeenCalledWith(
@@ -558,7 +558,7 @@ describe('Agent Discovery E2E', () => {
     it('should return null when IPFS gateway returns error', async () => {
       // Arrange
       vi.spyOn(client, 'getAgent').mockResolvedValue({
-        did: 'did:agentmesh:base:ipfs-agent',
+        did: 'did:agentme:base:ipfs-agent',
         owner: TEST_ADDRESSES.agent,
         capabilityCardCID: 'QmInvalidCID',
         active: true,
@@ -571,7 +571,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       // Act
-      const card = await discovery.getCapabilityCard('did:agentmesh:base:ipfs-agent');
+      const card = await discovery.getCapabilityCard('did:agentme:base:ipfs-agent');
 
       // Assert - should fall through to return null
       expect(card).toBeNull();
@@ -580,7 +580,7 @@ describe('Agent Discovery E2E', () => {
     it('should return null when agent has no CID', async () => {
       // Arrange
       vi.spyOn(client, 'getAgent').mockResolvedValue({
-        did: 'did:agentmesh:base:no-cid-agent',
+        did: 'did:agentme:base:no-cid-agent',
         owner: TEST_ADDRESSES.agent,
         capabilityCardCID: '', // Empty CID
         active: true,
@@ -588,7 +588,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       // Act
-      const card = await discovery.getCapabilityCard('did:agentmesh:base:no-cid-agent');
+      const card = await discovery.getCapabilityCard('did:agentme:base:no-cid-agent');
 
       // Assert
       expect(card).toBeNull();
@@ -600,7 +600,7 @@ describe('Agent Discovery E2E', () => {
       discovery.setIPFSGateway(customGateway);
 
       vi.spyOn(client, 'getAgent').mockResolvedValue({
-        did: 'did:agentmesh:base:custom-gateway',
+        did: 'did:agentme:base:custom-gateway',
         owner: TEST_ADDRESSES.agent,
         capabilityCardCID: 'QmCustomTest',
         active: true,
@@ -608,7 +608,7 @@ describe('Agent Discovery E2E', () => {
       });
 
       // Mock fetch - DHT returns 404, custom IPFS gateway returns the card
-      const testCard = createTestCapabilityCard({ id: 'did:agentmesh:base:custom-gateway' });
+      const testCard = createTestCapabilityCard({ id: 'did:agentme:base:custom-gateway' });
       const mockFetch = vi.fn().mockImplementation((url: string) => {
         if (url.includes('/agents/') && !url.includes('gateway')) {
           // DHT endpoint - return 404 so it falls through to IPFS
@@ -627,7 +627,7 @@ describe('Agent Discovery E2E', () => {
       global.fetch = mockFetch;
 
       // Act
-      const card = await discovery.getCapabilityCard('did:agentmesh:base:custom-gateway');
+      const card = await discovery.getCapabilityCard('did:agentme:base:custom-gateway');
 
       // Assert
       expect(card).not.toBeNull();

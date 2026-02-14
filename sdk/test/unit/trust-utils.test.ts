@@ -10,19 +10,19 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { TrustClient } from '../../src/trust.js';
-import type { AgentMeshClient } from '../../src/client.js';
+import type { AgentMeClient } from '../../src/client.js';
 
 // =============================================================================
 // Setup
 // =============================================================================
 
-function createMinimalMockClient(): AgentMeshClient {
+function createMinimalMockClient(): AgentMeClient {
   return {
     getPublicClient: vi.fn(() => null),
     getWalletClient: vi.fn(() => null),
     getContractAddresses: vi.fn(() => ({})),
     getAddress: vi.fn(() => null),
-  } as unknown as AgentMeshClient;
+  } as unknown as AgentMeClient;
 }
 
 // =============================================================================

@@ -608,7 +608,7 @@ impl TrustService {
         // but the count is tracked for legacy callers
         data.endorsements.push(EndorsementData {
             endorser_did: format!(
-                "did:agentmesh:base:anonymous-endorser-{}",
+                "did:agentme:base:anonymous-endorser-{}",
                 data.endorsement_count
             ),
             hop_distance: 1,
@@ -698,7 +698,7 @@ mod tests {
         let service = test_service();
 
         // Act
-        let result = service.get_trust("did:agentmesh:base:new-agent").await;
+        let result = service.get_trust("did:agentme:base:new-agent").await;
 
         // Assert
         assert!(result.is_ok());
@@ -713,7 +713,7 @@ mod tests {
     async fn test_get_trust_calculates_stake_score() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:staked-agent";
+        let did = "did:agentme:base:staked-agent";
         // Stake $2,500 (25% of reference)
         service.set_trust_data(did, 2_500_000_000, 0, 0, 0);
 
@@ -732,7 +732,7 @@ mod tests {
     async fn test_get_trust_calculates_reputation_score() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:reputable-agent";
+        let did = "did:agentme:base:reputable-agent";
         // 90% success rate with 100 transactions
         service.set_trust_data(did, 0, 90, 10, 0);
 
@@ -751,7 +751,7 @@ mod tests {
     async fn test_get_trust_calculates_composite_score() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:full-agent";
+        let did = "did:agentme:base:full-agent";
         // Full reference stake, 100% success on 100 txs
         service.set_trust_data(did, REFERENCE_STAKE, 100, 0, 0);
 
@@ -760,7 +760,7 @@ mod tests {
         // Each endorsement contributes: endorser_reputation * 0.9^hop / 3.0
         // With 5 high-trust endorsers at hop 1: 5 * (1.0 * 0.9) / 3.0 = 1.5 -> capped at 1.0
         for i in 0..5 {
-            let endorser = format!("did:agentmesh:base:high-trust-endorser-{}", i);
+            let endorser = format!("did:agentme:base:high-trust-endorser-{}", i);
             service.set_trust_data(&endorser, REFERENCE_STAKE, 100, 0, 0);
             service
                 .add_endorsement_with_hop(&endorser, did, 1)
@@ -800,7 +800,7 @@ mod tests {
     async fn test_verify_returns_false_for_low_trust() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:low-trust";
+        let did = "did:agentme:base:low-trust";
         // Very low trust data
         service.set_trust_data(did, 100_000_000, 5, 5, 1);
 
@@ -819,7 +819,7 @@ mod tests {
     async fn test_verify_returns_true_for_high_trust() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:high-trust";
+        let did = "did:agentme:base:high-trust";
         // High trust data
         service.set_trust_data(did, REFERENCE_STAKE, 100, 0, 10);
 
@@ -840,7 +840,7 @@ mod tests {
         let service = test_service();
 
         // Act - even new agent should pass zero threshold
-        let result = service.verify("did:agentmesh:base:any", 0.0).await;
+        let result = service.verify("did:agentme:base:any", 0.0).await;
 
         // Assert
         assert!(result.is_ok());
@@ -853,7 +853,7 @@ mod tests {
     async fn test_record_success_increments_successful_transactions() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:worker";
+        let did = "did:agentme:base:worker";
 
         // Act
         service.record_success(did, 1_000_000).await.unwrap();
@@ -884,7 +884,7 @@ mod tests {
     async fn test_record_success_improves_reputation() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:improving";
+        let did = "did:agentme:base:improving";
 
         // Record 10 successes
         for _ in 0..10 {
@@ -905,7 +905,7 @@ mod tests {
     async fn test_record_failure_increments_failed_transactions() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:failing";
+        let did = "did:agentme:base:failing";
 
         // Act
         service.record_failure(did, "timeout").await.unwrap();
@@ -935,7 +935,7 @@ mod tests {
     async fn test_record_failure_hurts_reputation() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:mixed";
+        let did = "did:agentme:base:mixed";
 
         // Record 8 successes and 2 failures (80% success rate)
         for _ in 0..8 {
@@ -963,7 +963,7 @@ mod tests {
     async fn test_endorse_increments_endorsement_count() {
         // Arrange
         let service = test_service();
-        let target_did = "did:agentmesh:base:endorsed";
+        let target_did = "did:agentme:base:endorsed";
 
         // Act
         service.endorse(target_did, 1.0).await.unwrap();
@@ -990,7 +990,7 @@ mod tests {
     async fn test_endorse_validates_weight_range() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:target";
+        let did = "did:agentme:base:target";
 
         // Act - weight must be 0.0 to 1.0
         let result_low = service.endorse(did, -0.1).await;
@@ -1005,11 +1005,11 @@ mod tests {
     async fn test_endorse_improves_endorsement_score() {
         // Arrange
         let service = test_service();
-        let target_did = "did:agentmesh:base:popular";
+        let target_did = "did:agentme:base:popular";
 
         // Create 5 endorsers with trust data and add endorsements
         for i in 0..5 {
-            let endorser = format!("did:agentmesh:base:real-endorser-{}", i);
+            let endorser = format!("did:agentme:base:real-endorser-{}", i);
             service.set_trust_data(&endorser, REFERENCE_STAKE, 100, 0, 0);
             service
                 .add_endorsement_with_hop(&endorser, target_did, 1)
@@ -1076,7 +1076,7 @@ mod tests {
 
         // Act
         let result = service
-            .get_onchain_trust_score("did:agentmesh:base:test")
+            .get_onchain_trust_score("did:agentme:base:test")
             .await;
 
         // Assert
@@ -1109,7 +1109,7 @@ mod tests {
     async fn test_reputation_no_decay_for_recent_activity() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:active-agent";
+        let did = "did:agentme:base:active-agent";
 
         // Set trust data with recent activity (now)
         service.set_trust_data_with_timestamp(
@@ -1137,7 +1137,7 @@ mod tests {
     async fn test_reputation_decays_after_14_days_inactivity() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:inactive-agent";
+        let did = "did:agentme:base:inactive-agent";
 
         // Set trust data with activity 14 days ago
         let fourteen_days_ago = current_timestamp() - (14 * 24 * 60 * 60);
@@ -1164,7 +1164,7 @@ mod tests {
     async fn test_reputation_decays_more_after_28_days() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:long-inactive";
+        let did = "did:agentme:base:long-inactive";
 
         // Set trust data with activity 28 days ago (2 decay periods)
         let twenty_eight_days_ago = current_timestamp() - (28 * 24 * 60 * 60);
@@ -1190,7 +1190,7 @@ mod tests {
     async fn test_reputation_decay_caps_at_zero() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:very-old";
+        let did = "did:agentme:base:very-old";
 
         // Set trust data with activity 1 year ago (should be fully decayed)
         let one_year_ago = current_timestamp() - (365 * 24 * 60 * 60);
@@ -1211,7 +1211,7 @@ mod tests {
     async fn test_reputation_decay_does_not_affect_new_agents() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:new-agent-decay";
+        let did = "did:agentme:base:new-agent-decay";
 
         // New agent with no transactions (timestamp = 0)
         service.set_trust_data_with_timestamp(did, 0, 0, 0, 0, 0);
@@ -1230,7 +1230,7 @@ mod tests {
     async fn test_record_success_updates_last_activity() {
         // Arrange
         let service = test_service();
-        let did = "did:agentmesh:base:updating-agent";
+        let did = "did:agentme:base:updating-agent";
 
         // Set old activity timestamp
         let old_time = current_timestamp() - (30 * 24 * 60 * 60);
@@ -1263,8 +1263,8 @@ mod tests {
     async fn test_endorsement_hop_decay_at_hop_1() {
         // Arrange
         let service = test_service();
-        let endorser_did = "did:agentmesh:base:trusted-endorser";
-        let target_did = "did:agentmesh:base:endorsed-agent";
+        let endorser_did = "did:agentme:base:trusted-endorser";
+        let target_did = "did:agentme:base:endorsed-agent";
 
         // Endorser has high trust (1.0 reputation)
         service.set_trust_data(endorser_did, REFERENCE_STAKE, 100, 0, 0);
@@ -1297,8 +1297,8 @@ mod tests {
     async fn test_endorsement_hop_decay_at_hop_2() {
         // Arrange
         let service = test_service();
-        let endorser_did = "did:agentmesh:base:indirect-endorser";
-        let target_did = "did:agentmesh:base:target-hop2";
+        let endorser_did = "did:agentme:base:indirect-endorser";
+        let target_did = "did:agentme:base:target-hop2";
 
         // Endorser has high trust
         service.set_trust_data(endorser_did, REFERENCE_STAKE, 100, 0, 0);
@@ -1331,8 +1331,8 @@ mod tests {
     async fn test_endorsement_hop_decay_at_hop_3() {
         // Arrange
         let service = test_service();
-        let endorser_did = "did:agentmesh:base:far-endorser";
-        let target_did = "did:agentmesh:base:target-hop3";
+        let endorser_did = "did:agentme:base:far-endorser";
+        let target_did = "did:agentme:base:target-hop3";
 
         // Endorser has high trust
         service.set_trust_data(endorser_did, REFERENCE_STAKE, 100, 0, 0);
@@ -1365,8 +1365,8 @@ mod tests {
     async fn test_endorsement_ignored_beyond_max_hops() {
         // Arrange
         let service = test_service();
-        let endorser_did = "did:agentmesh:base:too-far-endorser";
-        let target_did = "did:agentmesh:base:target-hop4";
+        let endorser_did = "did:agentme:base:too-far-endorser";
+        let target_did = "did:agentme:base:target-hop4";
 
         // Endorser has high trust
         service.set_trust_data(endorser_did, REFERENCE_STAKE, 100, 0, 0);
@@ -1392,10 +1392,10 @@ mod tests {
     async fn test_endorsement_considers_endorser_trust_score() {
         // Arrange
         let service = test_service();
-        let high_trust_endorser = "did:agentmesh:base:high-trust";
-        let low_trust_endorser = "did:agentmesh:base:low-trust";
-        let target_high = "did:agentmesh:base:endorsed-by-high";
-        let target_low = "did:agentmesh:base:endorsed-by-low";
+        let high_trust_endorser = "did:agentme:base:high-trust";
+        let low_trust_endorser = "did:agentme:base:low-trust";
+        let target_high = "did:agentme:base:endorsed-by-high";
+        let target_low = "did:agentme:base:endorsed-by-low";
 
         // High trust endorser (100% success, 100 txs)
         service.set_trust_data(high_trust_endorser, 0, 100, 0, 0);
@@ -1429,11 +1429,11 @@ mod tests {
     async fn test_endorsement_max_10_counted() {
         // Arrange
         let service = test_service();
-        let target_did = "did:agentmesh:base:popular-agent";
+        let target_did = "did:agentme:base:popular-agent";
 
         // Add 15 endorsements from different agents
         for i in 0..15 {
-            let endorser = format!("did:agentmesh:base:endorser-{}", i);
+            let endorser = format!("did:agentme:base:endorser-{}", i);
             service.set_trust_data(&endorser, REFERENCE_STAKE, 100, 0, 0);
             service
                 .add_endorsement_with_hop(&endorser, target_did, 1)
@@ -1458,12 +1458,12 @@ mod tests {
     async fn test_endorsement_score_aggregates_multiple_endorsers() {
         // Arrange
         let service = test_service();
-        let target_did = "did:agentmesh:base:multi-endorsed";
+        let target_did = "did:agentme:base:multi-endorsed";
 
         // Add 3 endorsements from different agents at different hops
-        let endorser1 = "did:agentmesh:base:e1";
-        let endorser2 = "did:agentmesh:base:e2";
-        let endorser3 = "did:agentmesh:base:e3";
+        let endorser1 = "did:agentme:base:e1";
+        let endorser2 = "did:agentme:base:e2";
+        let endorser3 = "did:agentme:base:e3";
 
         service.set_trust_data(endorser1, REFERENCE_STAKE, 100, 0, 0); // trust ~1.0
         service.set_trust_data(endorser2, REFERENCE_STAKE, 100, 0, 0); // trust ~1.0
@@ -1505,7 +1505,7 @@ mod tests {
 
         // Act
         let result = service
-            .add_endorsement_with_hop("invalid-endorser", "did:agentmesh:base:target", 1)
+            .add_endorsement_with_hop("invalid-endorser", "did:agentme:base:target", 1)
             .await;
 
         // Assert
@@ -1520,7 +1520,7 @@ mod tests {
 
         // Act
         let result = service
-            .add_endorsement_with_hop("did:agentmesh:base:endorser", "invalid-target", 1)
+            .add_endorsement_with_hop("did:agentme:base:endorser", "invalid-target", 1)
             .await;
 
         // Assert
@@ -1532,8 +1532,8 @@ mod tests {
     async fn test_endorsement_at_hop_0_gives_full_contribution() {
         // Arrange
         let service = test_service();
-        let endorser_did = "did:agentmesh:base:direct-endorser";
-        let target_did = "did:agentmesh:base:direct-target";
+        let endorser_did = "did:agentme:base:direct-endorser";
+        let target_did = "did:agentme:base:direct-target";
 
         // Endorser has high trust
         service.set_trust_data(endorser_did, REFERENCE_STAKE, 100, 0, 0);
@@ -1561,8 +1561,8 @@ mod tests {
     async fn test_endorsement_with_zero_trust_endorser_gives_zero_contribution() {
         // Arrange
         let service = test_service();
-        let endorser_did = "did:agentmesh:base:new-endorser";
-        let target_did = "did:agentmesh:base:endorsed-by-new";
+        let endorser_did = "did:agentme:base:new-endorser";
+        let target_did = "did:agentme:base:endorsed-by-new";
 
         // Endorser has NO trust data (new agent)
         // Do not set any trust data for endorser

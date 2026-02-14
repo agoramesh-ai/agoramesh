@@ -1,7 +1,7 @@
 /**
- * AgentMesh SDK Utilities
+ * AgentMe SDK Utilities
  *
- * Shared utility functions for the AgentMesh SDK.
+ * Shared utility functions for the AgentMe SDK.
  *
  * @packageDocumentation
  */

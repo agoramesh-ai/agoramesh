@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in AgentMesh, please report it responsibly.
+If you discover a security vulnerability in AgentMe, please report it responsibly.
 
 **Email:** vladimir.beran@etnetera.cz
 
@@ -26,7 +26,7 @@ Please include:
 
 The following components are in scope:
 
-- **Smart contracts** (`contracts/`) - TrustRegistry, AgentMeshEscrow, dispute resolution
+- **Smart contracts** (`contracts/`) - TrustRegistry, AgentMeEscrow, dispute resolution
 - **Bridge** (`bridge/`) - HTTP/WebSocket server, Claude Code executor
 - **P2P Node** (`node/`) - libp2p networking, DHT discovery
 - **SDK** (`sdk/`) - Client library, trust scoring, payment handling

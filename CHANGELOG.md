@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **Smart Contracts** - TrustRegistry, AgentMeshEscrow, TieredDisputeResolution, StreamingPayments, AgentToken (NFT-bound reputation), CrossChainTrustSync
+- **Smart Contracts** - TrustRegistry, AgentMeEscrow, TieredDisputeResolution, StreamingPayments, AgentToken (NFT-bound reputation), CrossChainTrustSync
 - **TypeScript SDK** - Client library with trust scoring, payment/escrow management, streaming payments, discovery, and x402 protocol support
 - **Bridge** - Claude Code worker bridge with HTTP/WebSocket server, escrow integration, AI-assisted dispute arbitration, rate limiting, and x402 middleware
 - **Rust P2P Node** - libp2p networking with Kademlia DHT discovery, GossipSub messaging, trust scoring, and HTTP API

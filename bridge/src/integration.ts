@@ -1,7 +1,7 @@
 /**
- * AgentMesh Integration
+ * AgentMe Integration
  *
- * Handles automatic registration and announcement to the AgentMesh network.
+ * Handles automatic registration and announcement to the AgentMe network.
  */
 
 import { createHash } from 'crypto';
@@ -13,13 +13,13 @@ import { RegistrationError, type Result, success, failure } from './errors.js';
 import type {
   CapabilityCard,
   Skill,
-  AgentMeshConfig,
-  AgentMeshClient,
+  AgentMeConfig,
+  AgentMeClient,
   DiscoveryClient,
 } from '@agentme/sdk';
 
 /**
- * Configuration for AgentMesh integration.
+ * Configuration for AgentMe integration.
  */
 export interface IntegrationConfig {
   /** RPC URL for the blockchain */
@@ -28,7 +28,7 @@ export interface IntegrationConfig {
   chainId: number;
   /** Trust Registry contract address */
   trustRegistryAddress?: string;
-  /** AgentMesh node URL for P2P discovery */
+  /** AgentMe node URL for P2P discovery */
   nodeUrl?: string;
   /** IPFS gateway for capability card retrieval */
   ipfsGateway?: string;
@@ -37,32 +37,32 @@ export interface IntegrationConfig {
 }
 
 /**
- * Handles integration with the AgentMesh network.
+ * Handles integration with the AgentMe network.
  *
  * Provides methods to:
  * - Register agent on-chain
  * - Announce capability card to P2P network
  * - Generate DID from private key
  */
-export class AgentMeshIntegration {
+export class AgentMeIntegration {
   private readonly agentConfig: AgentConfig;
   private readonly integrationConfig: IntegrationConfig;
   private readonly did: string;
-  private client: AgentMeshClient | null = null;
+  private client: AgentMeClient | null = null;
   private discovery: DiscoveryClient | null = null;
   private ipfsService: IPFSService;
   private connected = false;
 
   /**
-   * Create a new AgentMesh integration.
+   * Create a new AgentMe integration.
    *
    * @param agentConfig - The agent's configuration
-   * @param integrationConfig - AgentMesh network configuration
+   * @param integrationConfig - AgentMe network configuration
    * @throws Error if privateKey is missing
    */
   constructor(agentConfig: AgentConfig, integrationConfig: IntegrationConfig) {
     if (!agentConfig.privateKey || agentConfig.privateKey === '') {
-      throw new Error('Private key is required for AgentMesh integration');
+      throw new Error('Private key is required for AgentMe integration');
     }
 
     this.agentConfig = agentConfig;
@@ -92,13 +92,13 @@ export class AgentMeshIntegration {
   /**
    * Generate a DID from the private key.
    *
-   * Format: did:agentmesh:base:0x{address}
+   * Format: did:agentme:base:0x{address}
    */
   private generateDID(privateKey: string): string {
     // In a real implementation, we'd use viem to derive the address
     // For now, use a cryptographic hash of the key
     const hash = this.secureHash(privateKey);
-    return `did:agentmesh:base:${hash}`;
+    return `did:agentme:base:${hash}`;
   }
 
   /**
@@ -189,16 +189,16 @@ export class AgentMeshIntegration {
 
     try {
       // Dynamic import to avoid requiring SDK at module load time
-      const { AgentMeshClient, DiscoveryClient } = await import('@agentme/sdk');
+      const { AgentMeClient, DiscoveryClient } = await import('@agentme/sdk');
 
-      const clientConfig: AgentMeshConfig = {
+      const clientConfig: AgentMeConfig = {
         rpcUrl: this.integrationConfig.rpcUrl,
         chainId: this.integrationConfig.chainId,
         privateKey: this.agentConfig.privateKey as `0x${string}`,
         trustRegistryAddress: this.integrationConfig.trustRegistryAddress as `0x${string}` | undefined,
       };
 
-      this.client = new AgentMeshClient(clientConfig);
+      this.client = new AgentMeClient(clientConfig);
       await this.client.connect();
 
       this.discovery = new DiscoveryClient(this.client);
@@ -209,7 +209,7 @@ export class AgentMeshIntegration {
       this.connected = true;
     } catch (error) {
       // SDK not available - log warning but continue
-      console.warn('[Integration] AgentMesh SDK not available:', error);
+      console.warn('[Integration] AgentMe SDK not available:', error);
       throw error;
     }
   }
@@ -241,7 +241,7 @@ export class AgentMeshIntegration {
       if (this.ipfsService.isConfigured()) {
         console.log('[Integration] Uploading capability card to IPFS...');
         capabilityCardCID = await this.ipfsService.uploadJSON(card, {
-          name: `agentmesh-capability-card-${this.did}`,
+          name: `agentme-capability-card-${this.did}`,
           keyvalues: {
             type: 'capability-card',
             did: this.did,

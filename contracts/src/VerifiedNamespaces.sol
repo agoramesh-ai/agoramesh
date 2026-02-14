@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import "./interfaces/IVerifiedNamespaces.sol";
 
-/// @title VerifiedNamespaces - Verified Namespace Registry for AgentMesh
+/// @title VerifiedNamespaces - Verified Namespace Registry for AgentMe
 /// @notice Manages organization namespaces for agent verification
 /// @dev Implements IVerifiedNamespaces with ENS-inspired architecture
 contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {

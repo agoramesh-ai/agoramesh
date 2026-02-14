@@ -1,19 +1,19 @@
-# AgentMesh Node Deployment
+# AgentMe Node Deployment
 # Production-ready Kubernetes deployment with best practices
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: agentmesh-node
-  namespace: agentmesh
+  name: agentme-node
+  namespace: agentme
   labels:
-    app.kubernetes.io/name: agentmesh-node
+    app.kubernetes.io/name: agentme-node
     app.kubernetes.io/component: node
-    app.kubernetes.io/part-of: agentmesh
+    app.kubernetes.io/part-of: agentme
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app.kubernetes.io/name: agentmesh-node
+      app.kubernetes.io/name: agentme-node
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -22,7 +22,7 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: agentmesh-node
+        app.kubernetes.io/name: agentme-node
         app.kubernetes.io/component: node
       annotations:
         prometheus.io/scrape: "true"
@@ -39,7 +39,7 @@ spec:
           type: RuntimeDefault
 
       # Service account
-      serviceAccountName: agentmesh-node
+      serviceAccountName: agentme-node
       automountServiceAccountToken: false
 
       # Pod anti-affinity for high availability
@@ -50,7 +50,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app.kubernetes.io/name: agentmesh-node
+                    app.kubernetes.io/name: agentme-node
                 topologyKey: kubernetes.io/hostname
 
       # Init containers for pre-flight checks
@@ -69,18 +69,18 @@ spec:
             - -c
             - |
               echo "Checking RPC endpoint connectivity..."
-              until wget -qO- --timeout=5 ${AGENTMESH_CHAIN_RPC} >/dev/null 2>&1; do
+              until wget -qO- --timeout=5 ${AGENTME_CHAIN_RPC} >/dev/null 2>&1; do
                 echo "Waiting for RPC endpoint..."
                 sleep 5
               done
               echo "RPC endpoint is reachable"
           envFrom:
             - configMapRef:
-                name: agentmesh-node-config
+                name: agentme-node-config
 
       containers:
         - name: node
-          image: ghcr.io/agentmesh/node:latest
+          image: ghcr.io/agentme/node:latest
           imagePullPolicy: Always
 
           # Resource limits
@@ -112,11 +112,11 @@ spec:
           # Environment from ConfigMap
           envFrom:
             - configMapRef:
-                name: agentmesh-node-config
+                name: agentme-node-config
 
           # Additional environment variables
           env:
-            - name: AGENTMESH_DATA_DIR
+            - name: AGENTME_DATA_DIR
               value: "/app/data"
             - name: POD_NAME
               valueFrom:
@@ -170,7 +170,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: agentmesh-node-data
+            claimName: agentme-node-data
         - name: tmp
           emptyDir: {}
 
@@ -184,26 +184,26 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: agentmesh-node
+              app.kubernetes.io/name: agentme-node
 ---
 # Service Account
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: agentmesh-node
-  namespace: agentmesh
+  name: agentme-node
+  namespace: agentme
   labels:
-    app.kubernetes.io/name: agentmesh-node
+    app.kubernetes.io/name: agentme-node
 automountServiceAccountToken: false
 ---
 # PVC for data persistence
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: agentmesh-node-data
-  namespace: agentmesh
+  name: agentme-node-data
+  namespace: agentme
   labels:
-    app.kubernetes.io/name: agentmesh-node
+    app.kubernetes.io/name: agentme-node
 spec:
   accessModes:
     - ReadWriteOnce

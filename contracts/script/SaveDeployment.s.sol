@@ -17,7 +17,7 @@ contract SaveDeployment is Deploy {
         address usdc = isMainnet ? USDC_MAINNET : USDC_SEPOLIA;
         address lzEndpoint = isMainnet ? LZ_ENDPOINT_MAINNET : LZ_ENDPOINT_SEPOLIA;
 
-        console.log("Deploying AgentMesh to chain:", block.chainid);
+        console.log("Deploying AgentMe to chain:", block.chainid);
         console.log("Admin:", admin);
         console.log("USDC:", usdc);
         console.log("LayerZero Endpoint:", lzEndpoint);

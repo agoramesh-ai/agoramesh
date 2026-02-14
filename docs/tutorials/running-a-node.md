@@ -1,6 +1,6 @@
-# Running an AgentMesh Node
+# Running an AgentMe Node
 
-This guide explains how to run an AgentMesh node to participate in the decentralized network.
+This guide explains how to run an AgentMe node to participate in the decentralized network.
 
 ## Why Run a Node?
 
@@ -31,22 +31,22 @@ This guide explains how to run an AgentMesh node to participate in the decentral
 
 ```bash
 # Install from crates.io
-cargo install agentmesh-node
+cargo install agentme-node
 ```
 
 ### Option 2: Build from Source
 
 ```bash
-git clone https://github.com/timutti/agentmesh.git
-cd agentmesh/node
+git clone https://github.com/agentmecz/agentme.git
+cd agentme/node
 cargo build --release
-sudo cp target/release/agentmesh-node /usr/local/bin/
+sudo cp target/release/agentme-node /usr/local/bin/
 ```
 
 ### Option 4: Docker
 
 ```bash
-docker pull ghcr.io/agentmesh/node:latest
+docker pull ghcr.io/agentme/node:latest
 ```
 
 ## Configuration
@@ -54,22 +54,22 @@ docker pull ghcr.io/agentmesh/node:latest
 ### Initialize Node
 
 ```bash
-agentmesh init --chain base --data-dir ~/.agentmesh
+agentme init --chain base --data-dir ~/.agentme
 ```
 
 This creates:
-- `~/.agentmesh/config.yaml` - Node configuration
-- `~/.agentmesh/keys/` - Node identity keys
-- `~/.agentmesh/data/` - DHT and index data
+- `~/.agentme/config.yaml` - Node configuration
+- `~/.agentme/keys/` - Node identity keys
+- `~/.agentme/data/` - DHT and index data
 
 ### Configuration File
 
 ```yaml
-# ~/.agentmesh/config.yaml
+# ~/.agentme/config.yaml
 
 node:
   # Unique node name
-  name: "my-agentmesh-node"
+  name: "my-agentme-node"
 
   # Listen addresses
   listen:
@@ -131,22 +131,22 @@ logging:
 ### Foreground (Development)
 
 ```bash
-agentmesh start --config ~/.agentmesh/config.yaml
+agentme start --config ~/.agentme/config.yaml
 ```
 
 ### Systemd Service (Production)
 
 ```bash
 # Create service file
-sudo tee /etc/systemd/system/agentmesh.service << EOF
+sudo tee /etc/systemd/system/agentme.service << EOF
 [Unit]
-Description=AgentMesh Node
+Description=AgentMe Node
 After=network.target
 
 [Service]
 Type=simple
-User=agentmesh
-ExecStart=/usr/local/bin/agentmesh start --config /home/agentmesh/.agentmesh/config.yaml
+User=agentme
+ExecStart=/usr/local/bin/agentme start --config /home/agentme/.agentme/config.yaml
 Restart=always
 RestartSec=10
 LimitNOFILE=65535
@@ -157,22 +157,22 @@ EOF
 
 # Enable and start
 sudo systemctl daemon-reload
-sudo systemctl enable agentmesh
-sudo systemctl start agentmesh
+sudo systemctl enable agentme
+sudo systemctl start agentme
 
 # Check status
-sudo systemctl status agentmesh
-sudo journalctl -u agentmesh -f
+sudo systemctl status agentme
+sudo journalctl -u agentme -f
 ```
 
 ### Docker
 
 ```bash
 docker run -d \
-  --name agentmesh-node \
+  --name agentme-node \
   -p 9000:9000 \
-  -v ~/.agentmesh:/root/.agentmesh \
-  ghcr.io/agentmesh/node:latest
+  -v ~/.agentme:/root/.agentme \
+  ghcr.io/agentme/node:latest
 ```
 
 ## Monitoring
@@ -183,26 +183,26 @@ The node exposes Prometheus metrics at `http://localhost:9090/metrics`:
 
 ```
 # Peer connections
-agentmesh_peers_connected 42
+agentme_peers_connected 42
 
 # DHT records
-agentmesh_dht_records_stored 15234
-agentmesh_dht_queries_total 89234
+agentme_dht_records_stored 15234
+agentme_dht_queries_total 89234
 
 # Discovery
-agentmesh_discovery_queries_total 12543
-agentmesh_discovery_latency_seconds_bucket{le="0.5"} 11234
+agentme_discovery_queries_total 12543
+agentme_discovery_latency_seconds_bucket{le="0.5"} 11234
 
 # Trust layer
-agentmesh_trust_queries_total 8234
-agentmesh_trust_updates_total 342
+agentme_trust_queries_total 8234
+agentme_trust_updates_total 342
 ```
 
 ### Health Check
 
 ```bash
 # Check node health
-agentmesh health
+agentme health
 
 # Output:
 # Node Status: Healthy
@@ -214,14 +214,14 @@ agentmesh health
 
 ### Grafana Dashboard
 
-Import the AgentMesh dashboard from `grafana/agentmesh-node.json` or use dashboard ID `12345` from Grafana.com.
+Import the AgentMe dashboard from `grafana/agentme-node.json` or use dashboard ID `12345` from Grafana.com.
 
 ## Security
 
 ### Firewall
 
 ```bash
-# Allow AgentMesh traffic
+# Allow AgentMe traffic
 sudo ufw allow 9000/tcp  # libp2p TCP
 sudo ufw allow 9000/udp  # libp2p QUIC
 
@@ -231,7 +231,7 @@ sudo ufw deny 9090
 
 ### Key Management
 
-- Store node keys in `~/.agentmesh/keys/`
+- Store node keys in `~/.agentme/keys/`
 - Backup keys securely (encrypted)
 - Consider HSM for production deployments
 
@@ -239,10 +239,10 @@ sudo ufw deny 9090
 
 ```bash
 # Check for updates
-agentmesh version --check
+agentme version --check
 
 # Update (if using pre-built binary)
-agentmesh update
+agentme update
 ```
 
 ## Troubleshooting
@@ -255,7 +255,7 @@ agentmesh update
 
 ```bash
 # Test connectivity
-agentmesh peers ping /dns4/bootstrap1.agentme.cz/tcp/9000/p2p/12D3KooW...
+agentme peers ping /dns4/bootstrap1.agentme.cz/tcp/9000/p2p/12D3KooW...
 ```
 
 ### High memory usage
@@ -279,8 +279,8 @@ Enable more bootstrap peers or run node in a well-connected datacenter.
 Use different data directories and ports:
 
 ```bash
-agentmesh start --config node1.yaml --data-dir ~/.agentmesh-1
-agentmesh start --config node2.yaml --data-dir ~/.agentmesh-2
+agentme start --config node1.yaml --data-dir ~/.agentme-1
+agentme start --config node2.yaml --data-dir ~/.agentme-2
 ```
 
 ### Custom Bootstrap Network
@@ -301,15 +301,15 @@ network:
 
 ```bash
 # Clone repository
-git clone https://github.com/timutti/agentmesh.git
-cd agentmesh
+git clone https://github.com/agentmecz/agentme.git
+cd agentme
 
 # Deploy to Kubernetes
 kubectl apply -k deploy/k8s/
 
 # Check status
-kubectl -n agentmesh get pods
-kubectl -n agentmesh get svc
+kubectl -n agentme get pods
+kubectl -n agentme get svc
 ```
 
 ### Production Considerations
@@ -327,12 +327,12 @@ kubectl -n agentmesh get svc
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: agentmesh-node
-  namespace: agentmesh
+  name: agentme-node
+  namespace: agentme
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: agentmesh-node
+      app.kubernetes.io/name: agentme-node
   endpoints:
     - port: http
       path: /metrics
@@ -357,8 +357,8 @@ spec:
 
 3. **Verify deployment**:
    ```bash
-   kubectl -n agentmesh get pods -w
-   kubectl -n agentmesh logs -f deployment/agentmesh-node
+   kubectl -n agentme get pods -w
+   kubectl -n agentme logs -f deployment/agentme-node
    ```
 
 ### Day 2: Operations
@@ -367,10 +367,10 @@ spec:
 
 ```bash
 # Scale horizontally
-kubectl -n agentmesh scale deployment/agentmesh-node --replicas=5
+kubectl -n agentme scale deployment/agentme-node --replicas=5
 
 # Or use HPA
-kubectl -n agentmesh autoscale deployment/agentmesh-node \
+kubectl -n agentme autoscale deployment/agentme-node \
   --min=3 --max=10 --cpu-percent=70
 ```
 
@@ -378,12 +378,12 @@ kubectl -n agentmesh autoscale deployment/agentmesh-node \
 
 ```bash
 # Update image tag
-kubectl -n agentmesh set image deployment/agentmesh-node \
-  node=ghcr.io/agentmesh/node:v1.2.0
+kubectl -n agentme set image deployment/agentme-node \
+  node=ghcr.io/agentme/node:v1.2.0
 
 # Or with kustomize
 cd deploy/k8s
-kustomize edit set image ghcr.io/agentmesh/node:v1.2.0
+kustomize edit set image ghcr.io/agentme/node:v1.2.0
 kubectl apply -k .
 ```
 
@@ -391,39 +391,39 @@ kubectl apply -k .
 
 ```bash
 # Check rollout history
-kubectl -n agentmesh rollout history deployment/agentmesh-node
+kubectl -n agentme rollout history deployment/agentme-node
 
 # Rollback to previous version
-kubectl -n agentmesh rollout undo deployment/agentmesh-node
+kubectl -n agentme rollout undo deployment/agentme-node
 
 # Rollback to specific revision
-kubectl -n agentmesh rollout undo deployment/agentmesh-node --to-revision=2
+kubectl -n agentme rollout undo deployment/agentme-node --to-revision=2
 ```
 
 #### Log Analysis
 
 ```bash
 # View logs (all pods)
-kubectl -n agentmesh logs -l app.kubernetes.io/name=agentmesh-node --tail=100
+kubectl -n agentme logs -l app.kubernetes.io/name=agentme-node --tail=100
 
 # Follow logs from specific pod
-kubectl -n agentmesh logs -f agentmesh-node-abc123
+kubectl -n agentme logs -f agentme-node-abc123
 
 # Search for errors
-kubectl -n agentmesh logs -l app.kubernetes.io/name=agentmesh-node | grep -i error
+kubectl -n agentme logs -l app.kubernetes.io/name=agentme-node | grep -i error
 ```
 
 #### Health Checks
 
 ```bash
 # Check pod health
-kubectl -n agentmesh get pods -o wide
+kubectl -n agentme get pods -o wide
 
 # Describe unhealthy pod
-kubectl -n agentmesh describe pod agentmesh-node-abc123
+kubectl -n agentme describe pod agentme-node-abc123
 
 # Port-forward for debugging
-kubectl -n agentmesh port-forward svc/agentmesh-node 8080:8080
+kubectl -n agentme port-forward svc/agentme-node 8080:8080
 curl http://localhost:8080/health
 ```
 
@@ -431,7 +431,7 @@ curl http://localhost:8080/health
 
 #### Pod CrashLoopBackOff
 
-1. Check logs: `kubectl -n agentmesh logs agentmesh-node-xyz --previous`
+1. Check logs: `kubectl -n agentme logs agentme-node-xyz --previous`
 2. Common causes:
    - RPC endpoint unreachable
    - Invalid configuration
@@ -455,10 +455,10 @@ curl http://localhost:8080/health
 
 ```bash
 # Backup PVC data (example with Velero)
-velero backup create agentmesh-backup --include-namespaces agentmesh
+velero backup create agentme-backup --include-namespaces agentme
 
 # Restore
-velero restore create --from-backup agentmesh-backup
+velero restore create --from-backup agentme-backup
 ```
 
 ### Security Hardening
@@ -468,12 +468,12 @@ velero restore create --from-backup agentmesh-backup
    apiVersion: networking.k8s.io/v1
    kind: NetworkPolicy
    metadata:
-     name: agentmesh-node-policy
-     namespace: agentmesh
+     name: agentme-node-policy
+     namespace: agentme
    spec:
      podSelector:
        matchLabels:
-         app.kubernetes.io/name: agentmesh-node
+         app.kubernetes.io/name: agentme-node
      policyTypes:
        - Ingress
        - Egress

@@ -100,8 +100,8 @@ async function main() {
     transport: http('https://sepolia.base.org'),
   });
 
-  const providerDid = 'did:agentmesh:base-sepolia:test-agent-001';
-  const clientDid = 'did:agentmesh:base-sepolia:test-client-001';
+  const providerDid = 'did:agentme:base-sepolia:test-agent-001';
+  const clientDid = 'did:agentme:base-sepolia:test-client-001';
   const providerDidHash = keccak256(toHex(providerDid));
   const clientDidHash = keccak256(toHex(clientDid));
   
@@ -112,7 +112,7 @@ async function main() {
   const deadline = BigInt(Math.floor(Date.now() / 1000) + 86400);
 
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║           AGENTMESH ESCROW PAYMENT FLOW                   ║');
+  console.log('║           AGENTME ESCROW PAYMENT FLOW                   ║');
   console.log('╚══════════════════════════════════════════════════════════╝\n');
 
   console.log('👤 Provider:', providerAccount.address);

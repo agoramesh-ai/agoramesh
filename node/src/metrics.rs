@@ -1,4 +1,4 @@
-//! Prometheus metrics for AgentMesh node observability.
+//! Prometheus metrics for AgentMe node observability.
 //!
 //! This module provides comprehensive metrics collection for monitoring:
 //! - HTTP API requests (count, duration, status)
@@ -10,7 +10,7 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use agentmesh_node::metrics::{MetricsService, MetricsConfig};
+//! use agentme_node::metrics::{MetricsService, MetricsConfig};
 //!
 //! let metrics = MetricsService::new(MetricsConfig::default());
 //! metrics.http_request("GET", "/agents", 200, 0.015);
@@ -18,16 +18,16 @@
 //!
 //! ## Exposed Metrics
 //!
-//! All metrics are prefixed with `agentmesh_`:
+//! All metrics are prefixed with `agentme_`:
 //!
-//! - `agentmesh_http_requests_total` - Total HTTP requests (counter)
-//! - `agentmesh_http_request_duration_seconds` - Request latency (histogram)
-//! - `agentmesh_http_requests_in_flight` - Current in-flight requests (gauge)
-//! - `agentmesh_circuit_breaker_state` - Circuit breaker state (gauge)
-//! - `agentmesh_rate_limit_rejected_total` - Rate limited requests (counter)
-//! - `agentmesh_discovery_queries_total` - Discovery queries (counter)
-//! - `agentmesh_trust_lookups_total` - Trust score lookups (counter)
-//! - `agentmesh_p2p_peers_connected` - Connected peers (gauge)
+//! - `agentme_http_requests_total` - Total HTTP requests (counter)
+//! - `agentme_http_request_duration_seconds` - Request latency (histogram)
+//! - `agentme_http_requests_in_flight` - Current in-flight requests (gauge)
+//! - `agentme_circuit_breaker_state` - Circuit breaker state (gauge)
+//! - `agentme_rate_limit_rejected_total` - Rate limited requests (counter)
+//! - `agentme_discovery_queries_total` - Discovery queries (counter)
+//! - `agentme_trust_lookups_total` - Trust score lookups (counter)
+//! - `agentme_p2p_peers_connected` - Connected peers (gauge)
 
 use metrics::{counter, describe_counter, describe_gauge, describe_histogram, gauge, histogram};
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
@@ -38,7 +38,7 @@ use std::time::Instant;
 /// Metrics configuration.
 #[derive(Debug, Clone)]
 pub struct MetricsConfig {
-    /// Prefix for all metric names (default: "agentmesh")
+    /// Prefix for all metric names (default: "agentme")
     pub prefix: String,
     /// Enable detailed histogram buckets for latency
     pub detailed_histograms: bool,
@@ -49,7 +49,7 @@ pub struct MetricsConfig {
 impl Default for MetricsConfig {
     fn default() -> Self {
         Self {
-            prefix: "agentmesh".to_string(),
+            prefix: "agentme".to_string(),
             detailed_histograms: true,
             enable_p2p_metrics: true,
         }
@@ -93,7 +93,7 @@ impl MetricNames {
 
 impl Default for MetricNames {
     fn default() -> Self {
-        Self::with_prefix("agentmesh")
+        Self::with_prefix("agentme")
     }
 }
 
@@ -403,8 +403,8 @@ pub async fn metrics_middleware(
         ("status", status.to_string()),
     ];
 
-    counter!("agentmesh_http_requests_total", &labels).increment(1);
-    histogram!("agentmesh_http_request_duration_seconds", &labels).record(duration);
+    counter!("agentme_http_requests_total", &labels).increment(1);
+    histogram!("agentme_http_request_duration_seconds", &labels).record(duration);
 
     response
 }
@@ -421,9 +421,9 @@ mod tests {
     // ========== RED Phase: MetricsConfig Tests ==========
 
     #[test]
-    fn test_default_config_has_agentmesh_prefix() {
+    fn test_default_config_has_agentme_prefix() {
         let config = MetricsConfig::default();
-        assert_eq!(config.prefix, "agentmesh");
+        assert_eq!(config.prefix, "agentme");
     }
 
     #[test]
@@ -443,14 +443,14 @@ mod tests {
     #[test]
     fn test_metric_names_with_default_prefix() {
         let names = MetricNames::default();
-        assert_eq!(names.http_requests_total, "agentmesh_http_requests_total");
+        assert_eq!(names.http_requests_total, "agentme_http_requests_total");
         assert_eq!(
             names.http_request_duration,
-            "agentmesh_http_request_duration_seconds"
+            "agentme_http_request_duration_seconds"
         );
         assert_eq!(
             names.http_requests_in_flight,
-            "agentmesh_http_requests_in_flight"
+            "agentme_http_requests_in_flight"
         );
     }
 
@@ -499,7 +499,7 @@ mod tests {
         let service = MetricsService::disabled();
         assert_eq!(
             service.names().http_requests_total,
-            "agentmesh_http_requests_total"
+            "agentme_http_requests_total"
         );
     }
 

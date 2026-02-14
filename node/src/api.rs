@@ -1,4 +1,4 @@
-//! HTTP API for the AgentMesh node.
+//! HTTP API for the AgentMe node.
 //!
 //! This module provides:
 //! - Health check endpoint
@@ -319,7 +319,7 @@ async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
 
 /// A2A Agent Card handler.
 async fn agent_card_handler(State(state): State<AppState>) -> Json<CapabilityCard> {
-    use crate::discovery::AgentMeshExtension;
+    use crate::discovery::AgentMeExtension;
 
     // Use node_info if available, otherwise defaults
     let (name, description, url, did) = match &state.node_info {
@@ -330,10 +330,10 @@ async fn agent_card_handler(State(state): State<AppState>) -> Json<CapabilityCar
             info.did.clone(),
         ),
         None => (
-            "AgentMesh Node".to_string(),
-            "AgentMesh P2P node".to_string(),
+            "AgentMe Node".to_string(),
+            "AgentMe P2P node".to_string(),
             "http://localhost:8080".to_string(),
-            "did:agentmesh:base:unknown".to_string(),
+            "did:agentme:base:unknown".to_string(),
         ),
     };
 
@@ -344,7 +344,7 @@ async fn agent_card_handler(State(state): State<AppState>) -> Json<CapabilityCar
         provider: None,
         capabilities: vec![],
         authentication: None,
-        agentmesh: Some(AgentMeshExtension {
+        agentme: Some(AgentMeExtension {
             did,
             trust_score: None,
             stake: None,
@@ -477,7 +477,7 @@ async fn register_agent_handler(
     match state.discovery.register(&card).await {
         Ok(()) => {
             let did = card
-                .agentmesh
+                .agentme
                 .as_ref()
                 .map(|a| a.did.clone())
                 .unwrap_or_default();
@@ -523,7 +523,7 @@ async fn get_trust_handler(
 mod tests {
     use super::*;
     use crate::discovery::{
-        AgentMeshExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
+        AgentMeExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
     };
     use axum_test::TestServer;
 
@@ -576,7 +576,7 @@ mod tests {
                 output_schema: None,
             }],
             authentication: None,
-            agentmesh: Some(AgentMeshExtension {
+            agentme: Some(AgentMeExtension {
                 did: did.to_string(),
                 trust_score: Some(0.85),
                 stake: Some(1_000_000_000),
@@ -681,9 +681,9 @@ mod tests {
         let mut state = test_state();
         state.node_info = Some(NodeInfo {
             name: "Test Node".to_string(),
-            description: "A test AgentMesh node".to_string(),
+            description: "A test AgentMe node".to_string(),
             url: "http://localhost:8080".to_string(),
-            did: "did:agentmesh:base:test-node".to_string(),
+            did: "did:agentme:base:test-node".to_string(),
         });
 
         let server = test_server(state);
@@ -693,8 +693,8 @@ mod tests {
         let card: CapabilityCard = response.json();
         assert_eq!(card.name, "Test Node");
         assert_eq!(card.url, "http://localhost:8080");
-        assert!(card.agentmesh.is_some());
-        assert_eq!(card.agentmesh.unwrap().did, "did:agentmesh:base:test-node");
+        assert!(card.agentme.is_some());
+        assert_eq!(card.agentme.unwrap().did, "did:agentme:base:test-node");
     }
 
     #[tokio::test]
@@ -706,7 +706,7 @@ mod tests {
 
         response.assert_status_ok();
         let card: CapabilityCard = response.json();
-        assert_eq!(card.name, "AgentMesh Node");
+        assert_eq!(card.name, "AgentMe Node");
     }
 
     // ========== TDD Tests: GET /agents ==========
@@ -725,7 +725,7 @@ mod tests {
     #[tokio::test]
     async fn test_search_agents_finds_registered_agents() {
         let state = test_state();
-        let card = sample_capability_card("did:agentmesh:base:test-agent");
+        let card = sample_capability_card("did:agentme:base:test-agent");
         state.discovery.register(&card).await.unwrap();
 
         let server = test_server(state);
@@ -741,8 +741,8 @@ mod tests {
     #[tokio::test]
     async fn test_search_agents_with_no_query_returns_all() {
         let state = test_state();
-        let card1 = sample_capability_card("did:agentmesh:base:agent-1");
-        let mut card2 = sample_capability_card("did:agentmesh:base:agent-2");
+        let card1 = sample_capability_card("did:agentme:base:agent-1");
+        let mut card2 = sample_capability_card("did:agentme:base:agent-2");
         card2.name = "Another Agent".to_string();
 
         state.discovery.register(&card1).await.unwrap();
@@ -764,7 +764,7 @@ mod tests {
     async fn test_get_agent_returns_404_for_unknown_did() {
         let server = test_server(test_state());
 
-        let response = server.get("/agents/did%3Aagentmesh%3Abase%3Aunknown").await;
+        let response = server.get("/agents/did%3Aagentme%3Abase%3Aunknown").await;
 
         response.assert_status_not_found();
         let error: ApiError = response.json();
@@ -774,7 +774,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_agent_returns_registered_agent() {
         let state = test_state();
-        let did = "did:agentmesh:base:my-agent";
+        let did = "did:agentme:base:my-agent";
         let card = sample_capability_card(did);
         state.discovery.register(&card).await.unwrap();
 
@@ -794,13 +794,13 @@ mod tests {
     #[tokio::test]
     async fn test_register_agent_succeeds_with_valid_card() {
         let server = test_server(test_state());
-        let card = sample_capability_card("did:agentmesh:base:new-agent");
+        let card = sample_capability_card("did:agentme:base:new-agent");
 
         let response = server.post("/agents").json(&card).await;
 
         response.assert_status(StatusCode::CREATED);
         let body: serde_json::Value = response.json();
-        assert_eq!(body["did"], "did:agentmesh:base:new-agent");
+        assert_eq!(body["did"], "did:agentme:base:new-agent");
     }
 
     #[tokio::test]
@@ -816,16 +816,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_register_agent_fails_without_agentmesh_extension() {
+    async fn test_register_agent_fails_without_agentme_extension() {
         let server = test_server(test_state());
-        let mut card = sample_capability_card("did:agentmesh:base:test");
-        card.agentmesh = None;
+        let mut card = sample_capability_card("did:agentme:base:test");
+        card.agentme = None;
 
         let response = server.post("/agents").json(&card).await;
 
         response.assert_status_bad_request();
         let error: ApiError = response.json();
-        assert!(error.error.contains("agentmesh") || error.error.contains("DID"));
+        assert!(error.error.contains("agentme") || error.error.contains("DID"));
     }
 
     // ========== TDD Tests: GET /trust/:did ==========
@@ -834,7 +834,7 @@ mod tests {
     async fn test_get_trust_returns_zero_for_new_agent() {
         let server = test_server(test_state());
 
-        let encoded_did = urlencoding::encode("did:agentmesh:base:unknown");
+        let encoded_did = urlencoding::encode("did:agentme:base:unknown");
         let response = server.get(&format!("/trust/{}", encoded_did)).await;
 
         response.assert_status_ok();
@@ -1020,7 +1020,7 @@ mod tests {
         };
 
         // Register a card - should auto-index in HybridSearch
-        let card = sample_capability_card("did:agentmesh:base:code-reviewer");
+        let card = sample_capability_card("did:agentme:base:code-reviewer");
         state.discovery.register(&card).await.unwrap();
 
         // Index the card in HybridSearch
@@ -1046,7 +1046,7 @@ mod tests {
             return;
         };
 
-        let card = sample_capability_card("did:agentmesh:base:scorer");
+        let card = sample_capability_card("did:agentme:base:scorer");
         if let Some(ref hybrid) = state.hybrid_search {
             hybrid.write().await.index_card(&card).await.unwrap();
         }

@@ -1,6 +1,6 @@
-# AgentMesh Contracts
+# AgentMe Contracts
 
-Solidity smart contracts for the AgentMesh trust layer, escrow system, dispute resolution, and supporting infrastructure. Built with [Foundry](https://book.getfoundry.sh/) and [OpenZeppelin](https://www.openzeppelin.com/contracts).
+Solidity smart contracts for the AgentMe trust layer, escrow system, dispute resolution, and supporting infrastructure. Built with [Foundry](https://book.getfoundry.sh/) and [OpenZeppelin](https://www.openzeppelin.com/contracts).
 
 ## Contracts
 

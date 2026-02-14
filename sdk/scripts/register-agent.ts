@@ -60,7 +60,7 @@ async function main() {
   });
 
   // Create DID and hash it
-  const did = 'did:agentmesh:base-sepolia:test-agent-001';
+  const did = 'did:agentme:base-sepolia:test-agent-001';
   const didHash = keccak256(toHex(did));
   const capabilityCardCID = 'ipfs://QmTestAgentCard123'; // Would be actual IPFS CID
 

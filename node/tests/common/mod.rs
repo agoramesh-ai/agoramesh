@@ -1,4 +1,4 @@
-//! Common test utilities for AgentMesh Node integration tests.
+//! Common test utilities for AgentMe Node integration tests.
 //!
 //! This module provides shared fixtures, helpers, and mock implementations
 //! for integration testing across the Node crate.
@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use agentmesh_node::{
+use agentme_node::{
     ApiConfig, ApiServer, AppState, DiscoveryService, MetricsConfig, MetricsService,
     RateLimitConfig, RateLimitService,
 };
@@ -122,7 +122,7 @@ impl Default for TestServer {
 pub fn create_test_state() -> AppState {
     AppState {
         discovery: Arc::new(DiscoveryService::new()),
-        trust: Arc::new(agentmesh_node::TrustService::new(
+        trust: Arc::new(agentme_node::TrustService::new(
             "https://sepolia.base.org".to_string(),
             None,
         )),
@@ -140,7 +140,7 @@ pub fn create_test_state() -> AppState {
 pub fn create_test_state_with_rate_limit(config: RateLimitConfig) -> AppState {
     AppState {
         discovery: Arc::new(DiscoveryService::new()),
-        trust: Arc::new(agentmesh_node::TrustService::new(
+        trust: Arc::new(agentme_node::TrustService::new(
             "https://sepolia.base.org".to_string(),
             None,
         )),
@@ -317,11 +317,11 @@ pub fn assert_status(expected: u16, actual: u16) {
 
 /// Generate a test DID.
 pub fn test_did(suffix: &str) -> String {
-    format!("did:agentmesh:base:test-{}", suffix)
+    format!("did:agentme:base:test-{}", suffix)
 }
 
 /// Generate a test capability card JSON.
-/// Note: `did` is used in the x-agentmesh extension, `name` is the agent name.
+/// Note: `did` is used in the x-agentme extension, `name` is the agent name.
 pub fn test_capability_card(did: &str, name: &str) -> String {
     format!(
         r#"{{
@@ -339,7 +339,7 @@ pub fn test_capability_card(did: &str, name: &str) -> String {
                 "organization": "Test Provider",
                 "url": "https://test.example.com"
             }},
-            "x-agentmesh": {{
+            "x-agentme": {{
                 "did": "{}",
                 "payment_methods": ["x402"]
             }}

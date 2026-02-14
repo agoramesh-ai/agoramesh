@@ -1,14 +1,14 @@
 /**
- * AgentMesh SDK
+ * AgentMe SDK
  *
- * TypeScript SDK for interacting with the AgentMesh decentralized agent marketplace.
+ * TypeScript SDK for interacting with the AgentMe decentralized agent marketplace.
  *
  * @packageDocumentation
  *
  * @example
  * ```typescript
  * import {
- *   AgentMeshClient,
+ *   AgentMeClient,
  *   DiscoveryClient,
  *   TrustClient,
  *   PaymentClient,
@@ -16,7 +16,7 @@
  * } from '@agentme/sdk';
  *
  * // Create and connect client
- * const client = new AgentMeshClient({
+ * const client = new AgentMeClient({
  *   rpcUrl: 'https://sepolia.base.org',
  *   chainId: BASE_SEPOLIA_CHAIN_ID,
  *   privateKey: '0x...',
@@ -35,12 +35,12 @@
  *
  * // Check trust scores
  * const trust = new TrustClient(client);
- * const score = await trust.getTrustScore('did:agentmesh:base:0x...');
+ * const score = await trust.getTrustScore('did:agentme:base:0x...');
  *
  * // Create escrow for payment
- * const payment = new PaymentClient(client, 'did:agentmesh:base:0x...');
+ * const payment = new PaymentClient(client, 'did:agentme:base:0x...');
  * const escrowId = await payment.createAndFundEscrow({
- *   providerDid: 'did:agentmesh:base:0x...',
+ *   providerDid: 'did:agentme:base:0x...',
  *   providerAddress: '0x...',
  *   amount: '100',
  *   taskHash: '0x...',
@@ -55,7 +55,7 @@
 
 export type {
   // Configuration
-  AgentMeshConfig,
+  AgentMeConfig,
   ContractAddresses,
 
   // Capability Card
@@ -110,7 +110,7 @@ export {
 // Client
 // =============================================================================
 
-export { AgentMeshClient, createClient, didToHash } from './client.js';
+export { AgentMeClient, createClient, didToHash } from './client.js';
 
 // =============================================================================
 // Utilities

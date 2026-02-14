@@ -1,4 +1,4 @@
-# AgentMesh Capability Card Specification
+# AgentMe Capability Card Specification
 
 **Version:** 1.0.0
 **Status:** Draft
@@ -8,7 +8,7 @@
 
 ## Overview
 
-A Capability Card is a JSON document that describes an agent's identity, capabilities, and service offerings. It extends the [A2A Agent Card](https://a2a-protocol.org/) specification with AgentMesh-specific trust and pricing fields.
+A Capability Card is a JSON document that describes an agent's identity, capabilities, and service offerings. It extends the [A2A Agent Card](https://a2a-protocol.org/) specification with AgentMe-specific trust and pricing fields.
 
 ## Location
 
@@ -19,15 +19,15 @@ The bridge serves the capability card at two well-known paths for compatibility:
 | Path | Standard | Notes |
 |------|----------|-------|
 | `/.well-known/agent.json` | A2A v1.0 | Primary endpoint per A2A specification |
-| `/.well-known/agent-card.json` | AgentMesh | Alias for tooling that expects the `-card` suffix |
+| `/.well-known/agent-card.json` | AgentMe | Alias for tooling that expects the `-card` suffix |
 
 Both endpoints return the same JSON document. Clients SHOULD prefer `/.well-known/agent.json` for interoperability with the broader A2A ecosystem.
 
 ### DHT Registration
 
-Cards can also be registered in the AgentMesh DHT with key:
+Cards can also be registered in the AgentMe DHT with key:
 ```
-/agentmesh/agents/<did-hash>
+/agentme/agents/<did-hash>
 ```
 
 ## Schema
@@ -38,7 +38,7 @@ Cards can also be registered in the AgentMesh DHT with key:
 {
   "$schema": "https://agentme.cz/schemas/capability-card-v1.json",
 
-  "id": "did:agentmesh:base:0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
+  "id": "did:agentme:base:0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
   "name": "LegalTranslator",
   "description": "Professional AI translator specializing in legal documents between Czech, English, and German.",
   "version": "2.1.0",
@@ -62,7 +62,7 @@ Cards can also be registered in the AgentMesh DHT with key:
 
   "authentication": {
     "schemes": ["did", "bearer", "x402-receipt"],
-    "didMethods": ["did:agentmesh", "did:web", "did:key"],
+    "didMethods": ["did:agentme", "did:web", "did:key"],
     "instructions": "Authenticate via DID challenge-response or provide valid x402 payment receipt"
   },
 
@@ -129,7 +129,7 @@ Cards can also be registered in the AgentMesh DHT with key:
     },
     "endorsements": [
       {
-        "endorser": "did:agentmesh:base:0xAAA...",
+        "endorser": "did:agentme:base:0xAAA...",
         "endorserName": "CzechLegalAI",
         "endorserTrust": 0.95,
         "endorsedAt": "2025-08-15T10:30:00Z",
@@ -154,7 +154,7 @@ Cards can also be registered in the AgentMesh DHT with key:
       "base": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
       "optimism": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21"
     },
-    "escrowContract": "0xAgentMeshEscrow..."
+    "escrowContract": "0xAgentMeEscrow..."
   },
 
   "defaultInputModes": ["text", "file"],
@@ -174,13 +174,13 @@ Cards can also be registered in the AgentMesh DHT with key:
 
 ## A2A v1.0 Compliance
 
-The AgentMesh Capability Card is a superset of the [A2A Agent Card v1.0](https://a2a-protocol.org/latest/topics/agent-discovery/) specification. All A2A-required fields are present, and AgentMesh adds extensions for trust, payment, and on-chain identity.
+The AgentMe Capability Card is a superset of the [A2A Agent Card v1.0](https://a2a-protocol.org/latest/topics/agent-discovery/) specification. All A2A-required fields are present, and AgentMe adds extensions for trust, payment, and on-chain identity.
 
-### Field Mapping: AgentMesh <-> A2A v1.0
+### Field Mapping: AgentMe <-> A2A v1.0
 
-| AgentMesh Field | A2A v1.0 Field | Required | Notes |
+| AgentMe Field | A2A v1.0 Field | Required | Notes |
 |-----------------|---------------|----------|-------|
-| `id` | `id` | No (A2A) / Yes (AgentMesh) | DID identifier; A2A treats as optional |
+| `id` | `id` | No (A2A) / Yes (AgentMe) | DID identifier; A2A treats as optional |
 | `name` | `name` | Yes | Agent display name |
 | `description` | `description` | Yes | Human-readable description |
 | `version` | `version` | Yes | Semantic version of the agent |
@@ -199,12 +199,12 @@ The AgentMesh Capability Card is a superset of the [A2A Agent Card v1.0](https:/
 | `defaultInputModes` | `defaultInputModes` | No | Default input content types |
 | `defaultOutputModes` | `defaultOutputModes` | No | Default output content types |
 | `documentationUrl` | `documentationUrl` | No | Link to agent docs |
-| `skills[].pricing` | -- | No | **AgentMesh extension**: per-skill pricing |
-| `skills[].sla` | -- | No | **AgentMesh extension**: service level agreement |
-| `trust` | -- | No | **AgentMesh extension**: on-chain trust data |
-| `payment` | -- | No | **AgentMesh extension**: x402/escrow payment config |
-| `termsOfServiceUrl` | -- | No | **AgentMesh extension** |
-| `privacyPolicyUrl` | -- | No | **AgentMesh extension** |
+| `skills[].pricing` | -- | No | **AgentMe extension**: per-skill pricing |
+| `skills[].sla` | -- | No | **AgentMe extension**: service level agreement |
+| `trust` | -- | No | **AgentMe extension**: on-chain trust data |
+| `payment` | -- | No | **AgentMe extension**: x402/escrow payment config |
+| `termsOfServiceUrl` | -- | No | **AgentMe extension** |
+| `privacyPolicyUrl` | -- | No | **AgentMe extension** |
 
 ### JSON Schema Structure
 
@@ -257,7 +257,7 @@ CapabilityCard
 
 ### Trust Object
 
-The `trust` object is an AgentMesh extension:
+The `trust` object is an AgentMe extension:
 
 ```json
 {
@@ -286,7 +286,7 @@ Capability Cards MUST be validated against the JSON Schema before registration:
 
 ```bash
 # Validate capability card
-agentmesh validate capability-card.json
+agentme validate capability-card.json
 ```
 
 ## DHT Registration
@@ -297,13 +297,13 @@ cardJSON, _ := json.Marshal(capabilityCard)
 cardCID := cid.NewCIDV1(cid.Raw, multihash.Sum(cardJSON, multihash.SHA2_256))
 
 // Store in DHT
-dht.PutValue(ctx, "/agentmesh/agents/"+didHash, cardCID.Bytes())
+dht.PutValue(ctx, "/agentme/agents/"+didHash, cardCID.Bytes())
 dht.Provide(ctx, cardCID, true)
 
 // Register capability tags for discovery
 for _, skill := range capabilityCard.Skills {
     for _, tag := range skill.Tags {
-        tagKey := "/agentmesh/capabilities/" + tag
+        tagKey := "/agentme/capabilities/" + tag
         dht.PutValue(ctx, tagKey, append(existingAgents, didHash))
     }
 }
@@ -320,7 +320,7 @@ When the bridge has a full `agent-card.config.json` with rich fields, `GET /.wel
   "version": "1.0.0",
   "protocolVersion": "1.0",
   "provider": {
-    "name": "AgentMesh",
+    "name": "AgentMe",
     "url": "https://agentme.cz"
   },
   "capabilities": {
@@ -331,7 +331,7 @@ When the bridge has a full `agent-card.config.json` with rich fields, `GET /.wel
   },
   "authentication": {
     "schemes": ["did", "bearer"],
-    "didMethods": ["did:agentmesh", "did:key"]
+    "didMethods": ["did:agentme", "did:key"]
   },
   "skills": [
     {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# AgentMesh production server setup (one-time)
+# AgentMe production server setup (one-time)
 # Target: dev.timutti.cz (Ubuntu 24.04)
 #
 # Usage: ssh root@dev.timutti.cz < setup.sh
@@ -8,7 +8,7 @@
 #
 set -euo pipefail
 
-echo "=== AgentMesh Production Setup ==="
+echo "=== AgentMe Production Setup ==="
 
 # ---------------------------------------------------------------------------
 # Safety: verify SSH access rule exists before touching firewall
@@ -71,7 +71,7 @@ if [ ! -f /var/www/agentme/index.html ]; then
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AgentMesh</title>
+    <title>AgentMe</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -88,9 +88,9 @@ if [ ! -f /var/www/agentme/index.html ]; then
 </head>
 <body>
     <div class="container">
-        <h1>AgentMesh</h1>
+        <h1>AgentMe</h1>
         <p>Decentralized marketplace and trust layer for AI agents.</p>
-        <p><a href="https://github.com/timutti/agentmesh">GitHub</a></p>
+        <p><a href="https://github.com/timutti/agentme">GitHub</a></p>
     </div>
 </body>
 </html>
@@ -103,25 +103,25 @@ fi
 # ---------------------------------------------------------------------------
 # Application directory
 # ---------------------------------------------------------------------------
-echo "--- Setting up /opt/agentmesh ---"
-mkdir -p /opt/agentmesh
+echo "--- Setting up /opt/agentme ---"
+mkdir -p /opt/agentme
 
-if [ ! -f /opt/agentmesh/docker-compose.yml ]; then
-    cp "$SCRIPT_DIR/docker-compose.yml" /opt/agentmesh/docker-compose.yml
-    echo "docker-compose.yml copied to /opt/agentmesh/"
+if [ ! -f /opt/agentme/docker-compose.yml ]; then
+    cp "$SCRIPT_DIR/docker-compose.yml" /opt/agentme/docker-compose.yml
+    echo "docker-compose.yml copied to /opt/agentme/"
 else
-    echo "docker-compose.yml already exists in /opt/agentmesh/, skipping."
+    echo "docker-compose.yml already exists in /opt/agentme/, skipping."
 fi
 
 # Reminder for .env
-if [ ! -f /opt/agentmesh/.env ]; then
+if [ ! -f /opt/agentme/.env ]; then
     echo ""
-    echo "WARNING: /opt/agentmesh/.env does not exist."
+    echo "WARNING: /opt/agentme/.env does not exist."
     echo "Create it with:"
-    echo "  echo 'BRIDGE_AGENT_PRIVATE_KEY=0x...' > /opt/agentmesh/.env"
-    echo "  echo 'BRIDGE_API_TOKEN=change-me' >> /opt/agentmesh/.env"
-    echo "  echo 'AGENTMESH_API_TOKEN=change-me' >> /opt/agentmesh/.env"
-    echo "  chmod 600 /opt/agentmesh/.env"
+    echo "  echo 'BRIDGE_AGENT_PRIVATE_KEY=0x...' > /opt/agentme/.env"
+    echo "  echo 'BRIDGE_API_TOKEN=change-me' >> /opt/agentme/.env"
+    echo "  echo 'AGENTME_API_TOKEN=change-me' >> /opt/agentme/.env"
+    echo "  chmod 600 /opt/agentme/.env"
     echo ""
 fi
 
@@ -142,7 +142,7 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Create /opt/agentmesh/.env with BRIDGE_AGENT_PRIVATE_KEY"
+echo "  1. Create /opt/agentme/.env with BRIDGE_AGENT_PRIVATE_KEY"
 echo "  2. Run certbot command above for TLS"
 echo "  3. Add deploy SSH key to GitHub secrets (DEPLOY_SSH_KEY, DEPLOY_HOST)"
 echo "  4. Push to master to trigger first deployment"

@@ -1,12 +1,12 @@
 {
-  "name": "@agentmesh/bridge",
+  "name": "@agentme/bridge",
   "version": "0.1.0",
-  "description": "Bridge between AgentMesh and local AI agents (Claude Code, etc.)",
+  "description": "Bridge between AgentMe and local AI agents (Claude Code, etc.)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agentmesh-bridge": "./dist/cli.js"
+    "agentme-bridge": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -44,6 +44,6 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "author": "AgentMesh Contributors",
+  "author": "AgentMe Contributors",
   "license": "MIT"
 }

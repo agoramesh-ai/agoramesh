@@ -1,6 +1,6 @@
-# AgentMesh Smart Contract Deployment Guide
+# AgentMe Smart Contract Deployment Guide
 
-This guide covers deploying the AgentMesh smart contracts to Base L2.
+This guide covers deploying the AgentMe smart contracts to Base L2.
 
 ## Prerequisites
 

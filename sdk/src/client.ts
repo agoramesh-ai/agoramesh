@@ -1,7 +1,7 @@
 /**
- * AgentMesh Client
+ * AgentMe Client
  *
- * Main client for interacting with the AgentMesh network.
+ * Main client for interacting with the AgentMe network.
  *
  * @packageDocumentation
  */
@@ -22,7 +22,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 
 import type {
-  AgentMeshConfig,
+  AgentMeConfig,
   ContractAddresses,
   CapabilityCard,
   Agent,
@@ -101,18 +101,18 @@ const TRUST_REGISTRY_ABI = [
 // =============================================================================
 
 /**
- * Valid DID patterns for AgentMesh (W3C DID spec compliant).
+ * Valid DID patterns for AgentMe (W3C DID spec compliant).
  *
  * Supported DID methods:
- * - did:agentmesh:[network]:[identifier] - AgentMesh native DIDs
+ * - did:agentme:[network]:[identifier] - AgentMe native DIDs
  * - did:web:[network]:[identifier] - Web DIDs
  * - did:key:[multibase-key] - Key DIDs (multibase-encoded public keys starting with 'z')
  * - did:ethr:[address] or did:ethr:[network]:[address] - Ethereum DIDs
  */
 
-// AgentMesh/Web DID: did:(agentmesh|web):[method]:[identifier]
+// AgentMe/Web DID: did:(agentme|web):[method]:[identifier]
 // Method must be lowercase, identifier alphanumeric
-const DID_AGENTMESH_WEB_PATTERN = /^did:(agentmesh|web):[a-z]+:[a-zA-Z0-9]+$/;
+const DID_AGENTME_WEB_PATTERN = /^did:(agentme|web):[a-z]+:[a-zA-Z0-9]+$/;
 
 // Key DID: did:key:z[base58-multicodec-key]
 // Must start with 'z' (multibase prefix for base58btc) followed by alphanumeric chars
@@ -126,14 +126,14 @@ const DID_ETHR_PATTERN = /^did:ethr:(?:[a-zA-Z0-9]+:)?0x[a-fA-F0-9]{40}$/;
  * Validate a DID string format according to W3C DID spec.
  *
  * Supported formats:
- * - did:agentmesh:base:abc123 (AgentMesh native)
+ * - did:agentme:base:abc123 (AgentMe native)
  * - did:web:ethereum:ABC123 (Web DID)
  * - did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK (Key DID)
  * - did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a (Ethereum DID)
  * - did:ethr:mainnet:0xb9c5714089478a327f09197987f16f9e5d936e8a (Ethereum DID with network)
  *
  * Invalid patterns:
- * - agentmesh:base:abc123 (missing did: prefix)
+ * - agentme:base:abc123 (missing did: prefix)
  * - did:invalid:base:abc123 (unsupported method)
  * - did:KEY:... (uppercase method not allowed)
  * - did:key:abc123 (key must start with 'z' for multibase)
@@ -148,8 +148,8 @@ export function validateDID(did: string): void {
   }
 
   // Check which DID method is being used and validate accordingly
-  if (did.startsWith('did:agentmesh:') || did.startsWith('did:web:')) {
-    if (!DID_AGENTMESH_WEB_PATTERN.test(did)) {
+  if (did.startsWith('did:agentme:') || did.startsWith('did:web:')) {
+    if (!DID_AGENTME_WEB_PATTERN.test(did)) {
       throw new Error(`Invalid DID format: ${did}`);
     }
   } else if (did.startsWith('did:key:')) {
@@ -234,15 +234,15 @@ function parseAgentInfo(result: {
 }
 
 // =============================================================================
-// AgentMeshClient
+// AgentMeClient
 // =============================================================================
 
 /**
- * Main client for interacting with the AgentMesh network.
+ * Main client for interacting with the AgentMe network.
  *
  * @example
  * ```typescript
- * const client = new AgentMeshClient({
+ * const client = new AgentMeClient({
  *   rpcUrl: 'https://sepolia.base.org',
  *   chainId: 84532,
  *   privateKey: '0x...',
@@ -255,11 +255,11 @@ function parseAgentInfo(result: {
  * await client.registerAgent(capabilityCard, 'ipfs://Qm...');
  *
  * // Get agent info
- * const agent = await client.getAgent('did:agentmesh:base:0x...');
+ * const agent = await client.getAgent('did:agentme:base:0x...');
  * ```
  */
-export class AgentMeshClient {
-  private readonly config: AgentMeshConfig;
+export class AgentMeClient {
+  private readonly config: AgentMeConfig;
   private readonly chain: Chain;
   private readonly addresses: Partial<ContractAddresses>;
 
@@ -269,11 +269,11 @@ export class AgentMeshClient {
   private connected = false;
 
   /**
-   * Create a new AgentMesh client.
+   * Create a new AgentMe client.
    *
    * @param config - Client configuration
    */
-  constructor(config: AgentMeshConfig) {
+  constructor(config: AgentMeConfig) {
     this.config = config;
     this.chain = getChain(config.chainId);
     this.addresses = {
@@ -563,10 +563,10 @@ export class AgentMeshClient {
 // =============================================================================
 
 /**
- * Create a new AgentMesh client.
+ * Create a new AgentMe client.
  *
  * @param config - Client configuration
- * @returns A new AgentMeshClient instance
+ * @returns A new AgentMeClient instance
  *
  * @example
  * ```typescript
@@ -576,6 +576,6 @@ export class AgentMeshClient {
  * });
  * ```
  */
-export function createClient(config: AgentMeshConfig): AgentMeshClient {
-  return new AgentMeshClient(config);
+export function createClient(config: AgentMeConfig): AgentMeClient {
+  return new AgentMeClient(config);
 }

@@ -1,6 +1,6 @@
-//! AgentMesh Node CLI
+//! AgentMe Node CLI
 //!
-//! Command-line interface for running an AgentMesh node.
+//! Command-line interface for running an AgentMe node.
 
 use clap::{Parser, Subcommand};
 use std::env;
@@ -9,7 +9,7 @@ use tokio::signal;
 use tracing::{error, info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-use agentmesh_node::{
+use agentme_node::{
     validate_network_config, ApiServer, AppState, DiscoveryService, EmbeddingService, HybridSearch,
     MetricsConfig, MetricsService, NetworkConfig, NetworkManager, NodeConfig, RateLimitConfig,
     RateLimitService, Result, TrustService,
@@ -28,7 +28,7 @@ struct HealthResponse {
     uptime: u64,
 }
 
-/// Seed trust data entry from AGENTMESH_SEED_TRUST env var.
+/// Seed trust data entry from AGENTME_SEED_TRUST env var.
 #[derive(Debug, serde::Deserialize)]
 struct SeedTrustEntry {
     did: String,
@@ -67,8 +67,8 @@ const DEFAULT_API_ADDR: &str = "0.0.0.0:8080";
 const DEFAULT_P2P_ADDR: &str = "/ip4/0.0.0.0/tcp/9000";
 
 #[derive(Parser)]
-#[command(name = "agentmesh")]
-#[command(author, version, about = "AgentMesh P2P Node", long_about = None)]
+#[command(name = "agentme")]
+#[command(author, version, about = "AgentMe P2P Node", long_about = None)]
 struct Cli {
     /// Path to configuration file
     #[arg(short, long, default_value = "config.toml")]
@@ -91,7 +91,7 @@ enum Commands {
         output: String,
     },
 
-    /// Start the AgentMesh node
+    /// Start the AgentMe node
     Start {
         /// P2P listen address
         #[arg(long, default_value = "/ip4/0.0.0.0/tcp/9000")]
@@ -198,59 +198,59 @@ fn normalize_token(value: Option<String>) -> Option<String> {
 }
 
 fn apply_env_overrides(config: &mut NodeConfig) {
-    if let Some(listen_address) = env_string("AGENTMESH_API_LISTEN") {
+    if let Some(listen_address) = env_string("AGENTME_API_LISTEN") {
         config.api.listen_address = listen_address;
     }
-    if let Some(cors_enabled) = env_bool("AGENTMESH_CORS_ENABLED") {
+    if let Some(cors_enabled) = env_bool("AGENTME_CORS_ENABLED") {
         config.api.cors_enabled = cors_enabled;
     }
-    if let Some(cors_origins) = env_csv("AGENTMESH_CORS_ORIGINS") {
+    if let Some(cors_origins) = env_csv("AGENTME_CORS_ORIGINS") {
         config.api.cors_origins = cors_origins;
     }
-    if let Some(trust_proxy) = env_bool("AGENTMESH_TRUST_PROXY") {
+    if let Some(trust_proxy) = env_bool("AGENTME_TRUST_PROXY") {
         config.api.trust_proxy = trust_proxy;
     }
-    if let Some(admin_token) = env_string("AGENTMESH_API_TOKEN") {
+    if let Some(admin_token) = env_string("AGENTME_API_TOKEN") {
         config.api.admin_token = normalize_token(Some(admin_token));
     }
 
-    if let Some(listen_addresses) = env_csv("AGENTMESH_P2P_LISTEN") {
+    if let Some(listen_addresses) = env_csv("AGENTME_P2P_LISTEN") {
         config.network.listen_addresses = listen_addresses;
     }
-    if let Some(bootstrap_peers) = env_csv("AGENTMESH_P2P_BOOTSTRAP") {
+    if let Some(bootstrap_peers) = env_csv("AGENTME_P2P_BOOTSTRAP") {
         config.network.bootstrap_peers = bootstrap_peers;
     }
 
-    if let Some(chain_rpc) = env_string("AGENTMESH_CHAIN_RPC") {
+    if let Some(chain_rpc) = env_string("AGENTME_CHAIN_RPC") {
         config.blockchain.rpc_url = chain_rpc;
     }
-    if let Some(chain_id) = env_u64("AGENTMESH_CHAIN_ID") {
+    if let Some(chain_id) = env_u64("AGENTME_CHAIN_ID") {
         config.blockchain.chain_id = chain_id;
     }
-    if let Some(trust_registry_address) = env_string("AGENTMESH_TRUST_REGISTRY_ADDRESS") {
+    if let Some(trust_registry_address) = env_string("AGENTME_TRUST_REGISTRY_ADDRESS") {
         config.blockchain.trust_registry_address = Some(trust_registry_address);
     }
-    if let Some(escrow_address) = env_string("AGENTMESH_ESCROW_ADDRESS") {
+    if let Some(escrow_address) = env_string("AGENTME_ESCROW_ADDRESS") {
         config.blockchain.escrow_address = Some(escrow_address);
     }
 
-    if let Some(data_dir) = env_string("AGENTMESH_DATA_DIR") {
+    if let Some(data_dir) = env_string("AGENTME_DATA_DIR") {
         config.persistence.data_dir = data_dir;
     }
 
     // Node identity overrides
-    if let Some(did) = env_string("AGENTMESH_NODE_DID") {
+    if let Some(did) = env_string("AGENTME_NODE_DID") {
         config.identity.did = Some(did);
     }
 
     // Node info overrides (for agent card)
-    if let Some(name) = env_string("AGENTMESH_NODE_NAME") {
+    if let Some(name) = env_string("AGENTME_NODE_NAME") {
         config.node_info.name = Some(name);
     }
-    if let Some(description) = env_string("AGENTMESH_NODE_DESCRIPTION") {
+    if let Some(description) = env_string("AGENTME_NODE_DESCRIPTION") {
         config.node_info.description = Some(description);
     }
-    if let Some(url) = env_string("AGENTMESH_NODE_URL") {
+    if let Some(url) = env_string("AGENTME_NODE_URL") {
         config.node_info.url = Some(url);
     }
 
@@ -276,7 +276,7 @@ async fn main() -> Result<()> {
             api_addr,
             enable_semantic_search,
         } => {
-            info!("Starting AgentMesh node...");
+            info!("Starting AgentMe node...");
 
             // 1. Load configuration (or use defaults with CLI overrides)
             let mut config = if Path::new(&cli.config).exists() {
@@ -376,7 +376,7 @@ async fn main() -> Result<()> {
             };
 
             // 6. Start HTTP API server in background with shared state
-            let api_config = agentmesh_node::ApiConfig {
+            let api_config = agentme_node::ApiConfig {
                 listen_address: api_addr.clone(),
                 cors_enabled: config.api.cors_enabled,
                 cors_origins: config.api.cors_origins.clone(),
@@ -392,19 +392,19 @@ async fn main() -> Result<()> {
                 }
             });
 
-            // 6b. Seed agents from AGENTMESH_SEED_AGENTS env var
+            // 6b. Seed agents from AGENTME_SEED_AGENTS env var
             //
             // Format: JSON array of capability card objects, or a URL to fetch.
-            // Example: AGENTMESH_SEED_AGENTS='[{"name":"Bridge","description":"...","url":"https://bridge.agentme.cz","x-agentmesh":{"did":"did:agentmesh:base-sepolia:agent-001","payment_methods":["x402"]}}]'
-            if let Some(seed_agents_json) = env_string("AGENTMESH_SEED_AGENTS") {
-                match serde_json::from_str::<Vec<agentmesh_node::CapabilityCard>>(&seed_agents_json)
+            // Example: AGENTME_SEED_AGENTS='[{"name":"Bridge","description":"...","url":"https://bridge.agentme.cz","x-agentme":{"did":"did:agentme:base-sepolia:agent-001","payment_methods":["x402"]}}]'
+            if let Some(seed_agents_json) = env_string("AGENTME_SEED_AGENTS") {
+                match serde_json::from_str::<Vec<agentme_node::CapabilityCard>>(&seed_agents_json)
                 {
                     Ok(cards) => {
                         for card in &cards {
                             match discovery.register(card).await {
                                 Ok(()) => {
                                     let did = card
-                                        .agentmesh
+                                        .agentme
                                         .as_ref()
                                         .map(|a| a.did.as_str())
                                         .unwrap_or("unknown");
@@ -418,16 +418,16 @@ async fn main() -> Result<()> {
                         info!("Seeded {} agent(s)", cards.len());
                     }
                     Err(e) => {
-                        warn!("Failed to parse AGENTMESH_SEED_AGENTS: {}", e);
+                        warn!("Failed to parse AGENTME_SEED_AGENTS: {}", e);
                     }
                 }
             }
 
-            // 6c. Seed trust data from AGENTMESH_SEED_TRUST env var
+            // 6c. Seed trust data from AGENTME_SEED_TRUST env var
             //
             // Format: JSON array of objects with did, stake_amount, successful_txs, failed_txs, endorsement_count
-            // Example: AGENTMESH_SEED_TRUST='[{"did":"did:agentmesh:base-sepolia:agent-001","stake_amount":7225000000,"successful_txs":184,"failed_txs":16,"endorsement_count":5}]'
-            if let Some(seed_trust_json) = env_string("AGENTMESH_SEED_TRUST") {
+            // Example: AGENTME_SEED_TRUST='[{"did":"did:agentme:base-sepolia:agent-001","stake_amount":7225000000,"successful_txs":184,"failed_txs":16,"endorsement_count":5}]'
+            if let Some(seed_trust_json) = env_string("AGENTME_SEED_TRUST") {
                 match serde_json::from_str::<Vec<SeedTrustEntry>>(&seed_trust_json) {
                     Ok(entries) => {
                         for entry in &entries {
@@ -474,12 +474,12 @@ async fn main() -> Result<()> {
                         }
                     }
                     Err(e) => {
-                        warn!("Failed to parse AGENTMESH_SEED_TRUST: {}", e);
+                        warn!("Failed to parse AGENTME_SEED_TRUST: {}", e);
                     }
                 }
             }
 
-            info!("AgentMesh node started successfully");
+            info!("AgentMe node started successfully");
             info!("Press Ctrl+C to stop");
 
             // 7. Run event loop - process network events and handle shutdown
@@ -494,18 +494,18 @@ async fn main() -> Result<()> {
                         }
                     } => {
                         match event {
-                            agentmesh_node::NetworkEvent::PeerConnected(peer_id) => {
+                            agentme_node::NetworkEvent::PeerConnected(peer_id) => {
                                 peer_count.fetch_add(1, Ordering::SeqCst);
                                 info!("Peer connected: {} (total: {})", peer_id, peer_count.load(Ordering::SeqCst));
                             }
-                            agentmesh_node::NetworkEvent::PeerDisconnected(peer_id) => {
+                            agentme_node::NetworkEvent::PeerDisconnected(peer_id) => {
                                 peer_count.fetch_sub(1, Ordering::SeqCst);
                                 info!("Peer disconnected: {} (total: {})", peer_id, peer_count.load(Ordering::SeqCst));
                             }
-                            agentmesh_node::NetworkEvent::PeerDiscovered(peer_id) => {
+                            agentme_node::NetworkEvent::PeerDiscovered(peer_id) => {
                                 info!("Peer discovered via mDNS: {}", peer_id);
                             }
-                            agentmesh_node::NetworkEvent::Message { topic, source, data, .. } => {
+                            agentme_node::NetworkEvent::Message { topic, source, data, .. } => {
                                 info!(
                                     "Message on {}: {} bytes from {:?}",
                                     topic,
@@ -513,17 +513,17 @@ async fn main() -> Result<()> {
                                     source
                                 );
                             }
-                            agentmesh_node::NetworkEvent::BootstrapComplete => {
+                            agentme_node::NetworkEvent::BootstrapComplete => {
                                 info!("DHT bootstrap complete");
                             }
-                            agentmesh_node::NetworkEvent::RecordFound { key, value } => {
+                            agentme_node::NetworkEvent::RecordFound { key, value } => {
                                 info!(
                                     "DHT record found: key={} bytes, value={:?}",
                                     key.len(),
                                     value.as_ref().map(|v| v.len())
                                 );
                             }
-                            agentmesh_node::NetworkEvent::RecordStored { key } => {
+                            agentme_node::NetworkEvent::RecordStored { key } => {
                                 info!("DHT record stored: key={} bytes", key.len());
                             }
                         }
@@ -588,7 +588,7 @@ async fn check_health(url: &str) -> Result<HealthResponse> {
     // Connect to server
     let mut stream = TcpStream::connect(host_port)
         .await
-        .map_err(|e| agentmesh_node::Error::Api(format!("Connection failed: {}", e)))?;
+        .map_err(|e| agentme_node::Error::Api(format!("Connection failed: {}", e)))?;
 
     // Send HTTP GET request
     let request = format!(
@@ -598,14 +598,14 @@ async fn check_health(url: &str) -> Result<HealthResponse> {
     stream
         .write_all(request.as_bytes())
         .await
-        .map_err(|e| agentmesh_node::Error::Api(format!("Write failed: {}", e)))?;
+        .map_err(|e| agentme_node::Error::Api(format!("Write failed: {}", e)))?;
 
     // Read response
     let mut response = Vec::new();
     stream
         .read_to_end(&mut response)
         .await
-        .map_err(|e| agentmesh_node::Error::Api(format!("Read failed: {}", e)))?;
+        .map_err(|e| agentme_node::Error::Api(format!("Read failed: {}", e)))?;
 
     let response_str = String::from_utf8_lossy(&response);
 
@@ -613,9 +613,9 @@ async fn check_health(url: &str) -> Result<HealthResponse> {
     let body = response_str
         .split("\r\n\r\n")
         .nth(1)
-        .ok_or_else(|| agentmesh_node::Error::Api("Invalid HTTP response".to_string()))?;
+        .ok_or_else(|| agentme_node::Error::Api("Invalid HTTP response".to_string()))?;
 
     // Parse JSON
     serde_json::from_str(body)
-        .map_err(|e| agentmesh_node::Error::Api(format!("JSON parse error: {}", e)))
+        .map_err(|e| agentme_node::Error::Api(format!("JSON parse error: {}", e)))
 }

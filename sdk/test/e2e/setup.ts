@@ -54,10 +54,10 @@ export const TEST_CONTRACT_ADDRESSES = {
 
 /** Test DIDs */
 export const TEST_DIDS = {
-  client: 'did:agentmesh:base:0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-  provider: 'did:agentmesh:base:0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-  endorser: 'did:agentmesh:base:0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-  unregistered: 'did:agentmesh:base:0x0000000000000000000000000000000000000000',
+  client: 'did:agentme:base:0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  provider: 'did:agentme:base:0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  endorser: 'did:agentme:base:0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+  unregistered: 'did:agentme:base:0x0000000000000000000000000000000000000000',
 };
 
 /** Test node URL */
@@ -113,7 +113,7 @@ export function createTestCapabilityCard(
     },
     authentication: {
       schemes: ['did-auth'],
-      didMethods: ['agentmesh'],
+      didMethods: ['agentme'],
     },
     skills: [createTestSkill()],
     payment: {
@@ -834,7 +834,7 @@ export function createMockFetch() {
               name: s.name,
               description: s.description,
             })),
-            agentmesh: {
+            agentme: {
               did: card.id,
               trust_score: card.trust?.score ?? 0.75,
               pricing: card.skills[0]?.pricing ? {
@@ -876,7 +876,7 @@ export function createMockFetch() {
             name: s.name,
             description: s.description,
           })),
-          agentmesh: {
+          agentme: {
             did: card.id,
             trust_score: card.trust?.score ?? 0.75,
           },

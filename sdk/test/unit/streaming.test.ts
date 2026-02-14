@@ -11,7 +11,7 @@ import {
   type Stream,
   type CreateStreamOptions,
 } from '../../src/streaming.js';
-import type { AgentMeshClient } from '../../src/client.js';
+import type { AgentMeClient } from '../../src/client.js';
 
 const STREAM_CREATED_SELECTOR = keccak256(toHex('StreamCreated(uint256,bytes32,bytes32,uint256,uint256)'));
 
@@ -43,7 +43,7 @@ function createMockStreamCreatedLog(streamId: bigint) {
 // Mocks
 // =============================================================================
 
-function createMockClient(overrides: Partial<AgentMeshClient> = {}): AgentMeshClient {
+function createMockClient(overrides: Partial<AgentMeClient> = {}): AgentMeClient {
   return {
     getWalletClient: vi.fn().mockReturnValue({
       writeContract: vi.fn().mockResolvedValue('0xtxhash'),
@@ -57,7 +57,7 @@ function createMockClient(overrides: Partial<AgentMeshClient> = {}): AgentMeshCl
     }),
     getAddress: vi.fn().mockReturnValue('0x1234567890123456789012345678901234567890' as `0x${string}`),
     ...overrides,
-  } as unknown as AgentMeshClient;
+  } as unknown as AgentMeClient;
 }
 
 function createMockStream(overrides: Partial<Stream> = {}): Stream {
@@ -129,7 +129,7 @@ describe('StreamingPaymentsClient', () => {
 
       await expect(
         streaming.createStream({
-          recipientDid: 'did:agentmesh:base:0xtest',
+          recipientDid: 'did:agentme:base:0xtest',
           recipientAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
           amount: '100',
           duration: 3600,
@@ -147,7 +147,7 @@ describe('StreamingPaymentsClient', () => {
 
       await expect(
         streaming.createStream({
-          recipientDid: 'did:agentmesh:base:0xtest',
+          recipientDid: 'did:agentme:base:0xtest',
           recipientAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
           amount: '100',
           duration: 3600,
@@ -171,7 +171,7 @@ describe('StreamingPaymentsClient', () => {
       });
 
       await streaming.createStream({
-        recipientDid: 'did:agentmesh:base:0xtest',
+        recipientDid: 'did:agentme:base:0xtest',
         recipientAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
         amount: '100',
         duration: 3600,
@@ -197,7 +197,7 @@ describe('StreamingPaymentsClient', () => {
       });
 
       const streamId = await streaming.createStream({
-        recipientDid: 'did:agentmesh:base:0xtest',
+        recipientDid: 'did:agentme:base:0xtest',
         recipientAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as `0x${string}`,
         amount: '100',
         duration: 3600,
@@ -409,7 +409,7 @@ describe('StreamingPaymentsClient', () => {
         streamingPaymentsAddress: STREAMING_ADDRESS,
       });
 
-      const streamIds = await streaming.getStreamsBySender('did:agentmesh:base:0xtest');
+      const streamIds = await streaming.getStreamsBySender('did:agentme:base:0xtest');
 
       expect(streamIds).toEqual([1n, 2n, 5n]);
     });
@@ -426,7 +426,7 @@ describe('StreamingPaymentsClient', () => {
         streamingPaymentsAddress: STREAMING_ADDRESS,
       });
 
-      const streamIds = await streaming.getStreamsByRecipient('did:agentmesh:base:0xprovider');
+      const streamIds = await streaming.getStreamsByRecipient('did:agentme:base:0xprovider');
 
       expect(streamIds).toEqual([3n, 4n]);
     });
@@ -823,7 +823,7 @@ describe('StreamingPaymentsClient', () => {
         streamingPaymentsAddress: STREAMING_ADDRESS,
       });
 
-      const stuckStreams = await streaming.getStuckStreams('did:agentmesh:base:0xsender');
+      const stuckStreams = await streaming.getStuckStreams('did:agentme:base:0xsender');
 
       expect(stuckStreams).toHaveLength(2);
       expect(stuckStreams.map(s => s.id)).toEqual([1n, 3n]);
@@ -842,7 +842,7 @@ describe('StreamingPaymentsClient', () => {
         streamingPaymentsAddress: STREAMING_ADDRESS,
       });
 
-      const stuckStreams = await streaming.getStuckStreams('did:agentmesh:base:0xsender');
+      const stuckStreams = await streaming.getStuckStreams('did:agentme:base:0xsender');
 
       expect(stuckStreams).toHaveLength(0);
     });

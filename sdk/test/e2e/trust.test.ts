@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { keccak256, toHex, parseUnits } from 'viem';
-import { AgentMeshClient, didToHash } from '../../src/client.js';
+import { AgentMeClient, didToHash } from '../../src/client.js';
 import { TrustClient } from '../../src/trust.js';
 import { USDC_DECIMALS } from '../../src/types.js';
 import {
@@ -28,7 +28,7 @@ import {
 } from './setup.js';
 
 describe('Trust Score E2E', () => {
-  let client: AgentMeshClient;
+  let client: AgentMeClient;
   let trust: TrustClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
@@ -39,7 +39,7 @@ describe('Trust Score E2E', () => {
     mockWalletClient = createMockWalletClient(mockPublicClient);
 
     // Create client with test config
-    client = new AgentMeshClient({
+    client = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -399,7 +399,7 @@ describe('Trust Score E2E', () => {
 
     it('should throw when TrustRegistry not configured', async () => {
       // Create client without TrustRegistry
-      const clientWithoutRegistry = new AgentMeshClient({
+      const clientWithoutRegistry = new AgentMeClient({
         rpcUrl: TEST_RPC_URL,
         chainId: TEST_CHAIN_ID,
         privateKey: TEST_PRIVATE_KEYS.client,

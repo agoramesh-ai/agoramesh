@@ -1,7 +1,7 @@
-# AgentMesh Node - Fly.io Configuration
+# AgentMe Node - Fly.io Configuration
 # Deploy: fly launch (first time) or fly deploy (updates)
 
-app = "agentmesh-node"
+app = "agentme-node"
 primary_region = "fra"  # Frankfurt - good for EU
 
 [build]
@@ -9,8 +9,8 @@ primary_region = "fra"  # Frankfurt - good for EU
 
 [env]
   RUST_LOG = "info"
-  AGENTMESH_NETWORK = "testnet"
-  AGENTMESH_CHAIN_RPC = "https://sepolia.base.org"
+  AGENTME_NETWORK = "testnet"
+  AGENTME_CHAIN_RPC = "https://sepolia.base.org"
 
 [http_service]
   internal_port = 8080
@@ -41,7 +41,7 @@ primary_region = "fra"  # Frankfurt - good for EU
   timeout = "5s"
 
 [mounts]
-  source = "agentmesh_data"
+  source = "agentme_data"
   destination = "/app/data"
 
 [[vm]]

@@ -1,9 +1,9 @@
-# AgentMesh Glossary
+# AgentMe Glossary
 
 ## A
 
 **A2A (Agent-to-Agent) Protocol**
-Google's open protocol for AI agent communication. AgentMesh Capability Cards are compatible with A2A Agent Cards.
+Google's open protocol for AI agent communication. AgentMe Capability Cards are compatible with A2A Agent Cards.
 
 **ABT (AgentBound Token)**
 Non-transferable tokens (similar to Soulbound Tokens) that represent an agent's identity and credentials on-chain. Part of ERC-8004.
@@ -15,12 +15,12 @@ See: Capability Card
 DNS-like system for resolving agent identifiers. OWASP/IETF initiative for agent discovery.
 
 **Arbitration**
-Process of resolving disputes between agents. AgentMesh uses a tiered system: automatic, AI-assisted, and community-based.
+Process of resolving disputes between agents. AgentMe uses a tiered system: automatic, AI-assisted, and community-based.
 
 ## B
 
 **Base**
-Coinbase's Layer 2 blockchain built on Optimism. AgentMesh's primary chain due to low fees and x402 compatibility.
+Coinbase's Layer 2 blockchain built on Optimism. AgentMe's primary chain due to low fees and x402 compatibility.
 
 **Bootstrap Node**
 Initial peers that new nodes connect to for network discovery. Hardcoded in configuration.
@@ -39,10 +39,10 @@ JSON document describing an agent's identity, skills, pricing, and trust informa
 Gradual reduction of trust scores over time without activity. Reputation decays 5% per 14 days; endorsements decay 10% per hop.
 
 **DHT (Distributed Hash Table)**
-Decentralized key-value store. AgentMesh uses Kademlia DHT via libp2p for agent discovery.
+Decentralized key-value store. AgentMe uses Kademlia DHT via libp2p for agent discovery.
 
 **DID (Decentralized Identifier)**
-W3C standard for self-sovereign digital identity. Format: `did:agentmesh:base:0x...`
+W3C standard for self-sovereign digital identity. Format: `did:agentme:base:0x...`
 
 **Dispute**
 Formal conflict between client and provider when a transaction fails or deliverables don't meet expectations.
@@ -97,7 +97,7 @@ DHT algorithm used by libp2p. Provides O(log n) lookup performance.
 Blockchain scaling solution built on top of Ethereum (Layer 1). Base is an Optimistic Rollup L2.
 
 **libp2p**
-Modular networking stack used by IPFS, Ethereum, Polkadot. AgentMesh's P2P foundation.
+Modular networking stack used by IPFS, Ethereum, Polkadot. AgentMe's P2P foundation.
 
 ## M
 
@@ -110,7 +110,7 @@ Sub-dollar payment. Traditional payment rails can't handle these economically; x
 ## N
 
 **Node**
-Computer running AgentMesh software, participating in the P2P network.
+Computer running AgentMe software, participating in the P2P network.
 
 ## O
 
@@ -126,7 +126,7 @@ Data stored outside the blockchain (capability cards, evidence). Uses IPFS/DHT.
 Another node in the P2P network.
 
 **PNK (Pinakion)**
-Kleros's staking token. AgentMesh uses USDC instead of a native token.
+Kleros's staking token. AgentMe uses USDC instead of a native token.
 
 **Provider**
 Agent offering services in a transaction.
@@ -178,7 +178,7 @@ Composite metric (0.0-1.0) combining reputation, stake, and endorsements.
 ## U
 
 **USDC**
-USD Coin - stablecoin issued by Circle. Primary currency for AgentMesh payments.
+USD Coin - stablecoin issued by Circle. Primary currency for AgentMe payments.
 
 ## V
 

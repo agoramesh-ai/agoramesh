@@ -1,4 +1,4 @@
-//! Load Testing for AgentMesh P2P Network
+//! Load Testing for AgentMe P2P Network
 //!
 //! Integration tests that verify system behavior under load:
 //! - Concurrent discovery operations
@@ -18,8 +18,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use agentmesh_node::{
-    discovery::{AgentMeshExtension, Capability, CapabilityCard},
+use agentme_node::{
+    discovery::{AgentMeExtension, Capability, CapabilityCard},
     trust::TrustInfo,
     AIArbitrationConfig, AIArbitrator, Evidence, EvidenceType, JurorPool, JurorPoolConfig,
     TrustCache, TrustCacheConfig,
@@ -41,7 +41,7 @@ const STRESS_TEST_DURATION_SECS: u64 = 5;
 async fn test_concurrent_discovery_registration() {
     // Test registering many capability cards concurrently
     let cards: Vec<_> = (0..CONCURRENT_OPERATIONS)
-        .map(|i| create_test_card(&format!("did:agentmesh:base:concurrent-{}", i)))
+        .map(|i| create_test_card(&format!("did:agentme:base:concurrent-{}", i)))
         .collect();
 
     let start = Instant::now();
@@ -56,7 +56,7 @@ async fn test_concurrent_discovery_registration() {
         let cache = Arc::clone(&cache);
         let handle = tokio::spawn(async move {
             let did = card
-                .agentmesh
+                .agentme
                 .as_ref()
                 .map(|ext| ext.did.clone())
                 .unwrap_or_default();
@@ -88,9 +88,9 @@ async fn test_high_volume_discovery_search() {
     // Pre-populate with many cards
     let cards: HashMap<String, CapabilityCard> = (0..HIGH_LOAD_OPERATIONS)
         .map(|i| {
-            let card = create_test_card(&format!("did:agentmesh:base:search-{}", i));
+            let card = create_test_card(&format!("did:agentme:base:search-{}", i));
             let did = card
-                .agentmesh
+                .agentme
                 .as_ref()
                 .map(|ext| ext.did.clone())
                 .unwrap_or_default();
@@ -146,7 +146,7 @@ async fn test_concurrent_trust_cache_operations() {
     for i in 0..CONCURRENT_OPERATIONS {
         let cache = Arc::clone(&cache);
         let handle = tokio::spawn(async move {
-            let did = format!("did:agentmesh:base:trust-write-{}", i);
+            let did = format!("did:agentme:base:trust-write-{}", i);
             let info = TrustInfo {
                 did: did.clone(),
                 score: 0.5 + (i as f64 * 0.004),
@@ -176,7 +176,7 @@ async fn test_concurrent_trust_cache_operations() {
     for i in 0..CONCURRENT_OPERATIONS {
         let cache = Arc::clone(&cache);
         let handle = tokio::spawn(async move {
-            let did = format!("did:agentmesh:base:trust-write-{}", i);
+            let did = format!("did:agentme:base:trust-write-{}", i);
             cache.get(&did).await
         });
         handles.push(handle);
@@ -219,7 +219,7 @@ async fn test_trust_cache_stress() {
 
             while Instant::now() < deadline {
                 let op_num = local_ops;
-                let did = format!("did:agentmesh:base:stress-{}-{}", worker_id, op_num % 100);
+                let did = format!("did:agentme:base:stress-{}-{}", worker_id, op_num % 100);
 
                 if op_num.is_multiple_of(3) {
                     // Write
@@ -375,7 +375,7 @@ fn test_juror_registration_throughput() {
 
     for i in 0..HIGH_LOAD_OPERATIONS {
         pool.register_juror(
-            format!("did:agentmesh:base:juror-throughput-{}", i),
+            format!("did:agentme:base:juror-throughput-{}", i),
             100_000_000 + (i as u64 * 100_000), // Varying stakes
             vec![0],
         )
@@ -452,7 +452,7 @@ fn test_session_creation_throughput() {
     // Register enough jurors
     for i in 0..100 {
         pool.register_juror(
-            format!("did:agentmesh:base:session-juror-{}", i),
+            format!("did:agentme:base:session-juror-{}", i),
             500_000_000,
             vec![0],
         )
@@ -500,9 +500,9 @@ fn test_large_card_cache_memory() {
     let start = Instant::now();
 
     for i in 0..10000 {
-        let card = create_test_card(&format!("did:agentmesh:base:memory-test-{}", i));
+        let card = create_test_card(&format!("did:agentme:base:memory-test-{}", i));
         let did = card
-            .agentmesh
+            .agentme
             .as_ref()
             .map(|ext| ext.did.clone())
             .unwrap_or_default();
@@ -515,7 +515,7 @@ fn test_large_card_cache_memory() {
     let start = Instant::now();
     let mut found = 0;
     for i in 0..10000 {
-        let did = format!("did:agentmesh:base:memory-test-{}", i);
+        let did = format!("did:agentme:base:memory-test-{}", i);
         if cache.contains_key(&did) {
             found += 1;
         }
@@ -550,7 +550,7 @@ fn create_test_card(did: &str) -> CapabilityCard {
             output_schema: None,
         }],
         authentication: None,
-        agentmesh: Some(AgentMeshExtension {
+        agentme: Some(AgentMeExtension {
             did: did.to_string(),
             trust_score: Some(0.85),
             stake: Some(1_000_000_000),

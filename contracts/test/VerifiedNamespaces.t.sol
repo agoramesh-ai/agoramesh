@@ -15,8 +15,8 @@ contract VerifiedNamespacesTest is Test {
     address public verifier = address(0x4);
 
     // Test DIDs
-    bytes32 public constant DID1 = keccak256("did:agentmesh:base:0x1111");
-    bytes32 public constant DID2 = keccak256("did:agentmesh:base:0x2222");
+    bytes32 public constant DID1 = keccak256("did:agentme:base:0x1111");
+    bytes32 public constant DID2 = keccak256("did:agentme:base:0x2222");
 
     // Test namespaces
     string public constant NS_OPENAI = "openai";

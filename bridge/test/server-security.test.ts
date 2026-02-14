@@ -280,7 +280,7 @@ describe('WebSocket Origin Validation', () => {
       ...testConfig,
       rateLimit: { enabled: false },
       wsAuthToken: 'test-secret-token',
-      allowedOrigins: ['http://localhost:3402', 'https://app.agentmesh.io'],
+      allowedOrigins: ['http://localhost:3402', 'https://app.agentme.io'],
     });
     await server.start(0);
     port = server.getPort();

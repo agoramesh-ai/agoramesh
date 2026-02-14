@@ -30,9 +30,9 @@ contract TrustRegistryTest is Test {
     address public bob = address(0x5);
     address public charlie = address(0x6);
 
-    bytes32 public aliceDid = keccak256("did:agentmesh:alice");
-    bytes32 public bobDid = keccak256("did:agentmesh:bob");
-    bytes32 public charlieDid = keccak256("did:agentmesh:charlie");
+    bytes32 public aliceDid = keccak256("did:agentme:alice");
+    bytes32 public bobDid = keccak256("did:agentme:bob");
+    bytes32 public charlieDid = keccak256("did:agentme:charlie");
 
     string public aliceCID = "QmAliceCapabilityCard123";
     string public bobCID = "QmBobCapabilityCard456";
@@ -117,7 +117,7 @@ contract TrustRegistryTest is Test {
         vm.startPrank(alice);
         registry.registerAgent(aliceDid, aliceCID);
 
-        bytes32 anotherDid = keccak256("did:agentmesh:alice2");
+        bytes32 anotherDid = keccak256("did:agentme:alice2");
         vm.expectRevert(TrustRegistry.OwnerAlreadyHasAgent.selector);
         registry.registerAgent(anotherDid, "QmAnotherCID");
         vm.stopPrank();
@@ -528,7 +528,7 @@ contract TrustRegistryTest is Test {
         // Create 10 endorsers
         for (uint256 i = 0; i < 10; i++) {
             address endorser = address(uint160(100 + i));
-            bytes32 endorserDid = keccak256(abi.encodePacked("did:agentmesh:", i));
+            bytes32 endorserDid = keccak256(abi.encodePacked("did:agentme:", i));
 
             vm.prank(endorser);
             registry.registerAgent(endorserDid, "QmCID");
@@ -539,7 +539,7 @@ contract TrustRegistryTest is Test {
 
         // 11th endorsement should revert
         address extraEndorser = address(uint160(200));
-        bytes32 extraDid = keccak256("did:agentmesh:extra");
+        bytes32 extraDid = keccak256("did:agentme:extra");
         vm.prank(extraEndorser);
         registry.registerAgent(extraDid, "QmCID");
 
@@ -600,7 +600,7 @@ contract TrustRegistryTest is Test {
         // Create endorsers with reputation
         for (uint256 i = 0; i < 5; i++) {
             address endorser = address(uint160(100 + i));
-            bytes32 endorserDid = keccak256(abi.encodePacked("did:agentmesh:", i));
+            bytes32 endorserDid = keccak256(abi.encodePacked("did:agentme:", i));
 
             vm.prank(endorser);
             registry.registerAgent(endorserDid, "QmCID");

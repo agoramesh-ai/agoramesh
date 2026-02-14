@@ -8,17 +8,17 @@
 
 ## Overview
 
-[ERC-8004](https://eips.ethereum.org/) (Trustless Agents) is an Ethereum standard launched in January 2026 that defines three registry interfaces for AI agent identity, reputation, and validation. AgentMesh implements ERC-8004 compatibility through a read-only adapter contract so that any ERC-8004 compliant system can discover and query AgentMesh agents without requiring changes to the underlying TrustRegistry or AgentToken contracts.
+[ERC-8004](https://eips.ethereum.org/) (Trustless Agents) is an Ethereum standard launched in January 2026 that defines three registry interfaces for AI agent identity, reputation, and validation. AgentMe implements ERC-8004 compatibility through a read-only adapter contract so that any ERC-8004 compliant system can discover and query AgentMe agents without requiring changes to the underlying TrustRegistry or AgentToken contracts.
 
 This integration matters because:
 
-- **Discoverability**: Agents registered in AgentMesh become queryable by any ERC-8004 compliant tool, wallet, or marketplace.
-- **Interoperability**: External systems can verify agent identity and reputation using the standard ERC-8004 interface without needing AgentMesh-specific integration code.
-- **Standards compliance**: Aligns AgentMesh with the emerging on-chain agent identity standard while preserving the richer trust model.
+- **Discoverability**: Agents registered in AgentMe become queryable by any ERC-8004 compliant tool, wallet, or marketplace.
+- **Interoperability**: External systems can verify agent identity and reputation using the standard ERC-8004 interface without needing AgentMe-specific integration code.
+- **Standards compliance**: Aligns AgentMe with the emerging on-chain agent identity standard while preserving the richer trust model.
 
 ## Hybrid Architecture
 
-AgentMesh uses ERC-8004 and TrustRegistry for complementary purposes:
+AgentMe uses ERC-8004 and TrustRegistry for complementary purposes:
 
 ```
 ERC-8004 (Identity/Discovery)          TrustRegistry (Trust Scoring)
@@ -65,7 +65,7 @@ It holds immutable references to the deployed `TrustRegistry` and `AgentToken` c
 
 ### ID Mapping
 
-ERC-8004 identifies agents by `uint256 agentId` (ERC-721 token IDs). AgentMesh internally uses `bytes32 didHash` (keccak256 of the agent's DID). The adapter translates between the two:
+ERC-8004 identifies agents by `uint256 agentId` (ERC-721 token IDs). AgentMe internally uses `bytes32 didHash` (keccak256 of the agent's DID). The adapter translates between the two:
 
 ```
 uint256 agentId  <-->  bytes32 didHash
@@ -110,17 +110,17 @@ Returns `AgentToken.ownerOf(agentId)` -- the wallet address that owns the agent 
 
 Maps TrustRegistry reputation data to ERC-8004 format:
 
-| ERC-8004 Return | AgentMesh Source | Mapping |
+| ERC-8004 Return | AgentMe Source | Mapping |
 |----------------|-----------------|---------|
 | `count` (uint64) | `TrustRegistry.getReputation().transactions` | Direct cast to uint64 |
 | `summaryValue` (int128) | `TrustRegistry.getReputation().score` | Cast to int128 (0-10000 basis points) |
 | `summaryValueDecimals` (uint8) | -- | Always `2` (so 10000 = 100.00) |
 
-The `clientAddresses`, `tag1`, and `tag2` filter parameters are accepted but ignored. AgentMesh does not track per-client or per-tag reputation; reputation is computed from aggregate transaction history.
+The `clientAddresses`, `tag1`, and `tag2` filter parameters are accepted but ignored. AgentMe does not track per-client or per-tag reputation; reputation is computed from aggregate transaction history.
 
 #### `readFeedback`, `getClients`, `getLastIndex`
 
-These return zeroed/empty values. AgentMesh computes reputation from aggregate on-chain transaction history rather than individual per-client feedback entries.
+These return zeroed/empty values. AgentMe computes reputation from aggregate on-chain transaction history rather than individual per-client feedback entries.
 
 ### Validation Functions
 
@@ -138,11 +138,11 @@ The threshold of 5000 (50.00%) represents a majority-positive composite trust sc
 
 #### `getValidationStatus`, `getAgentValidations`
 
-Return zeroed/empty values. AgentMesh does not use request-hash-based validation tracking; trust is assessed via the composite trust score.
+Return zeroed/empty values. AgentMe does not use request-hash-based validation tracking; trust is assessed via the composite trust score.
 
 ## Data Mapping Summary
 
-| ERC-8004 Concept | AgentMesh Source | Mapping Logic |
+| ERC-8004 Concept | AgentMe Source | Mapping Logic |
 |-----------------|-----------------|---------------|
 | Agent ID | `AgentToken` token ID | `uint256` ERC-721 token ID |
 | Agent URI | `AgentToken.capabilityCID` | IPFS CID of capability card |
@@ -268,7 +268,7 @@ There are no data migrations, no contract upgrades, and no re-registration steps
 - **Per-request validation** is not tracked. `getValidationStatus()` and `getAgentValidations()` return empty/zero values.
 - **Filter parameters** (`clientAddresses`, `tag1`, `tag2`, `validatorAddresses`) are accepted but ignored.
 
-These limitations reflect architectural differences: AgentMesh computes trust from aggregate transaction history and a composite scoring formula rather than individual feedback entries.
+These limitations reflect architectural differences: AgentMe computes trust from aggregate transaction history and a composite scoring formula rather than individual feedback entries.
 
 ## See Also
 

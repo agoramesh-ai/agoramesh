@@ -1,7 +1,7 @@
 /**
- * AgentMesh SDK Types
+ * AgentMe SDK Types
  *
- * Core type definitions for the AgentMesh TypeScript SDK.
+ * Core type definitions for the AgentMe TypeScript SDK.
  *
  * @packageDocumentation
  */
@@ -11,9 +11,9 @@
 // =============================================================================
 
 /**
- * Configuration for the AgentMesh client.
+ * Configuration for the AgentMe client.
  */
-export interface AgentMeshConfig {
+export interface AgentMeConfig {
   /** RPC URL for blockchain connection */
   rpcUrl: string;
   /** Chain ID (8453 for Base Mainnet, 84532 for Base Sepolia) */
@@ -22,7 +22,7 @@ export interface AgentMeshConfig {
   privateKey?: `0x${string}`;
   /** TrustRegistry contract address */
   trustRegistryAddress?: `0x${string}`;
-  /** AgentMeshEscrow contract address */
+  /** AgentMeEscrow contract address */
   escrowAddress?: `0x${string}`;
   /** USDC token address */
   usdcAddress?: `0x${string}`;
@@ -148,7 +148,7 @@ export interface PaymentConfig {
 }
 
 /**
- * A2A-compatible Capability Card with AgentMesh extensions.
+ * A2A-compatible Capability Card with AgentMe extensions.
  */
 export interface CapabilityCard {
   /** JSON Schema reference */
@@ -179,7 +179,7 @@ export interface CapabilityCard {
   authentication?: Authentication;
   /** Skills/capabilities offered by the agent */
   skills: Skill[];
-  /** Trust information (AgentMesh extension) */
+  /** Trust information (AgentMe extension) */
   trust?: TrustInfo;
   /** Payment configuration */
   payment?: PaymentConfig;

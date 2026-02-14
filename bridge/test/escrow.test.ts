@@ -1,7 +1,7 @@
 /**
  * Escrow Integration Tests
  *
- * TDD tests for Bridge <-> AgentMeshEscrow contract integration.
+ * TDD tests for Bridge <-> AgentMeEscrow contract integration.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -142,14 +142,14 @@ describe('generateOutputHash', () => {
 
 describe('didToHash', () => {
   it('converts DID string to bytes32 hash', () => {
-    const did = 'did:agentmesh:base:0x1234567890123456789012345678901234567890';
+    const did = 'did:agentme:base:0x1234567890123456789012345678901234567890';
     const hash = didToHash(did);
 
     expect(hash).toMatch(/^0x[0-9a-f]{64}$/);
   });
 
   it('generates deterministic hash for same DID', () => {
-    const did = 'did:agentmesh:base:0xabc123';
+    const did = 'did:agentme:base:0xabc123';
     const hash1 = didToHash(did);
     const hash2 = didToHash(did);
 
@@ -157,8 +157,8 @@ describe('didToHash', () => {
   });
 
   it('generates different hashes for different DIDs', () => {
-    const hash1 = didToHash('did:agentmesh:base:agent1');
-    const hash2 = didToHash('did:agentmesh:base:agent2');
+    const hash1 = didToHash('did:agentme:base:agent1');
+    const hash2 = didToHash('did:agentme:base:agent2');
 
     expect(hash1).not.toBe(hash2);
   });

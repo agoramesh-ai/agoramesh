@@ -1,8 +1,8 @@
-# AgentMesh Node Dockerfile
+# AgentMe Node Dockerfile
 # Multi-stage build for security and minimal image size
 #
-# Build: docker build -t agentmesh-node .
-# Run:   docker run -p 8080:8080 -p 4001:4001 agentmesh-node
+# Build: docker build -t agentme-node .
+# Run:   docker run -p 8080:8080 -p 4001:4001 agentme-node
 
 # ==============================================================================
 # Build Stage - Rust compilation
@@ -65,9 +65,9 @@ RUN printf '%s\n' \
 
 # Build dependencies only (cached layer)
 RUN cargo build --release 2>/dev/null || true && \
-    rm -rf src benches target/release/.fingerprint/agentmesh* \
-    target/release/agentmesh* target/release/deps/agentmesh* \
-    target/release/deps/libagentmesh*
+    rm -rf src benches target/release/.fingerprint/agentme* \
+    target/release/agentme* target/release/deps/agentme* \
+    target/release/deps/libagentme*
 
 # Copy actual source and benchmarks
 COPY src/ ./src/
@@ -77,7 +77,7 @@ COPY benches/ ./benches/
 RUN cargo build --release
 
 # Verify the binary exists
-RUN ls -la target/release/agentmesh
+RUN ls -la target/release/agentme
 
 # ==============================================================================
 # Production Stage - Minimal runtime
@@ -93,33 +93,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Security: Create non-root user and group
-RUN groupadd -g 1001 agentmesh && \
-    useradd -u 1001 -g agentmesh -s /bin/false agentmesh
+RUN groupadd -g 1001 agentme && \
+    useradd -u 1001 -g agentme -s /bin/false agentme
 
 # Create directories
 RUN mkdir -p /app/data /app/config && \
-    chown -R agentmesh:agentmesh /app
+    chown -R agentme:agentme /app
 
 # Set working directory
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /build/target/release/agentmesh ./
+COPY --from=builder /build/target/release/agentme ./
 
 # Set ownership
-RUN chown agentmesh:agentmesh ./agentmesh && \
-    chmod +x ./agentmesh
+RUN chown agentme:agentme ./agentme && \
+    chmod +x ./agentme
 
 # Switch to non-root user
-USER agentmesh
+USER agentme
 
 # Environment variables with defaults
 ENV RUST_LOG=info \
-    AGENTMESH_API_LISTEN=0.0.0.0:8080 \
-    AGENTMESH_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001 \
-    AGENTMESH_DATA_DIR=/app/data \
-    AGENTMESH_NETWORK=mainnet \
-    AGENTMESH_CHAIN_RPC=https://mainnet.base.org
+    AGENTME_API_LISTEN=0.0.0.0:8080 \
+    AGENTME_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001 \
+    AGENTME_DATA_DIR=/app/data \
+    AGENTME_NETWORK=mainnet \
+    AGENTME_CHAIN_RPC=https://mainnet.base.org
 
 # Expose ports
 # 8080 - HTTP API
@@ -137,4 +137,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Start the node
-CMD ["./agentmesh", "start"]
+CMD ["./agentme", "start"]

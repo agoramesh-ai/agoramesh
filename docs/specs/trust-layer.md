@@ -1,4 +1,4 @@
-# AgentMesh Trust Layer Specification
+# AgentMe Trust Layer Specification
 
 **Version:** 1.0.0
 **Status:** Draft
@@ -119,7 +119,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-interface IAgentMeshTrustRegistry {
+interface IAgentMeTrustRegistry {
 
     // ========== Events ==========
 
@@ -243,7 +243,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract AgentMeshTrustRegistry is IAgentMeshTrustRegistry, ReentrancyGuard, AccessControl {
+contract AgentMeTrustRegistry is IAgentMeTrustRegistry, ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
 
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
@@ -364,7 +364,7 @@ contract AgentMeshTrustRegistry is IAgentMeshTrustRegistry, ReentrancyGuard, Acc
 
 ## Real-World Comparisons
 
-| System | Mechanism | Lessons for AgentMesh |
+| System | Mechanism | Lessons for AgentMe |
 |--------|-----------|----------------------|
 | **Kleros** | PNK staking + Schelling voting | Stake-to-participate works; 80%+ juror coherence |
 | **Cred Protocol** | Endorsement staking + slashing | Endorsers with "skin in game" improve trust signals |

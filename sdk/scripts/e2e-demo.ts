@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * AgentMesh E2E Demo Script
+ * AgentMe E2E Demo Script
  *
  * Exercises the full agent lifecycle against a live network:
  *   1. Load deployment addresses
@@ -270,7 +270,7 @@ const ESCROW_STATE_NAMES: Record<number, string> = {
 
 async function main() {
   console.log('='.repeat(62));
-  console.log('  AgentMesh E2E Demo');
+  console.log('  AgentMe E2E Demo');
   console.log(`  Network: ${deployment.network} (chain ${deployment.chainId})`);
   console.log('='.repeat(62));
 
@@ -315,9 +315,9 @@ async function main() {
     : walletClient;
 
   // Agent identities
-  const clientDid = `did:agentmesh:base:client${Date.now().toString(36)}`;
+  const clientDid = `did:agentme:base:client${Date.now().toString(36)}`;
   // Use bridge's provider DID if available (matches PROVIDER_DID env in bridge)
-  const bridgeProviderDid = process.env.PROVIDER_DID ?? `did:agentmesh:local:agent-001`;
+  const bridgeProviderDid = process.env.PROVIDER_DID ?? `did:agentme:local:agent-001`;
   const providerDid = bridgeProviderDid;
   const clientDidHash = didToHash(clientDid);
   const providerDidHash = didToHash(providerDid);
@@ -445,7 +445,7 @@ async function main() {
           { id: 'code-review', name: 'Code Review', description: 'Review code for bugs and improvements' },
           { id: 'debugging', name: 'Debugging', description: 'Debug and fix code issues' },
         ],
-        'x-agentmesh': {
+        'x-agentme': {
           did: providerDid,
           trust_score: 0.5,
           payment_methods: ['escrow', 'x402'],

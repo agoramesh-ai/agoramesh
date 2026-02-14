@@ -1,17 +1,17 @@
 /**
- * AgentMesh Integration Tests
+ * AgentMe Integration Tests
  *
- * Tests for automatic agent registration with the AgentMesh network.
+ * Tests for automatic agent registration with the AgentMe network.
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { AgentMeshIntegration } from '../src/integration.js';
+import { AgentMeIntegration } from '../src/integration.js';
 import { IPFSService } from '../src/ipfs.js';
 import type { AgentConfig } from '../src/types.js';
 
 // Mock the SDK
 vi.mock('@agentme/sdk', () => ({
-  AgentMeshClient: vi.fn().mockImplementation(() => ({
+  AgentMeClient: vi.fn().mockImplementation(() => ({
     connect: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),
@@ -39,8 +39,8 @@ const createMockIPFSService = (configured = true): IPFSService => {
   return service;
 };
 
-describe('AgentMeshIntegration', () => {
-  let integration: AgentMeshIntegration;
+describe('AgentMeIntegration', () => {
+  let integration: AgentMeIntegration;
   let config: AgentConfig;
 
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('AgentMeshIntegration', () => {
 
   describe('constructor', () => {
     it('should create integration with valid config', () => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
@@ -73,7 +73,7 @@ describe('AgentMeshIntegration', () => {
     it('should throw if privateKey is missing', () => {
       const badConfig = { ...config, privateKey: '' };
 
-      expect(() => new AgentMeshIntegration(badConfig, {
+      expect(() => new AgentMeIntegration(badConfig, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       })).toThrow('Private key is required');
@@ -81,38 +81,38 @@ describe('AgentMeshIntegration', () => {
   });
 
   describe('generateDID', () => {
-    it('should generate a valid AgentMesh DID', () => {
-      integration = new AgentMeshIntegration(config, {
+    it('should generate a valid AgentMe DID', () => {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
 
       const did = integration.getDID();
 
-      expect(did).toMatch(/^did:agentmesh:base:0x[a-fA-F0-9]+$/);
+      expect(did).toMatch(/^did:agentme:base:0x[a-fA-F0-9]+$/);
     });
 
     it('should generate different DIDs for different chainIds', () => {
-      const integration1 = new AgentMeshIntegration(config, {
+      const integration1 = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
 
-      const integration2 = new AgentMeshIntegration(config, {
+      const integration2 = new AgentMeIntegration(config, {
         rpcUrl: 'https://mainnet.base.org',
         chainId: 8453,
       });
 
       // DIDs should be the same since they're derived from the address, not chainId
       // but let's check they're both valid
-      expect(integration1.getDID()).toMatch(/^did:agentmesh:base:0x/);
-      expect(integration2.getDID()).toMatch(/^did:agentmesh:base:0x/);
+      expect(integration1.getDID()).toMatch(/^did:agentme:base:0x/);
+      expect(integration2.getDID()).toMatch(/^did:agentme:base:0x/);
     });
   });
 
   describe('createCapabilityCard', () => {
     it('should create a valid capability card from config', () => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
@@ -135,7 +135,7 @@ describe('AgentMeshIntegration', () => {
 
   describe('register', () => {
     beforeEach(() => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         trustRegistryAddress: '0xTrustRegistry',
@@ -152,7 +152,7 @@ describe('AgentMeshIntegration', () => {
     });
 
     it('should throw if IPFS is not configured', async () => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         trustRegistryAddress: '0xTrustRegistry',
@@ -167,8 +167,8 @@ describe('AgentMeshIntegration', () => {
 
     it('should skip registration if agent already registered', async () => {
       // Mock getAgent to return existing agent
-      const { AgentMeshClient } = await import('@agentme/sdk');
-      vi.mocked(AgentMeshClient).mockImplementation(() => ({
+      const { AgentMeClient } = await import('@agentme/sdk');
+      vi.mocked(AgentMeClient).mockImplementation(() => ({
         connect: vi.fn().mockResolvedValue(undefined),
         disconnect: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
@@ -178,7 +178,7 @@ describe('AgentMeshIntegration', () => {
         getAddress: vi.fn().mockReturnValue('0xAgentAddress'),
       }) as any);
 
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         trustRegistryAddress: '0xTrustRegistry',
@@ -193,7 +193,7 @@ describe('AgentMeshIntegration', () => {
 
   describe('announce', () => {
     beforeEach(() => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         nodeUrl: 'http://localhost:8080',
@@ -208,7 +208,7 @@ describe('AgentMeshIntegration', () => {
     });
 
     it('should throw if nodeUrl not configured', async () => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         // No nodeUrl
@@ -221,7 +221,7 @@ describe('AgentMeshIntegration', () => {
 
   describe('unannounce', () => {
     it('should remove agent from P2P network', async () => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         nodeUrl: 'http://localhost:8080',
@@ -236,7 +236,7 @@ describe('AgentMeshIntegration', () => {
 
   describe('disconnect', () => {
     it('should disconnect from blockchain', () => {
-      integration = new AgentMeshIntegration(config, {
+      integration = new AgentMeIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });

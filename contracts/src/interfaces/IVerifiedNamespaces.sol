@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 /// @title IVerifiedNamespaces - Interface for Verified Namespace Registry
 /// @notice Manages organization namespaces for agent verification
-/// @dev Part of the AgentMesh trust layer, inspired by ENS
+/// @dev Part of the AgentMe trust layer, inspired by ENS
 interface IVerifiedNamespaces {
     // ============ Structs ============
 

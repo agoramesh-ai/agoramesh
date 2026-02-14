@@ -15,7 +15,7 @@ import "../src/NFTBoundReputation.sol";
 import "../src/ERC8004Adapter.sol";
 
 /// @title DeployLocal - Deploy all contracts to local Anvil with MockUSDC
-/// @notice Deploys MockUSDC, mints test tokens, then deploys all AgentMesh contracts.
+/// @notice Deploys MockUSDC, mints test tokens, then deploys all AgentMe contracts.
 ///         Writes addresses to deployments/local.json for other components.
 /// @dev Run with: forge script script/DeployLocal.s.sol --rpc-url localhost --broadcast
 contract DeployLocal is Script {
@@ -40,7 +40,7 @@ contract DeployLocal is Script {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address admin = vm.addr(deployerPrivateKey);
 
-        console.log("Deploying AgentMesh to local Anvil (chain 31337)");
+        console.log("Deploying AgentMe to local Anvil (chain 31337)");
         console.log("Admin:", admin);
 
         vm.startBroadcast(deployerPrivateKey);
@@ -78,7 +78,7 @@ contract DeployLocal is Script {
         c.namespaces = address(new VerifiedNamespaces(admin));
         console.log("VerifiedNamespaces:", c.namespaces);
 
-        c.agentToken = address(new AgentToken("AgentMesh Agents", "AGENT", c.usdc, admin, admin));
+        c.agentToken = address(new AgentToken("AgentMe Agents", "AGENT", c.usdc, admin, admin));
         console.log("AgentToken:", c.agentToken);
 
         c.nftReputation = address(new NFTBoundReputation(c.agentToken, c.usdc, admin));

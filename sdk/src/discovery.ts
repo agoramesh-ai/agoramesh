@@ -1,7 +1,7 @@
 /**
- * AgentMesh Discovery Client
+ * AgentMe Discovery Client
  *
- * Client for discovering agents in the AgentMesh network.
+ * Client for discovering agents in the AgentMe network.
  *
  * @packageDocumentation
  */
@@ -11,7 +11,7 @@ import type {
   SearchOptions,
   DiscoveryResult,
 } from './types.js';
-import type { AgentMeshClient } from './client.js';
+import type { AgentMeClient } from './client.js';
 
 // =============================================================================
 // URL Validation (SSRF Protection)
@@ -89,7 +89,7 @@ function isPrivateUrl(urlStr: string): boolean {
 // =============================================================================
 
 /**
- * Client for discovering and announcing agents in the AgentMesh network.
+ * Client for discovering and announcing agents in the AgentMe network.
  *
  * Discovery uses a combination of:
  * - On-chain registry for registered agents
@@ -98,7 +98,7 @@ function isPrivateUrl(urlStr: string): boolean {
  *
  * @example
  * ```typescript
- * const client = new AgentMeshClient({ ... });
+ * const client = new AgentMeClient({ ... });
  * await client.connect();
  *
  * const discovery = new DiscoveryClient(client);
@@ -110,24 +110,24 @@ function isPrivateUrl(urlStr: string): boolean {
  * });
  *
  * // Get a specific agent's capability card
- * const card = await discovery.getCapabilityCard('did:agentmesh:base:0x...');
+ * const card = await discovery.getCapabilityCard('did:agentme:base:0x...');
  * ```
  */
 /** Default IPFS gateway URL */
 const DEFAULT_IPFS_GATEWAY = 'https://ipfs.io/ipfs';
 
 export class DiscoveryClient {
-  private readonly client: AgentMeshClient;
+  private readonly client: AgentMeClient;
   private nodeUrl: string | null = null;
   private ipfsGateway: string = DEFAULT_IPFS_GATEWAY;
 
   /**
    * Create a new DiscoveryClient.
    *
-   * @param client - The AgentMesh client instance
-   * @param nodeUrl - Optional AgentMesh node URL for P2P discovery
+   * @param client - The AgentMe client instance
+   * @param nodeUrl - Optional AgentMe node URL for P2P discovery
    */
-  constructor(client: AgentMeshClient, nodeUrl?: string) {
+  constructor(client: AgentMeClient, nodeUrl?: string) {
     this.client = client;
     this.nodeUrl = nodeUrl ?? null;
   }
@@ -137,7 +137,7 @@ export class DiscoveryClient {
   // ===========================================================================
 
   /**
-   * Set the AgentMesh node URL for P2P discovery.
+   * Set the AgentMe node URL for P2P discovery.
    *
    * @param url - The node URL
    * @throws Error if the URL points to a private address
@@ -262,7 +262,7 @@ export class DiscoveryClient {
         description: string;
         url: string;
         capabilities?: Array<{ id: string; name: string; description?: string }>;
-        agentmesh?: {
+        agentme?: {
           did: string;
           trust_score?: number;
           pricing?: { base_price: number; currency: string; model: string };
@@ -290,7 +290,7 @@ export class DiscoveryClient {
             endorsement: item.trust.endorsement_score,
           }
         : {
-            overall: item.card.agentmesh?.trust_score ?? item.score,
+            overall: item.card.agentme?.trust_score ?? item.score,
             reputation: item.score,
             stake: 0,
             endorsement: 0,
@@ -300,11 +300,11 @@ export class DiscoveryClient {
         name: c.name,
         description: c.description,
       })),
-      pricing: item.card.agentmesh?.pricing
+      pricing: item.card.agentme?.pricing
         ? {
             model: 'per_request' as const,
-            amount: String(item.card.agentmesh.pricing.base_price),
-            currency: item.card.agentmesh.pricing.currency,
+            amount: String(item.card.agentme.pricing.base_price),
+            currency: item.card.agentme.pricing.currency,
           }
         : undefined,
     }));
@@ -363,7 +363,7 @@ export class DiscoveryClient {
       description: string;
       url: string;
       capabilities?: Array<{ id: string; name: string; description?: string }>;
-      agentmesh?: {
+      agentme?: {
         did: string;
         trust_score?: number;
         pricing?: { base_price: number; currency: string; model: string };
@@ -371,12 +371,12 @@ export class DiscoveryClient {
     }>;
 
     return data.map((card) => ({
-      did: card.agentmesh?.did ?? '',
+      did: card.agentme?.did ?? '',
       name: card.name,
       description: card.description,
       url: card.url,
       trust: {
-        overall: card.agentmesh?.trust_score ?? 0,
+        overall: card.agentme?.trust_score ?? 0,
         reputation: 0,
         stake: 0,
         endorsement: 0,
@@ -386,11 +386,11 @@ export class DiscoveryClient {
         name: c.name,
         description: c.description,
       })),
-      pricing: card.agentmesh?.pricing
+      pricing: card.agentme?.pricing
         ? {
             model: 'per_request' as const,
-            amount: String(card.agentmesh.pricing.base_price),
-            currency: card.agentmesh.pricing.currency,
+            amount: String(card.agentme.pricing.base_price),
+            currency: card.agentme.pricing.currency,
           }
         : undefined,
     }));
@@ -405,7 +405,7 @@ export class DiscoveryClient {
    *
    * Attempts to fetch from:
    * 1. Well-known URL (https://domain/.well-known/agent.json)
-   * 2. AgentMesh DHT (if node URL configured)
+   * 2. AgentMe DHT (if node URL configured)
    * 3. IPFS (if CID available on-chain)
    *
    * @param did - The agent's DID
@@ -440,7 +440,7 @@ export class DiscoveryClient {
    */
   private async fetchFromWellKnown(did: string): Promise<CapabilityCard | null> {
     // Extract domain from DID if possible
-    // Format: did:web:example.com or did:agentmesh:base:0x...
+    // Format: did:web:example.com or did:agentme:base:0x...
     const match = did.match(/^did:web:([^:]+)/);
     if (!match) {
       return null;

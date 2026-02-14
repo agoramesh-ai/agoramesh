@@ -1,4 +1,4 @@
-//! Persistence Layer for AgentMesh Node
+//! Persistence Layer for AgentMe Node
 //!
 //! Provides durable storage for:
 //! - Capability cards (agent metadata)
@@ -527,7 +527,7 @@ mod tests {
             provider: None,
             capabilities: vec![],
             authentication: None,
-            agentmesh: None,
+            agentme: None,
         }
     }
 

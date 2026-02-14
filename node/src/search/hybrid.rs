@@ -92,7 +92,7 @@ impl HybridSearch {
     /// Generates and stores embedding for the card.
     pub async fn index_card(&mut self, card: &CapabilityCard) -> Result<()> {
         let did = card
-            .agentmesh
+            .agentme
             .as_ref()
             .map(|ext| ext.did.clone())
             .ok_or_else(|| Error::Search("Card missing DID".to_string()))?;
@@ -228,7 +228,7 @@ impl HybridSearch {
 mod tests {
     use super::*;
     use crate::discovery::{
-        AgentMeshExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
+        AgentMeExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
     };
 
     fn sample_card(
@@ -259,7 +259,7 @@ mod tests {
                 })
                 .collect(),
             authentication: None,
-            agentmesh: Some(AgentMeshExtension {
+            agentme: Some(AgentMeExtension {
                 did: did.to_string(),
                 trust_score: Some(0.8),
                 stake: Some(1_000_000_000),
@@ -323,7 +323,7 @@ mod tests {
         };
 
         let card = sample_card(
-            "did:agentmesh:base:agent1",
+            "did:agentme:base:agent1",
             "Code Reviewer",
             "AI code review agent",
             vec!["Review", "Analyze"],
@@ -337,7 +337,7 @@ mod tests {
             result.err()
         );
         assert_eq!(search.index_size(), 1);
-        assert!(search.is_indexed("did:agentmesh:base:agent1"));
+        assert!(search.is_indexed("did:agentme:base:agent1"));
     }
 
     #[tokio::test]
@@ -348,12 +348,12 @@ mod tests {
         };
 
         let mut card = sample_card(
-            "did:agentmesh:base:agent1",
+            "did:agentme:base:agent1",
             "Agent",
             "Description",
             vec!["Skill"],
         );
-        card.agentmesh = None; // Remove DID
+        card.agentme = None; // Remove DID
 
         let result = search.index_card(&card).await;
 
@@ -369,19 +369,19 @@ mod tests {
 
         let cards = vec![
             sample_card(
-                "did:agentmesh:base:agent1",
+                "did:agentme:base:agent1",
                 "Agent 1",
                 "Desc 1",
                 vec!["Skill1"],
             ),
             sample_card(
-                "did:agentmesh:base:agent2",
+                "did:agentme:base:agent2",
                 "Agent 2",
                 "Desc 2",
                 vec!["Skill2"],
             ),
             sample_card(
-                "did:agentmesh:base:agent3",
+                "did:agentme:base:agent3",
                 "Agent 3",
                 "Desc 3",
                 vec!["Skill3"],
@@ -405,18 +405,18 @@ mod tests {
         };
 
         let card = sample_card(
-            "did:agentmesh:base:agent1",
+            "did:agentme:base:agent1",
             "Agent",
             "Description",
             vec!["Skill"],
         );
         search.index_card(&card).await.expect("Should index");
 
-        let removed = search.remove_card("did:agentmesh:base:agent1");
+        let removed = search.remove_card("did:agentme:base:agent1");
 
         assert!(removed, "Should return true when card existed");
         assert_eq!(search.index_size(), 0);
-        assert!(!search.is_indexed("did:agentmesh:base:agent1"));
+        assert!(!search.is_indexed("did:agentme:base:agent1"));
     }
 
     #[tokio::test]
@@ -426,7 +426,7 @@ mod tests {
             return;
         };
 
-        let removed = search.remove_card("did:agentmesh:base:nonexistent");
+        let removed = search.remove_card("did:agentme:base:nonexistent");
 
         assert!(!removed, "Should return false for nonexistent card");
     }
@@ -454,7 +454,7 @@ mod tests {
         };
 
         let card = sample_card(
-            "did:agentmesh:base:reviewer",
+            "did:agentme:base:reviewer",
             "Code Reviewer",
             "AI-powered code review service",
             vec!["Code Review", "Bug Detection"],
@@ -467,7 +467,7 @@ mod tests {
             .expect("Search should work");
 
         assert!(!results.is_empty(), "Should find matching agent");
-        assert_eq!(results[0].did, "did:agentmesh:base:reviewer");
+        assert_eq!(results[0].did, "did:agentme:base:reviewer");
         assert!(results[0].keyword_score > 0.0, "Should have keyword match");
     }
 
@@ -480,7 +480,7 @@ mod tests {
 
         // Index a code review agent
         let card = sample_card(
-            "did:agentmesh:base:reviewer",
+            "did:agentme:base:reviewer",
             "Code Quality Analyzer",
             "Examines source code for potential issues and improvements",
             vec!["Static Analysis", "Bug Detection"],
@@ -513,7 +513,7 @@ mod tests {
 
         // Exact match should rank higher
         let exact_match = sample_card(
-            "did:agentmesh:base:exact",
+            "did:agentme:base:exact",
             "Code Review Agent",
             "Code review service",
             vec!["Code Review"],
@@ -521,7 +521,7 @@ mod tests {
 
         // Partial match
         let partial_match = sample_card(
-            "did:agentmesh:base:partial",
+            "did:agentme:base:partial",
             "Weather Forecast",
             "Weather service with code quality tips",
             vec!["Weather", "Forecast"],
@@ -540,7 +540,7 @@ mod tests {
 
         assert!(!results.is_empty(), "Should find at least one match");
         assert_eq!(
-            results[0].did, "did:agentmesh:base:exact",
+            results[0].did, "did:agentme:base:exact",
             "Exact match should rank first"
         );
     }
@@ -560,7 +560,7 @@ mod tests {
         // Index 5 similar agents
         for i in 0..5 {
             let card = sample_card(
-                &format!("did:agentmesh:base:agent{}", i),
+                &format!("did:agentme:base:agent{}", i),
                 &format!("AI Agent {}", i),
                 "AI assistant for various tasks",
                 vec!["AI", "Assistant"],
@@ -584,7 +584,7 @@ mod tests {
         };
 
         let card = sample_card(
-            "did:agentmesh:base:agent",
+            "did:agentme:base:agent",
             "Test Agent",
             "A test agent for scoring",
             vec!["Test"],
@@ -619,7 +619,7 @@ mod tests {
         };
 
         let card = sample_card(
-            "did:agentmesh:base:agent",
+            "did:agentme:base:agent",
             "Agent",
             "Description",
             vec!["Skill"],

@@ -1,15 +1,15 @@
-# AgentMesh Node - Docker Compose for Local Development
+# AgentMe Node - Docker Compose for Local Development
 # Usage: docker-compose up -d
 services:
   # ==========================================================================
-  # AgentMesh Node
+  # AgentMe Node
   # ==========================================================================
   node:
     build:
       context: .
       dockerfile: Dockerfile
-    image: agentmesh-node:local
-    container_name: agentmesh-node
+    image: agentme-node:local
+    container_name: agentme-node
     restart: unless-stopped
 
     # Ports
@@ -19,17 +19,17 @@ services:
 
     # Environment variables
     environment:
-      RUST_LOG: debug,agentmesh_node=trace
-      AGENTMESH_NETWORK: testnet
-      AGENTMESH_API_LISTEN: 0.0.0.0:8080
-      AGENTMESH_P2P_LISTEN: /ip4/0.0.0.0/tcp/4001
-      AGENTMESH_DATA_DIR: /app/data
-      AGENTMESH_CHAIN_RPC: https://sepolia.base.org
-      AGENTMESH_CHAIN_ID: "84532"
-      AGENTMESH_RATE_LIMIT_ENABLED: "true"
-      AGENTMESH_RATE_LIMIT_RPS: "100"
-      AGENTMESH_TRUST_CACHE_ENABLED: "true"
-      AGENTMESH_METRICS_ENABLED: "true"
+      RUST_LOG: debug,agentme_node=trace
+      AGENTME_NETWORK: testnet
+      AGENTME_API_LISTEN: 0.0.0.0:8080
+      AGENTME_P2P_LISTEN: /ip4/0.0.0.0/tcp/4001
+      AGENTME_DATA_DIR: /app/data
+      AGENTME_CHAIN_RPC: https://sepolia.base.org
+      AGENTME_CHAIN_ID: "84532"
+      AGENTME_RATE_LIMIT_ENABLED: "true"
+      AGENTME_RATE_LIMIT_RPS: "100"
+      AGENTME_TRUST_CACHE_ENABLED: "true"
+      AGENTME_METRICS_ENABLED: "true"
 
     # Persistent data volume
     volumes:
@@ -55,14 +55,14 @@ services:
 
     # Networking
     networks:
-      - agentmesh
+      - agentme
 
   # ==========================================================================
   # Prometheus (Optional - for metrics)
   # ==========================================================================
   prometheus:
     image: prom/prometheus:v2.54.1
-    container_name: agentmesh-prometheus
+    container_name: agentme-prometheus
     restart: unless-stopped
     profiles:
       - monitoring
@@ -80,14 +80,14 @@ services:
       - '--web.enable-lifecycle'
 
     networks:
-      - agentmesh
+      - agentme
 
   # ==========================================================================
   # Grafana (Optional - for dashboards)
   # ==========================================================================
   grafana:
     image: grafana/grafana:11.4.0
-    container_name: agentmesh-grafana
+    container_name: agentme-grafana
     restart: unless-stopped
     profiles:
       - monitoring
@@ -103,13 +103,13 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
 
     networks:
-      - agentmesh
+      - agentme
 
 # ==========================================================================
 # Networks
 # ==========================================================================
 networks:
-  agentmesh:
+  agentme:
     driver: bridge
 
 # ==========================================================================

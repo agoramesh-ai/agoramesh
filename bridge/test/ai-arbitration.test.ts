@@ -83,7 +83,7 @@ const SAMPLE_DISPUTED_ESCROW: Escrow = {
 // Sample evidence from client
 const SAMPLE_CLIENT_EVIDENCE: DisputeEvidence = {
   disputeId: '0x42',
-  submittedBy: 'did:agentmesh:base:0x1111111111111111111111111111111111111111',
+  submittedBy: 'did:agentme:base:0x1111111111111111111111111111111111111111',
   role: 'client',
   timestamp: new Date().toISOString(),
   taskSpecification: {
@@ -119,7 +119,7 @@ const SAMPLE_CLIENT_EVIDENCE: DisputeEvidence = {
 // Sample evidence from provider
 const SAMPLE_PROVIDER_EVIDENCE: DisputeEvidence = {
   disputeId: '0x42',
-  submittedBy: 'did:agentmesh:base:0x2222222222222222222222222222222222222222',
+  submittedBy: 'did:agentme:base:0x2222222222222222222222222222222222222222',
   role: 'provider',
   timestamp: new Date().toISOString(),
   taskSpecification: {

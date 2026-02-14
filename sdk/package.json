@@ -1,7 +1,7 @@
 {
   "name": "@agentme/sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for AgentMesh - decentralized agent marketplace",
+  "description": "TypeScript SDK for AgentMe - decentralized agent marketplace",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -37,11 +37,11 @@
     "a2a",
     "x402"
   ],
-  "author": "AgentMesh",
+  "author": "AgentMe",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/timutti/agentmesh"
+    "url": "https://github.com/agentmecz/agentme"
   },
   "dependencies": {
     "@coinbase/x402": "^2.1.0",

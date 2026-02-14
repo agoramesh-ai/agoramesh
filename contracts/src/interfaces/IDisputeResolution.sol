@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title IDisputeResolution - Interface for AgentMesh Dispute Resolution
+/// @title IDisputeResolution - Interface for AgentMe Dispute Resolution
 /// @notice Defines the interface for tiered dispute resolution
 /// @dev Compatible with ERC-792 arbitration standard
 interface IDisputeResolution {

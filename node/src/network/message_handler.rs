@@ -331,7 +331,7 @@ impl MessageHandler {
         source: Option<&libp2p::PeerId>,
     ) -> Result<()> {
         let did = card
-            .agentmesh
+            .agentme
             .as_ref()
             .map(|ext| ext.did.as_str())
             .unwrap_or("unknown");
@@ -833,7 +833,7 @@ impl MessageHandler {
 mod tests {
     use super::*;
     use crate::discovery::{
-        AgentMeshExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
+        AgentMeExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
     };
     use libp2p::gossipsub::MessageId;
     use libp2p::PeerId;
@@ -855,7 +855,7 @@ mod tests {
                 output_schema: None,
             }],
             authentication: None,
-            agentmesh: Some(AgentMeshExtension {
+            agentme: Some(AgentMeExtension {
                 did: did.to_string(),
                 trust_score: Some(0.8),
                 stake: Some(1_000_000_000),
@@ -890,7 +890,7 @@ mod tests {
         let service = discovery_service();
         let handler = MessageHandler::new(service.clone());
 
-        let card = sample_card("did:agentmesh:base:test-agent");
+        let card = sample_card("did:agentme:base:test-agent");
         let message = DiscoveryMessage::CardAnnouncement {
             card: Box::new(card.clone()),
         };
@@ -912,7 +912,7 @@ mod tests {
             "Card should be cached in discovery service"
         );
 
-        let cached = service.get("did:agentmesh:base:test-agent").await.unwrap();
+        let cached = service.get("did:agentme:base:test-agent").await.unwrap();
         assert!(cached.is_some(), "Should retrieve cached card");
         assert_eq!(cached.unwrap().name, "Test Agent");
     }
@@ -923,7 +923,7 @@ mod tests {
         let handler = MessageHandler::new(service.clone());
 
         // Send raw card without DiscoveryMessage wrapper
-        let card = sample_card("did:agentmesh:base:raw-card");
+        let card = sample_card("did:agentme:base:raw-card");
         let data = serde_json::to_vec(&card).unwrap();
 
         let event = NetworkEvent::Message {
@@ -993,7 +993,7 @@ mod tests {
         let handler = MessageHandler::new(service);
 
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:trust-test".to_string(),
+            did: "did:agentme:base:trust-test".to_string(),
             trust_score: 0.85,
             timestamp: 1704067200,
         };
@@ -1020,7 +1020,7 @@ mod tests {
         let handler = MessageHandler::new(service);
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:rep-test".to_string(),
+            did: "did:agentme:base:rep-test".to_string(),
             success: true,
             amount: 1_000_000, // 1 USDC
             timestamp: 1704067200,
@@ -1088,7 +1088,7 @@ mod tests {
 
         // Send multiple messages
         for i in 0..3 {
-            let card = sample_card(&format!("did:agentmesh:base:agent-{}", i));
+            let card = sample_card(&format!("did:agentme:base:agent-{}", i));
             let message = DiscoveryMessage::CardAnnouncement {
                 card: Box::new(card),
             };
@@ -1118,7 +1118,7 @@ mod tests {
         let service = discovery_service();
         let handler = MessageHandler::new(service.clone());
 
-        let card = sample_card("did:agentmesh:base:cap-update");
+        let card = sample_card("did:agentme:base:cap-update");
         let data = serde_json::to_vec(&card).unwrap();
 
         let event = NetworkEvent::Message {
@@ -1149,8 +1149,8 @@ mod tests {
 
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-test".to_string(),
-            client_did: "did:agentmesh:base:client".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            client_did: "did:agentme:base:client".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 50_000_000,
             timestamp: now - 60,
         };
@@ -1180,7 +1180,7 @@ mod tests {
 
         // Invalid trust score (> 1.0 should be rejected)
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:invalid-score".to_string(),
+            did: "did:agentme:base:invalid-score".to_string(),
             trust_score: 1.5, // Invalid: above 1.0
             timestamp: 1704067200,
         };
@@ -1206,7 +1206,7 @@ mod tests {
 
         // Negative trust score should be rejected
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:negative-score".to_string(),
+            did: "did:agentme:base:negative-score".to_string(),
             trust_score: -0.5, // Invalid: negative
             timestamp: 1704067200,
         };
@@ -1256,7 +1256,7 @@ mod tests {
 
         // Timestamp far in the future (year 2100) should be rejected
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:future-ts".to_string(),
+            did: "did:agentme:base:future-ts".to_string(),
             trust_score: 0.85,
             timestamp: 4102444800, // Year 2100
         };
@@ -1286,7 +1286,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:valid-agent".to_string(),
+            did: "did:agentme:base:valid-agent".to_string(),
             trust_score: 0.85,
             timestamp: now - 60, // 1 minute ago
         };
@@ -1340,7 +1340,7 @@ mod tests {
         let handler = MessageHandler::new(service);
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:test".to_string(),
+            did: "did:agentme:base:test".to_string(),
             success: true,
             amount: 1_000_000,
             timestamp: 4102444800, // Year 2100 - future
@@ -1373,7 +1373,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:test-agent".to_string(),
+            did: "did:agentme:base:test-agent".to_string(),
             success: true,
             amount: 1_000_000,
             timestamp: now - 60,
@@ -1406,7 +1406,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:test-agent".to_string(),
+            did: "did:agentme:base:test-agent".to_string(),
             success: false,
             amount: 500_000,
             timestamp: now - 120,
@@ -1432,20 +1432,20 @@ mod tests {
 
     #[test]
     fn test_discovery_message_serialization_card_announcement() {
-        let card = sample_card("did:agentmesh:base:test");
+        let card = sample_card("did:agentme:base:test");
         let message = DiscoveryMessage::CardAnnouncement {
             card: Box::new(card),
         };
 
         let json = serde_json::to_string(&message).unwrap();
         assert!(json.contains("card_announcement"));
-        assert!(json.contains("did:agentmesh:base:test"));
+        assert!(json.contains("did:agentme:base:test"));
 
         // Deserialize back
         let parsed: DiscoveryMessage = serde_json::from_str(&json).unwrap();
         match parsed {
             DiscoveryMessage::CardAnnouncement { card } => {
-                assert_eq!(card.agentmesh.unwrap().did, "did:agentmesh:base:test");
+                assert_eq!(card.agentme.unwrap().did, "did:agentme:base:test");
             }
             _ => panic!("Expected CardAnnouncement"),
         }
@@ -1473,7 +1473,7 @@ mod tests {
     #[test]
     fn test_trust_message_serialization_trust_update() {
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:test".to_string(),
+            did: "did:agentme:base:test".to_string(),
             trust_score: 0.85,
             timestamp: 1704067200,
         };
@@ -1487,7 +1487,7 @@ mod tests {
             TrustMessage::TrustUpdate {
                 did, trust_score, ..
             } => {
-                assert_eq!(did, "did:agentmesh:base:test");
+                assert_eq!(did, "did:agentme:base:test");
                 assert!((trust_score - 0.85).abs() < 0.001);
             }
             _ => panic!("Expected TrustUpdate"),
@@ -1497,7 +1497,7 @@ mod tests {
     #[test]
     fn test_trust_message_serialization_reputation_event() {
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:test".to_string(),
+            did: "did:agentme:base:test".to_string(),
             success: true,
             amount: 1_000_000,
             timestamp: 1704067200,
@@ -1541,7 +1541,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:recording-test".to_string(),
+            did: "did:agentme:base:recording-test".to_string(),
             success: true,
             amount: 1_000_000,
             timestamp: now - 60,
@@ -1559,7 +1559,7 @@ mod tests {
 
         // Verify the success was recorded in TrustService
         let trust_info = trust
-            .get_trust("did:agentmesh:base:recording-test")
+            .get_trust("did:agentme:base:recording-test")
             .await
             .unwrap();
         assert_eq!(
@@ -1580,7 +1580,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:failure-test".to_string(),
+            did: "did:agentme:base:failure-test".to_string(),
             success: false,
             amount: 500_000,
             timestamp: now - 60,
@@ -1598,7 +1598,7 @@ mod tests {
 
         // Verify the failure was recorded in TrustService
         let trust_info = trust
-            .get_trust("did:agentmesh:base:failure-test")
+            .get_trust("did:agentme:base:failure-test")
             .await
             .unwrap();
         assert_eq!(
@@ -1619,7 +1619,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::ReputationEvent {
-            did: "did:agentmesh:base:no-trust".to_string(),
+            did: "did:agentme:base:no-trust".to_string(),
             success: true,
             amount: 1_000_000,
             timestamp: now - 60,
@@ -1662,8 +1662,8 @@ mod tests {
 
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-123".to_string(),
-            client_did: "did:agentmesh:base:client".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            client_did: "did:agentme:base:client".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 50_000_000, // $50 USDC - Tier 2
             timestamp: now - 60,
         };
@@ -1681,7 +1681,7 @@ mod tests {
 
         // Verify dispute was created in arbitrator by checking party disputes
         let disputes = arbitrator
-            .get_disputes_by_party("did:agentmesh:base:client")
+            .get_disputes_by_party("did:agentme:base:client")
             .unwrap();
         assert_eq!(disputes.len(), 1, "Should have created 1 dispute");
         assert_eq!(disputes[0].escrow_id, "escrow-123");
@@ -1701,8 +1701,8 @@ mod tests {
         // Tier 1 disputes (< $10) should be rejected by AI arbitrator
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-tier1".to_string(),
-            client_did: "did:agentmesh:base:client".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            client_did: "did:agentme:base:client".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 5_000_000, // $5 USDC - Tier 1
             timestamp: now - 60,
         };
@@ -1730,8 +1730,8 @@ mod tests {
         let dispute_id = arbitrator
             .create_dispute(
                 "escrow-evidence-test",
-                "did:agentmesh:base:client",
-                "did:agentmesh:base:provider",
+                "did:agentme:base:client",
+                "did:agentme:base:provider",
                 50_000_000,
             )
             .unwrap();
@@ -1744,7 +1744,7 @@ mod tests {
         // Submit evidence via message
         let message = DisputeMessage::SubmitEvidence {
             dispute_id: dispute_id.clone(),
-            submitter_did: "did:agentmesh:base:client".to_string(),
+            submitter_did: "did:agentme:base:client".to_string(),
             title: "Transaction Log".to_string(),
             description: "The provider failed to deliver the service as agreed.".to_string(),
             timestamp: now - 60,
@@ -1781,7 +1781,7 @@ mod tests {
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-invalid".to_string(),
             client_did: "invalid-client-did".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 50_000_000,
             timestamp: now - 60,
         };
@@ -1807,8 +1807,8 @@ mod tests {
         // Future timestamp
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-future".to_string(),
-            client_did: "did:agentmesh:base:client".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            client_did: "did:agentme:base:client".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 50_000_000,
             timestamp: 4102444800, // Year 2100
         };
@@ -1830,8 +1830,8 @@ mod tests {
         // Test CreateDispute serialization
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-123".to_string(),
-            client_did: "did:agentmesh:base:client".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            client_did: "did:agentme:base:client".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 100_000_000,
             timestamp: 1704067200,
         };
@@ -1867,8 +1867,8 @@ mod tests {
 
         let message = DisputeMessage::CreateDispute {
             escrow_id: "escrow-no-arb".to_string(),
-            client_did: "did:agentmesh:base:client".to_string(),
-            provider_did: "did:agentmesh:base:provider".to_string(),
+            client_did: "did:agentme:base:client".to_string(),
+            provider_did: "did:agentme:base:provider".to_string(),
             amount_usdc: 50_000_000,
             timestamp: now - 60,
         };
@@ -1901,11 +1901,11 @@ mod tests {
 
         // Set trust data: 100 successful, 0 failed → reputation ≈ 0.5-0.7
         // (100% success rate, volume factor based on 100 txs)
-        trust.set_trust_data("did:agentmesh:base:existing-agent", 0, 100, 0, 0);
+        trust.set_trust_data("did:agentme:base:existing-agent", 0, 100, 0, 0);
 
         // Get the calculated score first
         let existing = trust
-            .get_trust("did:agentmesh:base:existing-agent")
+            .get_trust("did:agentme:base:existing-agent")
             .await
             .unwrap();
         let existing_score = existing.score;
@@ -1920,7 +1920,7 @@ mod tests {
         // Trust update within 20% of existing score should be accepted
         let close_score = existing_score + 0.10; // Add 10% (within 20% tolerance)
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:existing-agent".to_string(),
+            did: "did:agentme:base:existing-agent".to_string(),
             trust_score: close_score.min(1.0),
             timestamp: now - 60,
         };
@@ -1949,11 +1949,11 @@ mod tests {
         let trust = test_trust_service();
 
         // Set trust data with history
-        trust.set_trust_data("did:agentmesh:base:deviation-test", 0, 100, 0, 0);
+        trust.set_trust_data("did:agentme:base:deviation-test", 0, 100, 0, 0);
 
         // Get the calculated score
         let existing = trust
-            .get_trust("did:agentmesh:base:deviation-test")
+            .get_trust("did:agentme:base:deviation-test")
             .await
             .unwrap();
         let existing_score = existing.score;
@@ -1969,7 +1969,7 @@ mod tests {
         // If existing is 0.5, then 0.1 would be 80% deviation
         let far_score = if existing_score > 0.5 { 0.1 } else { 0.9 };
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:deviation-test".to_string(),
+            did: "did:agentme:base:deviation-test".to_string(),
             trust_score: far_score,
             timestamp: now - 60,
         };
@@ -2005,7 +2005,7 @@ mod tests {
 
         // New agent with no existing trust data
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:brand-new-agent".to_string(),
+            did: "did:agentme:base:brand-new-agent".to_string(),
             trust_score: 0.50, // Any starting score
             timestamp: now - 60,
         };
@@ -2037,7 +2037,7 @@ mod tests {
             .as_secs();
 
         let message = TrustMessage::TrustUpdate {
-            did: "did:agentmesh:base:no-trust-service".to_string(),
+            did: "did:agentme:base:no-trust-service".to_string(),
             trust_score: 0.75,
             timestamp: now - 60,
         };
@@ -2071,8 +2071,8 @@ mod tests {
         let dispute_id = arbitrator
             .create_dispute(
                 "escrow-title-test",
-                "did:agentmesh:base:client",
-                "did:agentmesh:base:provider",
+                "did:agentme:base:client",
+                "did:agentme:base:provider",
                 50_000_000,
             )
             .unwrap();
@@ -2086,7 +2086,7 @@ mod tests {
         let long_title = "A".repeat(MAX_EVIDENCE_TITLE_LEN + 100);
         let message = DisputeMessage::SubmitEvidence {
             dispute_id,
-            submitter_did: "did:agentmesh:base:client".to_string(),
+            submitter_did: "did:agentme:base:client".to_string(),
             title: long_title,
             description: "Valid description".to_string(),
             timestamp: now - 60,
@@ -2118,8 +2118,8 @@ mod tests {
         let dispute_id = arbitrator
             .create_dispute(
                 "escrow-desc-test",
-                "did:agentmesh:base:client",
-                "did:agentmesh:base:provider",
+                "did:agentme:base:client",
+                "did:agentme:base:provider",
                 50_000_000,
             )
             .unwrap();
@@ -2133,7 +2133,7 @@ mod tests {
         let long_desc = "B".repeat(MAX_EVIDENCE_DESC_LEN + 1000);
         let message = DisputeMessage::SubmitEvidence {
             dispute_id,
-            submitter_did: "did:agentmesh:base:client".to_string(),
+            submitter_did: "did:agentme:base:client".to_string(),
             title: "Valid Title".to_string(),
             description: long_desc,
             timestamp: now - 60,
@@ -2164,8 +2164,8 @@ mod tests {
         let dispute_id = arbitrator
             .create_dispute(
                 "escrow-empty-title",
-                "did:agentmesh:base:client",
-                "did:agentmesh:base:provider",
+                "did:agentme:base:client",
+                "did:agentme:base:provider",
                 50_000_000,
             )
             .unwrap();
@@ -2177,7 +2177,7 @@ mod tests {
 
         let message = DisputeMessage::SubmitEvidence {
             dispute_id,
-            submitter_did: "did:agentmesh:base:client".to_string(),
+            submitter_did: "did:agentme:base:client".to_string(),
             title: "".to_string(), // Empty title
             description: "Some description".to_string(),
             timestamp: now - 60,
@@ -2204,8 +2204,8 @@ mod tests {
         let dispute_id = arbitrator
             .create_dispute(
                 "escrow-empty-desc",
-                "did:agentmesh:base:client",
-                "did:agentmesh:base:provider",
+                "did:agentme:base:client",
+                "did:agentme:base:provider",
                 50_000_000,
             )
             .unwrap();
@@ -2217,7 +2217,7 @@ mod tests {
 
         let message = DisputeMessage::SubmitEvidence {
             dispute_id,
-            submitter_did: "did:agentmesh:base:client".to_string(),
+            submitter_did: "did:agentme:base:client".to_string(),
             title: "Valid Title".to_string(),
             description: "".to_string(), // Empty description
             timestamp: now - 60,
@@ -2247,8 +2247,8 @@ mod tests {
         let dispute_id = arbitrator
             .create_dispute(
                 "escrow-valid-evidence",
-                "did:agentmesh:base:client",
-                "did:agentmesh:base:provider",
+                "did:agentme:base:client",
+                "did:agentme:base:provider",
                 50_000_000,
             )
             .unwrap();
@@ -2260,7 +2260,7 @@ mod tests {
 
         let message = DisputeMessage::SubmitEvidence {
             dispute_id: dispute_id.clone(),
-            submitter_did: "did:agentmesh:base:client".to_string(),
+            submitter_did: "did:agentme:base:client".to_string(),
             title: "Transaction Receipt".to_string(),
             description: "This is valid evidence describing the transaction.".to_string(),
             timestamp: now - 60,

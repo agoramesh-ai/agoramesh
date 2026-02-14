@@ -1,4 +1,4 @@
-//! API Integration Tests for AgentMesh Node.
+//! API Integration Tests for AgentMe Node.
 //!
 //! These tests verify the HTTP API endpoints work correctly in an
 //! end-to-end manner, including:
@@ -153,7 +153,7 @@ async fn test_discovery_get_agent_not_found_returns_404() {
     let mut server = TestServer::new();
     server.start().await;
 
-    let nonexistent_did = "did:agentmesh:base:nonexistent-agent";
+    let nonexistent_did = "did:agentme:base:nonexistent-agent";
     let encoded_did = urlencoding::encode(nonexistent_did);
 
     let (status, _body) = with_timeout(http_get(&server.url(&format!("/agents/{}", encoded_did))))
@@ -278,7 +278,7 @@ async fn test_trust_score_returns_default_for_unknown() {
 
 #[tokio::test]
 async fn test_rate_limiting_allows_under_limit() {
-    use agentmesh_node::RateLimitConfig;
+    use agentme_node::RateLimitConfig;
 
     let config = RateLimitConfig {
         requests_per_second: 10,
@@ -302,7 +302,7 @@ async fn test_rate_limiting_allows_under_limit() {
 
 #[tokio::test]
 async fn test_rate_limiting_returns_429_when_exceeded() {
-    use agentmesh_node::RateLimitConfig;
+    use agentme_node::RateLimitConfig;
 
     let config = RateLimitConfig {
         requests_per_second: 1,
@@ -333,7 +333,7 @@ async fn test_rate_limiting_returns_429_when_exceeded() {
 
 #[tokio::test]
 async fn test_rate_limiting_disabled_allows_all() {
-    use agentmesh_node::RateLimitConfig;
+    use agentme_node::RateLimitConfig;
 
     let config = RateLimitConfig {
         requests_per_second: 1,

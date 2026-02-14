@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title IAgentMeshEscrow - Interface for the AgentMesh Escrow Contract
+/// @title IAgentMeshEscrow - Interface for the AgentMe Escrow Contract
 /// @notice Manages escrow for agent-to-agent transactions with dispute resolution
-/// @dev Part of the AgentMesh payment layer, compatible with x402 protocol
+/// @dev Part of the AgentMe payment layer, compatible with x402 protocol
 interface IAgentMeshEscrow {
     // ============ Enums ============
 

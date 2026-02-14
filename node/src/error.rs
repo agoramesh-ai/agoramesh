@@ -1,11 +1,11 @@
-//! Error types for AgentMesh node.
+//! Error types for AgentMe node.
 
 use thiserror::Error;
 
-/// Result type alias using AgentMesh Error.
+/// Result type alias using AgentMe Error.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// AgentMesh node error types.
+/// AgentMe node error types.
 #[derive(Error, Debug)]
 pub enum Error {
     /// Configuration error.

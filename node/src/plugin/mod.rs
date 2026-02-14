@@ -1,4 +1,4 @@
-//! AgentMesh Plugin System
+//! AgentMe Plugin System
 //!
 //! A modular, extensible plugin architecture for AI agents.
 //!
@@ -11,7 +11,7 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! use agentmesh_node::plugin::{Plugin, PluginRegistry, Action, ActionContext};
+//! use agentme_node::plugin::{Plugin, PluginRegistry, Action, ActionContext};
 //!
 //! // Define a simple action
 //! struct EchoAction;

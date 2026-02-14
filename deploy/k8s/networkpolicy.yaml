@@ -1,12 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: agentmesh-node
-  namespace: agentmesh
+  name: agentme-node
+  namespace: agentme
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: agentmesh-node
+      app.kubernetes.io/name: agentme-node
   policyTypes:
     - Ingress
     - Egress
@@ -21,7 +21,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: agentmesh-node
+              app.kubernetes.io/name: agentme-node
       ports:
         - port: 4001
           protocol: TCP
@@ -39,7 +39,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: agentmesh-node
+              app.kubernetes.io/name: agentme-node
       ports:
         - port: 4001
           protocol: TCP

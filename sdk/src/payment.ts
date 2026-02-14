@@ -1,5 +1,5 @@
 /**
- * AgentMesh Payment Client
+ * AgentMe Payment Client
  *
  * Client for managing escrow payments between agents.
  *
@@ -8,7 +8,7 @@
 
 import { parseEventLogs } from 'viem';
 import type { Escrow, EscrowState, CreateEscrowOptions } from './types.js';
-import type { AgentMeshClient } from './client.js';
+import type { AgentMeClient } from './client.js';
 import { didToHash } from './client.js';
 import { EscrowStateNames } from './types.js';
 import { parseUSDC, formatUSDC, toUnixTimestamp } from './utils.js';
@@ -177,14 +177,14 @@ function parseEscrow(data: {
  *
  * @example
  * ```typescript
- * const client = new AgentMeshClient({ ... });
+ * const client = new AgentMeClient({ ... });
  * await client.connect();
  *
- * const payment = new PaymentClient(client, 'did:agentmesh:base:0x...');
+ * const payment = new PaymentClient(client, 'did:agentme:base:0x...');
  *
  * // Create and fund an escrow
  * const escrowId = await payment.createEscrow({
- *   providerDid: 'did:agentmesh:base:0x...',
+ *   providerDid: 'did:agentme:base:0x...',
  *   providerAddress: '0x...',
  *   amount: '100',
  *   taskHash: '0x...',
@@ -198,16 +198,16 @@ function parseEscrow(data: {
  * ```
  */
 export class PaymentClient {
-  private readonly client: AgentMeshClient;
+  private readonly client: AgentMeClient;
   private readonly clientDid: string;
 
   /**
    * Create a new PaymentClient.
    *
-   * @param client - The AgentMesh client instance
+   * @param client - The AgentMe client instance
    * @param clientDid - The client agent's DID (for creating escrows)
    */
-  constructor(client: AgentMeshClient, clientDid: string) {
+  constructor(client: AgentMeClient, clientDid: string) {
     this.client = client;
     this.clientDid = clientDid;
   }
@@ -225,7 +225,7 @@ export class PaymentClient {
    * @example
    * ```typescript
    * const escrowId = await payment.createEscrow({
-   *   providerDid: 'did:agentmesh:base:0x...',
+   *   providerDid: 'did:agentme:base:0x...',
    *   providerAddress: '0x...',
    *   amount: '100', // 100 USDC
    *   taskHash: keccak256(toHex(taskDescription)),

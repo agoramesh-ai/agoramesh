@@ -36,7 +36,7 @@ function parseBool(value?: string): boolean {
 }
 
 async function main() {
-  console.log('🚀 AgentMesh Bridge - Claude Code Worker');
+  console.log('🚀 AgentMe Bridge - Claude Code Worker');
   console.log('=========================================\n');
 
   const envConfig = loadConfig();

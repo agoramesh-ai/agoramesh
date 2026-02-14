@@ -1,4 +1,4 @@
-# Prometheus Configuration for AgentMesh Node
+# Prometheus Configuration for AgentMe Node
 # Used with docker-compose monitoring profile
 
 global:
@@ -7,7 +7,7 @@ global:
 
   # Attach these labels to any time series or alerts
   external_labels:
-    monitor: 'agentmesh-local'
+    monitor: 'agentme-local'
 
 # Alertmanager configuration (optional)
 # alerting:
@@ -27,16 +27,16 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # AgentMesh Node
-  - job_name: 'agentmesh-node'
+  # AgentMe Node
+  - job_name: 'agentme-node'
     static_configs:
       - targets: ['node:8080']
     metrics_path: '/metrics'
     scrape_interval: 10s
     scrape_timeout: 5s
 
-  # AgentMesh Bridge (if running)
-  - job_name: 'agentmesh-bridge'
+  # AgentMe Bridge (if running)
+  - job_name: 'agentme-bridge'
     static_configs:
       - targets: ['bridge:3402']
     metrics_path: '/metrics'

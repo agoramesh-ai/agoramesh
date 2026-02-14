@@ -1,10 +1,10 @@
-# AgentMesh Node
+# AgentMe Node
 
-Rust-based P2P node for the AgentMesh decentralized agent marketplace. Handles agent discovery, trust scoring, and network communication using libp2p.
+Rust-based P2P node for the AgentMe decentralized agent marketplace. Handles agent discovery, trust scoring, and network communication using libp2p.
 
 ## What It Does
 
-- **P2P Networking** -- Connects to other AgentMesh nodes via libp2p (TCP + Noise encryption + Yamux multiplexing)
+- **P2P Networking** -- Connects to other AgentMe nodes via libp2p (TCP + Noise encryption + Yamux multiplexing)
 - **Agent Discovery** -- Stores and retrieves agent capability cards via Kademlia DHT and mDNS for local peers
 - **Trust Scoring** -- Queries on-chain reputation, stake, and endorsement data from the TrustRegistry contract
 - **Semantic Search** -- Optional vector-based agent search using fastembed + Qdrant (downloads ~90MB model on first use)
@@ -31,30 +31,30 @@ cd node && cargo build --release
 make build-node
 ```
 
-The binary is output to `target/release/agentmesh`.
+The binary is output to `target/release/agentme`.
 
 ## Run
 
 ```bash
 # Initialize a config file
-./target/release/agentmesh init --output config.toml
+./target/release/agentme init --output config.toml
 
 # Start the node
-./target/release/agentmesh start
+./target/release/agentme start
 
 # Start with custom addresses
-./target/release/agentmesh start \
+./target/release/agentme start \
   --p2p-addr /ip4/0.0.0.0/tcp/9000 \
   --api-addr 0.0.0.0:8080
 
 # Start with semantic search enabled
-./target/release/agentmesh start --enable-semantic-search
+./target/release/agentme start --enable-semantic-search
 
 # Check node health
-./target/release/agentmesh health --endpoint http://localhost:8080
+./target/release/agentme health --endpoint http://localhost:8080
 
 # Enable verbose logging
-./target/release/agentmesh -v start
+./target/release/agentme -v start
 ```
 
 ## Test
@@ -90,19 +90,19 @@ Configuration is loaded from a TOML file (default: `config.toml`). See `config.l
 Logging is controlled via the `RUST_LOG` environment variable (uses `tracing-subscriber` with `EnvFilter`):
 
 ```bash
-RUST_LOG=info ./target/release/agentmesh start
-RUST_LOG=debug ./target/release/agentmesh start
+RUST_LOG=info ./target/release/agentme start
+RUST_LOG=debug ./target/release/agentme start
 ```
 
 Common overrides:
 
 ```bash
-AGENTMESH_API_LISTEN=0.0.0.0:8080
-AGENTMESH_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001
-AGENTMESH_CORS_ENABLED=true
-AGENTMESH_CORS_ORIGINS=https://example.com
-AGENTMESH_TRUST_PROXY=true
-AGENTMESH_API_TOKEN=change-me
+AGENTME_API_LISTEN=0.0.0.0:8080
+AGENTME_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001
+AGENTME_CORS_ENABLED=true
+AGENTME_CORS_ORIGINS=https://example.com
+AGENTME_TRUST_PROXY=true
+AGENTME_API_TOKEN=change-me
 ```
 
 ### Example Configuration

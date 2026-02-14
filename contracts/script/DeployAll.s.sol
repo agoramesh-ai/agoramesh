@@ -12,7 +12,7 @@ import "../src/VerifiedNamespaces.sol";
 import "../src/AgentToken.sol";
 import "../src/NFTBoundReputation.sol";
 
-/// @title DeployAll - Full AgentMesh Deployment with Configuration
+/// @title DeployAll - Full AgentMe Deployment with Configuration
 /// @notice Deploys ALL contracts, configures cross-contract permissions, whitelists USDC,
 ///         and saves deployment addresses to JSON. This is the canonical testnet deployment script.
 /// @dev Run with: forge script script/DeployAll.s.sol --rpc-url base_sepolia --broadcast --verify
@@ -50,7 +50,7 @@ contract DeployAll is Script {
         address lzEndpoint = isMainnet ? LZ_ENDPOINT_MAINNET : LZ_ENDPOINT_SEPOLIA;
 
         console.log("========================================");
-        console.log("  AGENTMESH FULL DEPLOYMENT");
+        console.log("  AGENTME FULL DEPLOYMENT");
         console.log("========================================");
         console.log("Chain ID:", block.chainid);
         console.log("Network:", isMainnet ? "Base Mainnet" : "Base Sepolia");
@@ -125,7 +125,7 @@ contract DeployAll is Script {
         console.log("  7. VerifiedNamespaces:", c.namespaces);
 
         // 8. AgentToken (ERC-721 agent ownership)
-        c.agentToken = address(new AgentToken("AgentMesh Agents", "AGENT", usdc, admin, admin));
+        c.agentToken = address(new AgentToken("AgentMe Agents", "AGENT", usdc, admin, admin));
         console.log("  8. AgentToken:", c.agentToken);
 
         // 9. NFTBoundReputation (reputation tied to agent NFTs)

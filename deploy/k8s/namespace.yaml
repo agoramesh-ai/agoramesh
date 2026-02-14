@@ -1,9 +1,9 @@
-# AgentMesh Namespace
-# Isolates all AgentMesh resources
+# AgentMe Namespace
+# Isolates all AgentMe resources
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agentmesh
+  name: agentme
   labels:
-    app.kubernetes.io/name: agentmesh
-    app.kubernetes.io/part-of: agentmesh
+    app.kubernetes.io/name: agentme
+    app.kubernetes.io/part-of: agentme

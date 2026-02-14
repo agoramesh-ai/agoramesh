@@ -1,10 +1,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: agentmesh-node
-  namespace: agentmesh
+  name: agentme-node
+  namespace: agentme
 spec:
   minAvailable: 2
   selector:
     matchLabels:
-      app.kubernetes.io/name: agentmesh-node
+      app.kubernetes.io/name: agentme-node

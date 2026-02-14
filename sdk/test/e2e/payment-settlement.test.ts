@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { keccak256, toHex, parseUnits } from 'viem';
-import { AgentMeshClient, didToHash } from '../../src/client.js';
+import { AgentMeClient, didToHash } from '../../src/client.js';
 import { TrustClient } from '../../src/trust.js';
 import { PaymentClient } from '../../src/payment.js';
 import {
@@ -37,8 +37,8 @@ import {
 // =============================================================================
 
 describe('Trust Score Updates After Payment Settlement', () => {
-  let clientAgent: AgentMeshClient;
-  let providerAgent: AgentMeshClient;
+  let clientAgent: AgentMeClient;
+  let providerAgent: AgentMeClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
 
@@ -47,7 +47,7 @@ describe('Trust Score Updates After Payment Settlement', () => {
     mockWalletClient = createMockWalletClient(mockPublicClient);
 
     // Create client agent
-    clientAgent = new AgentMeshClient({
+    clientAgent = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -66,7 +66,7 @@ describe('Trust Score Updates After Payment Settlement', () => {
     clientAgent.connected = true;
 
     // Create provider agent
-    providerAgent = new AgentMeshClient({
+    providerAgent = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.provider,
@@ -274,7 +274,7 @@ describe('Trust Score Updates After Payment Settlement', () => {
 // =============================================================================
 
 describe('Streaming Payments Settlement', () => {
-  let clientAgent: AgentMeshClient;
+  let clientAgent: AgentMeClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
   const STREAMING_ADDRESS = '0x9876543210987654321098765432109876543210' as `0x${string}`;
@@ -283,7 +283,7 @@ describe('Streaming Payments Settlement', () => {
     mockPublicClient = createMockPublicClient();
     mockWalletClient = createMockWalletClient(mockPublicClient);
 
-    clientAgent = new AgentMeshClient({
+    clientAgent = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -421,25 +421,25 @@ describe('Streaming Payments Settlement', () => {
 // =============================================================================
 
 describe('Multi-Party Payment Settlement', () => {
-  let orchestratorClient: AgentMeshClient;
+  let orchestratorClient: AgentMeClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
 
   const agents = {
     orchestrator: {
-      did: 'did:agentmesh:base:0x1111111111111111111111111111111111111111',
+      did: 'did:agentme:base:0x1111111111111111111111111111111111111111',
       address: '0x1111111111111111111111111111111111111111' as const,
     },
     worker1: {
-      did: 'did:agentmesh:base:0x2222222222222222222222222222222222222222',
+      did: 'did:agentme:base:0x2222222222222222222222222222222222222222',
       address: '0x2222222222222222222222222222222222222222' as const,
     },
     worker2: {
-      did: 'did:agentmesh:base:0x3333333333333333333333333333333333333333',
+      did: 'did:agentme:base:0x3333333333333333333333333333333333333333',
       address: '0x3333333333333333333333333333333333333333' as const,
     },
     finalizer: {
-      did: 'did:agentmesh:base:0x4444444444444444444444444444444444444444',
+      did: 'did:agentme:base:0x4444444444444444444444444444444444444444',
       address: '0x4444444444444444444444444444444444444444' as const,
     },
   };
@@ -456,7 +456,7 @@ describe('Multi-Party Payment Settlement', () => {
       });
     }
 
-    orchestratorClient = new AgentMeshClient({
+    orchestratorClient = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,

@@ -1,72 +1,72 @@
-# AgentMesh Node Configuration
+# AgentMe Node Configuration
 # Environment-specific settings
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agentmesh-node-config
-  namespace: agentmesh
+  name: agentme-node-config
+  namespace: agentme
   labels:
-    app.kubernetes.io/name: agentmesh-node
+    app.kubernetes.io/name: agentme-node
     app.kubernetes.io/component: config
 data:
   # Logging configuration
-  RUST_LOG: "info,agentmesh_node=debug"
+  RUST_LOG: "info,agentme_node=debug"
 
   # Network configuration
-  AGENTMESH_NETWORK: "mainnet"
+  AGENTME_NETWORK: "mainnet"
 
   # API configuration
-  AGENTMESH_API_LISTEN: "0.0.0.0:8080"
-  AGENTMESH_CORS_ENABLED: "true"
-  AGENTMESH_CORS_ORIGINS: "https://agentmesh.io"  # TODO: Set to actual production domain
+  AGENTME_API_LISTEN: "0.0.0.0:8080"
+  AGENTME_CORS_ENABLED: "true"
+  AGENTME_CORS_ORIGINS: "https://agentme.io"  # TODO: Set to actual production domain
 
   # P2P configuration
-  AGENTMESH_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
-  AGENTMESH_P2P_BOOTSTRAP: ""  # Comma-separated bootstrap peer addresses
+  AGENTME_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
+  AGENTME_P2P_BOOTSTRAP: ""  # Comma-separated bootstrap peer addresses
 
   # Rate limiting
-  AGENTMESH_RATE_LIMIT_ENABLED: "true"
-  AGENTMESH_RATE_LIMIT_RPS: "100"
-  AGENTMESH_RATE_LIMIT_BURST: "200"
+  AGENTME_RATE_LIMIT_ENABLED: "true"
+  AGENTME_RATE_LIMIT_RPS: "100"
+  AGENTME_RATE_LIMIT_BURST: "200"
 
   # Trust cache
-  AGENTMESH_TRUST_CACHE_ENABLED: "true"
-  AGENTMESH_TRUST_CACHE_TTL_SECS: "300"
-  AGENTMESH_TRUST_CACHE_MAX_ENTRIES: "10000"
+  AGENTME_TRUST_CACHE_ENABLED: "true"
+  AGENTME_TRUST_CACHE_TTL_SECS: "300"
+  AGENTME_TRUST_CACHE_MAX_ENTRIES: "10000"
 
   # Metrics
-  AGENTMESH_METRICS_ENABLED: "true"
+  AGENTME_METRICS_ENABLED: "true"
 
   # Chain configuration (Base Mainnet)
-  AGENTMESH_CHAIN_RPC: "https://mainnet.base.org"
-  AGENTMESH_CHAIN_ID: "8453"
+  AGENTME_CHAIN_RPC: "https://mainnet.base.org"
+  AGENTME_CHAIN_ID: "8453"
 
   # Contract addresses (to be filled after deployment)
-  # AGENTMESH_TRUST_REGISTRY_ADDRESS: ""
-  # AGENTMESH_ESCROW_ADDRESS: ""
+  # AGENTME_TRUST_REGISTRY_ADDRESS: ""
+  # AGENTME_ESCROW_ADDRESS: ""
 ---
 # Testnet configuration variant
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agentmesh-node-config-testnet
-  namespace: agentmesh
+  name: agentme-node-config-testnet
+  namespace: agentme
   labels:
-    app.kubernetes.io/name: agentmesh-node
+    app.kubernetes.io/name: agentme-node
     app.kubernetes.io/component: config
     environment: testnet
 data:
-  RUST_LOG: "debug,agentmesh_node=trace"
-  AGENTMESH_NETWORK: "testnet"
-  AGENTMESH_API_LISTEN: "0.0.0.0:8080"
-  AGENTMESH_CORS_ENABLED: "true"
-  AGENTMESH_CORS_ORIGINS: "https://agentmesh.io"  # TODO: Set to actual production domain
-  AGENTMESH_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
-  AGENTMESH_RATE_LIMIT_ENABLED: "true"
-  AGENTMESH_RATE_LIMIT_RPS: "50"
-  AGENTMESH_RATE_LIMIT_BURST: "100"
-  AGENTMESH_TRUST_CACHE_ENABLED: "true"
-  AGENTMESH_TRUST_CACHE_TTL_SECS: "60"
-  AGENTMESH_METRICS_ENABLED: "true"
-  AGENTMESH_CHAIN_RPC: "https://sepolia.base.org"
-  AGENTMESH_CHAIN_ID: "84532"
+  RUST_LOG: "debug,agentme_node=trace"
+  AGENTME_NETWORK: "testnet"
+  AGENTME_API_LISTEN: "0.0.0.0:8080"
+  AGENTME_CORS_ENABLED: "true"
+  AGENTME_CORS_ORIGINS: "https://agentme.io"  # TODO: Set to actual production domain
+  AGENTME_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
+  AGENTME_RATE_LIMIT_ENABLED: "true"
+  AGENTME_RATE_LIMIT_RPS: "50"
+  AGENTME_RATE_LIMIT_BURST: "100"
+  AGENTME_TRUST_CACHE_ENABLED: "true"
+  AGENTME_TRUST_CACHE_TTL_SECS: "60"
+  AGENTME_METRICS_ENABLED: "true"
+  AGENTME_CHAIN_RPC: "https://sepolia.base.org"
+  AGENTME_CHAIN_ID: "84532"

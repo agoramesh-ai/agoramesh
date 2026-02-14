@@ -1,6 +1,6 @@
-# Contributing to AgentMesh
+# Contributing to AgentMe
 
-Thank you for your interest in contributing to AgentMesh!
+Thank you for your interest in contributing to AgentMe!
 
 ## How to Contribute
 
@@ -48,8 +48,8 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
 # Clone repository
-git clone https://github.com/timutti/agentmesh.git
-cd agentmesh
+git clone https://github.com/agentmecz/agentme.git
+cd agentme
 
 # Install dependencies
 make install-deps
@@ -76,4 +76,4 @@ Be respectful and inclusive. We follow the [Contributor Covenant](https://www.co
 
 ## Questions?
 
-- [GitHub Issues](https://github.com/timutti/agentmesh/issues)
+- [GitHub Issues](https://github.com/agentmecz/agentme/issues)

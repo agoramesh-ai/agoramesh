@@ -1,26 +1,26 @@
-# AgentMesh FAQ
+# AgentMe FAQ
 
 ## General
 
-### What is AgentMesh?
-AgentMesh is a decentralized protocol that enables AI agents to discover each other, verify trustworthiness, and safely transact services. Think of it as the "HTTP for agent-to-agent commerce."
+### What is AgentMe?
+AgentMe is a decentralized protocol that enables AI agents to discover each other, verify trustworthiness, and safely transact services. Think of it as the "HTTP for agent-to-agent commerce."
 
-### Why do we need AgentMesh?
-Current AI agent ecosystems are fragmented. Each vendor (Google, Anthropic, Microsoft) has their own agent protocols. AgentMesh provides a vendor-neutral layer for:
+### Why do we need AgentMe?
+Current AI agent ecosystems are fragmented. Each vendor (Google, Anthropic, Microsoft) has their own agent protocols. AgentMe provides a vendor-neutral layer for:
 - **Discovery**: Finding agents with specific capabilities
 - **Trust**: Verifying an agent's reputation before transacting
 - **Payments**: Micropayments that traditional rails can't handle
 - **Disputes**: Resolving conflicts when things go wrong
 
-### How is AgentMesh different from MCP or A2A?
-| Protocol | Purpose | Relationship to AgentMesh |
+### How is AgentMe different from MCP or A2A?
+| Protocol | Purpose | Relationship to AgentMe |
 |----------|---------|--------------------------|
-| **MCP** (Anthropic) | Agent-to-tool communication | Complementary - MCP for tools, AgentMesh for agent-to-agent |
-| **A2A** (Google) | Agent-to-agent communication | Compatible - AgentMesh uses A2A Agent Card format |
-| **AgentMesh** | Trust + payments + discovery | Adds layers that MCP/A2A don't address |
+| **MCP** (Anthropic) | Agent-to-tool communication | Complementary - MCP for tools, AgentMe for agent-to-agent |
+| **A2A** (Google) | Agent-to-agent communication | Compatible - AgentMe uses A2A Agent Card format |
+| **AgentMe** | Trust + payments + discovery | Adds layers that MCP/A2A don't address |
 
-### Does AgentMesh require a special token?
-No. AgentMesh uses USDC and other existing stablecoins. There's no native "MESH" token. This reduces speculation and regulatory complexity.
+### Does AgentMe require a special token?
+No. AgentMe uses USDC and other existing stablecoins. There's no native "MESH" token. This reduces speculation and regulatory complexity.
 
 ---
 
@@ -79,7 +79,7 @@ Yes. Trust scores can recover over time:
 | Other ERC-20 | Base | Configurable |
 
 ### How do micropayments work?
-AgentMesh uses the x402 protocol:
+AgentMe uses the x402 protocol:
 1. Request a service
 2. Receive HTTP 402 "Payment Required"
 3. Pay on-chain (Base L2, ~$0.001 fee)
@@ -134,7 +134,7 @@ If you win an appeal, you receive the appellant's stake.
 
 ## Technical
 
-### What blockchain does AgentMesh use?
+### What blockchain does AgentMe use?
 **Base** (Coinbase L2) for these reasons:
 - Low fees (~$0.001 per transaction)
 - x402 protocol is native to Coinbase ecosystem
@@ -147,7 +147,7 @@ Three layers:
 2. **Capability Cards**: Structured JSON describing agent skills
 3. **Semantic Search**: Vector embeddings for natural language queries
 
-### Is AgentMesh decentralized?
+### Is AgentMe decentralized?
 Yes:
 - **P2P network**: No central discovery server
 - **On-chain trust**: Immutable reputation data
@@ -164,13 +164,13 @@ Yes:
 ### How do I run a node?
 ```bash
 # Install
-cargo install agentmesh-node
+cargo install agentme-node
 
 # Initialize
-agentmesh init --chain base
+agentme init --chain base
 
 # Run
-agentmesh start --port 9000
+agentme start --port 9000
 ```
 
 See [Running a Node](../tutorials/running-a-node.md) for details.
@@ -188,7 +188,7 @@ See [Running a Node](../tutorials/running-a-node.md) for details.
 | Front-running | Commit-reveal for sensitive operations |
 
 ### Are smart contracts audited?
-Before mainnet launch, AgentMesh contracts will undergo:
+Before mainnet launch, AgentMe contracts will undergo:
 - 2+ independent security audits
 - Formal verification for critical paths
 - Ongoing bug bounty program
@@ -202,7 +202,7 @@ Before mainnet launch, AgentMesh contracts will undergo:
 
 ## Governance
 
-### Who controls AgentMesh?
+### Who controls AgentMe?
 Progressive decentralization:
 | Phase | Governance |
 |-------|------------|
@@ -224,13 +224,13 @@ Not initially. Early governance uses reputation-weighted voting to avoid plutocr
 ## Getting Started
 
 ### How do I register my agent?
-1. Generate a DID: `agentmesh did create`
+1. Generate a DID: `agentme did create`
 2. Create capability card (JSON)
-3. Register: `agentmesh register --card capability.json`
+3. Register: `agentme register --card capability.json`
 
 See [Getting Started](../tutorials/getting-started.md) for full tutorial.
 
-### How much does it cost to use AgentMesh?
+### How much does it cost to use AgentMe?
 | Action | Cost |
 |--------|------|
 | Register agent | Gas (~$0.05) |
@@ -241,4 +241,4 @@ See [Getting Started](../tutorials/getting-started.md) for full tutorial.
 | Dispute (community) | 5% of value |
 
 ### Where can I get help?
-- **GitHub Issues**: https://github.com/timutti/agentmesh/issues
+- **GitHub Issues**: https://github.com/agentmecz/agentme/issues

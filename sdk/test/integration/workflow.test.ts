@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { keccak256, toHex, parseUnits } from 'viem';
-import { AgentMeshClient, didToHash } from '../../src/client.js';
+import { AgentMeClient, didToHash } from '../../src/client.js';
 import { TrustClient } from '../../src/trust.js';
 import { PaymentClient } from '../../src/payment.js';
 import { DiscoveryClient } from '../../src/discovery.js';
@@ -38,8 +38,8 @@ import {
 // =============================================================================
 
 describe('Complete Agent Discovery and Payment Workflow', () => {
-  let clientAgent: AgentMeshClient;
-  let providerAgent: AgentMeshClient;
+  let clientAgent: AgentMeClient;
+  let providerAgent: AgentMeClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
   let mockFetchContext: ReturnType<typeof createMockFetch>;
@@ -56,7 +56,7 @@ describe('Complete Agent Discovery and Payment Workflow', () => {
     global.fetch = mockFetchContext.mockFetch;
 
     // Create client agent (the one requesting services)
-    clientAgent = new AgentMeshClient({
+    clientAgent = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -75,7 +75,7 @@ describe('Complete Agent Discovery and Payment Workflow', () => {
     clientAgent.connected = true;
 
     // Create provider agent (the one offering services)
-    providerAgent = new AgentMeshClient({
+    providerAgent = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.provider,
@@ -483,15 +483,15 @@ describe('Multi-Agent Collaboration Workflow', () => {
     // Setup: Three agents - Orchestrator, Translator, and Reviewer
     const agents = {
       orchestrator: {
-        did: 'did:agentmesh:base:0x1111111111111111111111111111111111111111',
+        did: 'did:agentme:base:0x1111111111111111111111111111111111111111',
         address: '0x1111111111111111111111111111111111111111' as const,
       },
       translator: {
-        did: 'did:agentmesh:base:0x2222222222222222222222222222222222222222',
+        did: 'did:agentme:base:0x2222222222222222222222222222222222222222',
         address: '0x2222222222222222222222222222222222222222' as const,
       },
       reviewer: {
-        did: 'did:agentmesh:base:0x3333333333333333333333333333333333333333',
+        did: 'did:agentme:base:0x3333333333333333333333333333333333333333',
         address: '0x3333333333333333333333333333333333333333' as const,
       },
     };
@@ -505,7 +505,7 @@ describe('Multi-Agent Collaboration Workflow', () => {
     }
 
     // Create orchestrator client
-    const orchestratorClient = new AgentMeshClient({
+    const orchestratorClient = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client, // Use any key for testing
@@ -610,7 +610,7 @@ describe('Error Handling and Edge Cases', () => {
   });
 
   it('should handle unregistered agent gracefully', async () => {
-    const client = new AgentMeshClient({
+    const client = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -624,7 +624,7 @@ describe('Error Handling and Edge Cases', () => {
     client.connected = true;
 
     const trust = new TrustClient(client);
-    const score = await trust.getTrustScore('did:agentmesh:base:0x0000000000000000000000000000000000000000');
+    const score = await trust.getTrustScore('did:agentme:base:0x0000000000000000000000000000000000000000');
 
     // Unregistered agents should have zero trust
     expect(score.overall).toBe(0);
@@ -637,7 +637,7 @@ describe('Error Handling and Edge Cases', () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    const client = new AgentMeshClient({
+    const client = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -654,7 +654,7 @@ describe('Error Handling and Edge Cases', () => {
   });
 
   it('should handle expired escrow deadline', async () => {
-    const client = new AgentMeshClient({
+    const client = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,

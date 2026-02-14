@@ -1,4 +1,4 @@
-# AgentMesh Local Development Stack
+# AgentMe Local Development Stack
 # Usage: docker compose up -d
 #
 # Services:
@@ -11,7 +11,7 @@ services:
   # Local Ethereum Node (Foundry Anvil)
   anvil:
     image: ghcr.io/foundry-rs/foundry:latest
-    container_name: agentmesh-anvil
+    container_name: agentme-anvil
     entrypoint: ["anvil", "--host", "0.0.0.0", "--chain-id", "31337"]
     ports:
       - "8545:8545"
@@ -29,7 +29,7 @@ services:
   # Deploy contracts to Anvil (one-shot)
   deploy:
     image: ghcr.io/foundry-rs/foundry:latest
-    container_name: agentmesh-deploy
+    container_name: agentme-deploy
     working_dir: /app/contracts
     entrypoint: ["forge", "script", "script/DeployLocal.s.sol", "--rpc-url", "http://anvil:8545", "--broadcast"]
     environment:
@@ -42,24 +42,24 @@ services:
       anvil:
         condition: service_healthy
 
-  # AgentMesh P2P Node
+  # AgentMe P2P Node
   node:
     build:
       context: ./node
       dockerfile: Dockerfile
-    container_name: agentmesh-node
-    command: ["./agentmesh", "start", "--enable-semantic-search", "--api-addr", "0.0.0.0:8080", "--p2p-addr", "/ip4/0.0.0.0/tcp/4001"]
+    container_name: agentme-node
+    command: ["./agentme", "start", "--enable-semantic-search", "--api-addr", "0.0.0.0:8080", "--p2p-addr", "/ip4/0.0.0.0/tcp/4001"]
     ports:
       - "8080:8080"   # HTTP API
       - "4001:4001"   # P2P libp2p
     environment:
       - RUST_LOG=info
-      - AGENTMESH_NETWORK=local
-      - AGENTMESH_CHAIN_RPC=http://anvil:8545
-      - AGENTMESH_API_LISTEN=0.0.0.0:8080
-      - AGENTMESH_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001
+      - AGENTME_NETWORK=local
+      - AGENTME_CHAIN_RPC=http://anvil:8545
+      - AGENTME_API_LISTEN=0.0.0.0:8080
+      - AGENTME_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001
     volumes:
-      - agentmesh_data:/app/data
+      - agentme_data:/app/data
       - ./node/config.local.toml:/app/config.toml:ro
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
@@ -82,7 +82,7 @@ services:
     build:
       context: .
       dockerfile: bridge/Dockerfile
-    container_name: agentmesh-bridge
+    container_name: agentme-bridge
     ports:
       - "127.0.0.1:3402:3402"
     environment:
@@ -90,7 +90,7 @@ services:
       - AGENT_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
       - BRIDGE_PORT=3402
       - BRIDGE_HOST=0.0.0.0
-      - WORKSPACE_DIR=/tmp/agentmesh-workspace
+      - WORKSPACE_DIR=/tmp/agentme-workspace
       - ALLOWED_COMMANDS=claude,git,npm,node,npx,pnpm,yarn,cargo
       - TASK_TIMEOUT=300
       - AGENT_NAME=Local Test Agent
@@ -113,4 +113,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  agentmesh_data:
+  agentme_data:

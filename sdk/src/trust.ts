@@ -1,7 +1,7 @@
 /**
- * AgentMesh Trust Client
+ * AgentMe Trust Client
  *
- * Client for interacting with the AgentMesh trust layer.
+ * Client for interacting with the AgentMe trust layer.
  *
  * @packageDocumentation
  */
@@ -13,7 +13,7 @@ import type {
   StakeInfo,
   Endorsement,
 } from './types.js';
-import type { AgentMeshClient } from './client.js';
+import type { AgentMeClient } from './client.js';
 import { didToHash } from './client.js';
 import { BASIS_POINTS } from './types.js';
 import { parseUSDC, formatUSDC } from './utils.js';
@@ -156,7 +156,7 @@ function basisPointsToScore(bps: bigint): number {
 // =============================================================================
 
 /**
- * Client for interacting with the AgentMesh trust layer.
+ * Client for interacting with the AgentMe trust layer.
  *
  * The trust layer provides:
  * - Composite trust scores (reputation + stake + endorsements)
@@ -165,31 +165,31 @@ function basisPointsToScore(bps: bigint): number {
  *
  * @example
  * ```typescript
- * const client = new AgentMeshClient({ ... });
+ * const client = new AgentMeClient({ ... });
  * await client.connect();
  *
  * const trust = new TrustClient(client);
  *
  * // Get trust score
- * const score = await trust.getTrustScore('did:agentmesh:base:0x...');
+ * const score = await trust.getTrustScore('did:agentme:base:0x...');
  * console.log(`Trust: ${(score.overall * 100).toFixed(1)}%`);
  *
  * // Deposit stake
- * await trust.depositStake('did:agentmesh:base:0x...', '1000'); // 1000 USDC
+ * await trust.depositStake('did:agentme:base:0x...', '1000'); // 1000 USDC
  *
  * // Endorse another agent
- * await trust.endorse('did:agentmesh:base:0x...', 'Reliable partner');
+ * await trust.endorse('did:agentme:base:0x...', 'Reliable partner');
  * ```
  */
 export class TrustClient {
-  private readonly client: AgentMeshClient;
+  private readonly client: AgentMeClient;
 
   /**
    * Create a new TrustClient.
    *
-   * @param client - The AgentMesh client instance
+   * @param client - The AgentMe client instance
    */
-  constructor(client: AgentMeshClient) {
+  constructor(client: AgentMeClient) {
     this.client = client;
   }
 
@@ -201,14 +201,14 @@ export class TrustClient {
    * Get trust score from a node's REST API (no wallet/blockchain connection needed).
    *
    * @param did - The agent's DID
-   * @param nodeUrl - The AgentMesh node URL (e.g., 'https://api.agentme.cz')
+   * @param nodeUrl - The AgentMe node URL (e.g., 'https://api.agentme.cz')
    * @returns Trust score breakdown
    *
    * @example
    * ```typescript
    * const trust = new TrustClient(client);
    * const score = await trust.getTrustFromNode(
-   *   'did:agentmesh:base:0x...',
+   *   'did:agentme:base:0x...',
    *   'https://api.agentme.cz'
    * );
    * console.log(`Trust: ${(score.overall * 100).toFixed(1)}%`);
@@ -453,7 +453,7 @@ export class TrustClient {
    * @example
    * ```typescript
    * // Stake 1000 USDC
-   * const txHash = await trust.depositStake('did:agentmesh:base:0x...', '1000');
+   * const txHash = await trust.depositStake('did:agentme:base:0x...', '1000');
    * ```
    */
   async depositStake(did: string, amount: string): Promise<`0x${string}`> {
@@ -643,7 +643,7 @@ export class TrustClient {
    * @example
    * ```typescript
    * await trust.endorse(
-   *   'did:agentmesh:base:0x...',
+   *   'did:agentme:base:0x...',
    *   'Reliable partner for legal translations'
    * );
    * ```

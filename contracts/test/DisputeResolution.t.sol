@@ -36,11 +36,11 @@ contract DisputeResolutionTest is Test {
     address public arbiter2 = makeAddr("arbiter2");
     address public arbiter3 = makeAddr("arbiter3");
 
-    bytes32 public clientDid = keccak256("did:agentmesh:base:client");
-    bytes32 public providerDid = keccak256("did:agentmesh:base:provider");
-    bytes32 public arbiter1Did = keccak256("did:agentmesh:base:arbiter1");
-    bytes32 public arbiter2Did = keccak256("did:agentmesh:base:arbiter2");
-    bytes32 public arbiter3Did = keccak256("did:agentmesh:base:arbiter3");
+    bytes32 public clientDid = keccak256("did:agentme:base:client");
+    bytes32 public providerDid = keccak256("did:agentme:base:provider");
+    bytes32 public arbiter1Did = keccak256("did:agentme:base:arbiter1");
+    bytes32 public arbiter2Did = keccak256("did:agentme:base:arbiter2");
+    bytes32 public arbiter3Did = keccak256("did:agentme:base:arbiter3");
 
     // Constants matching the spec
     uint256 constant TIER1_MAX = 10 * 1e6; // $10

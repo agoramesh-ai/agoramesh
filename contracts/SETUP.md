@@ -1,6 +1,6 @@
 # Contracts Setup
 
-This directory contains the AgentMesh smart contracts built with [Foundry](https://book.getfoundry.sh/).
+This directory contains the AgentMe smart contracts built with [Foundry](https://book.getfoundry.sh/).
 
 ## Prerequisites
 

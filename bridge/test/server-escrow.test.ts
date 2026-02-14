@@ -111,7 +111,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-1',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '1',
         });
 
@@ -143,7 +143,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-2',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '1',
         });
 
@@ -174,7 +174,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-3',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '999',
         });
 
@@ -205,7 +205,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-4',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '1',
         });
 
@@ -230,7 +230,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-5',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           // No escrowId - direct payment or trust-based
         });
 
@@ -260,7 +260,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-6',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '1',
         });
 
@@ -290,7 +290,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-7',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           // No escrowId
         });
 
@@ -319,7 +319,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-8',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '1',
         });
 
@@ -348,7 +348,7 @@ describe('BridgeServer Escrow Integration', () => {
           taskId: 'test-task-9',
           type: 'prompt',
           prompt: 'Hello world',
-          clientDid: 'did:agentmesh:base:client1',
+          clientDid: 'did:agentme:base:client1',
           escrowId: '1', // Even with escrowId, should work (just not validated)
         });
 

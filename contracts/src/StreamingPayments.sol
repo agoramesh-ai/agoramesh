@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IStreamingPayments.sol";
 import "./TrustRegistry.sol";
 
-/// @title StreamingPayments - Continuous Payment Streams for AgentMesh
+/// @title StreamingPayments - Continuous Payment Streams for AgentMe
 /// @notice Enables time-based streaming of payments from clients to agent providers
 /// @dev Inspired by Sablier's linear streaming model, optimized for agent services
 contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, ReentrancyGuard {

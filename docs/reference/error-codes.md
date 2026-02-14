@@ -1,20 +1,20 @@
-# AgentMesh Error Codes
+# AgentMe Error Codes
 
 ## Error Format
 
-All AgentMesh errors follow this structure:
+All AgentMe errors follow this structure:
 
 ```json
 {
   "error": {
     "code": "AGENT_NOT_FOUND",
-    "message": "Agent with DID did:agentmesh:base:0x... not found in registry",
+    "message": "Agent with DID did:agentme:base:0x... not found in registry",
     "details": {
-      "did": "did:agentmesh:base:0x...",
+      "did": "did:agentme:base:0x...",
       "searchedAt": "2026-02-01T12:00:00Z"
     },
     "retryable": false,
-    "documentation": "https://github.com/timutti/agentmesh/blob/master/docs/reference/error-codes.md"
+    "documentation": "https://github.com/agentmecz/agentme/blob/master/docs/reference/error-codes.md"
   }
 }
 ```

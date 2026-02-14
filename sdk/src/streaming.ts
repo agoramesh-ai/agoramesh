@@ -1,5 +1,5 @@
 /**
- * AgentMesh Streaming Payments Client
+ * AgentMe Streaming Payments Client
  *
  * Client for managing continuous payment streams between agents.
  * Inspired by Sablier's linear streaming model.
@@ -8,7 +8,7 @@
  */
 
 import { parseEventLogs } from 'viem';
-import type { AgentMeshClient } from './client.js';
+import type { AgentMeClient } from './client.js';
 import { didToHash } from './client.js';
 import { parseUSDC, formatUSDC, toUnixTimestamp, calculateElapsedTime } from './utils.js';
 import { ERC20_ABI } from './abis.js';
@@ -391,7 +391,7 @@ function parseStream(data: {
  *
  * @example
  * ```typescript
- * const client = new AgentMeshClient({ ... });
+ * const client = new AgentMeClient({ ... });
  * await client.connect();
  *
  * const streaming = new StreamingPaymentsClient(client, {
@@ -400,7 +400,7 @@ function parseStream(data: {
  *
  * // Create a 1-hour stream of 100 USDC
  * const streamId = await streaming.createStream({
- *   recipientDid: 'did:agentmesh:base:0x...',
+ *   recipientDid: 'did:agentme:base:0x...',
  *   recipientAddress: '0x...',
  *   amount: '100',
  *   duration: 3600, // 1 hour in seconds
@@ -411,17 +411,17 @@ function parseStream(data: {
  * ```
  */
 export class StreamingPaymentsClient {
-  private readonly client: AgentMeshClient;
+  private readonly client: AgentMeClient;
   private readonly contractAddress: `0x${string}`;
 
   /**
    * Create a new StreamingPaymentsClient.
    *
-   * @param client - The AgentMesh client instance
+   * @param client - The AgentMe client instance
    * @param options - Configuration options
    */
   constructor(
-    client: AgentMeshClient,
+    client: AgentMeClient,
     options: { streamingPaymentsAddress: `0x${string}` }
   ) {
     this.client = client;
@@ -441,7 +441,7 @@ export class StreamingPaymentsClient {
    * @example
    * ```typescript
    * const streamId = await streaming.createStream({
-   *   recipientDid: 'did:agentmesh:base:0x...',
+   *   recipientDid: 'did:agentme:base:0x...',
    *   recipientAddress: '0x...',
    *   amount: '100', // 100 USDC
    *   duration: 3600, // 1 hour

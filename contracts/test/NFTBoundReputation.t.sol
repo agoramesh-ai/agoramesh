@@ -36,8 +36,8 @@ contract NFTBoundReputationTest is Test {
     address public treasury = address(0x6);
 
     // Test DIDs
-    bytes32 public constant DID1 = keccak256("did:agentmesh:base:0x1111");
-    bytes32 public constant DID2 = keccak256("did:agentmesh:base:0x2222");
+    bytes32 public constant DID1 = keccak256("did:agentme:base:0x1111");
+    bytes32 public constant DID2 = keccak256("did:agentme:base:0x2222");
 
     // Events
     event ReputationUpdated(uint256 indexed tokenId, uint256 newScore, uint256 totalTransactions);
@@ -49,7 +49,7 @@ contract NFTBoundReputationTest is Test {
         vm.startPrank(admin);
 
         usdc = new MockUSDC2();
-        agentToken = new AgentToken("AgentMesh Agents", "AGENT", address(usdc), treasury, admin);
+        agentToken = new AgentToken("AgentMe Agents", "AGENT", address(usdc), treasury, admin);
         reputation = new NFTBoundReputation(address(agentToken), address(usdc), admin);
 
         reputation.grantRole(reputation.ORACLE_ROLE(), oracle);

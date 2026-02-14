@@ -1,4 +1,4 @@
-//! End-to-End Integration Tests for AgentMesh Node.
+//! End-to-End Integration Tests for AgentMe Node.
 //!
 //! These tests verify complete system flows spanning multiple components:
 //! - Full arbitration lifecycle (dispute → evidence → ruling)
@@ -14,8 +14,8 @@
 
 use std::sync::Arc;
 
-use agentmesh_node::{
-    discovery::{AgentMeshExtension, Capability, CapabilityCard},
+use agentme_node::{
+    discovery::{AgentMeExtension, Capability, CapabilityCard},
     trust::TrustInfo,
     AIArbitrationConfig, AIArbitrator, CircuitBreaker, CircuitBreakerConfig, CircuitState,
     DiscoveryService, Evidence, EvidenceType, JurorPool, JurorPoolConfig, TrustCache,
@@ -36,8 +36,8 @@ async fn test_tier1_disputes_rejected_by_ai_arbitrator() {
     // Attempt to create a Tier 1 dispute ($5)
     let result = arbitrator.create_dispute(
         "escrow-tier1-test",
-        "did:agentmesh:base:client",
-        "did:agentmesh:base:provider",
+        "did:agentme:base:client",
+        "did:agentme:base:provider",
         5_000_000, // $5 USDC - below Tier 2 minimum
     );
 
@@ -64,8 +64,8 @@ async fn test_tier2_dispute_minimum_boundary() {
     let dispute_id = arbitrator
         .create_dispute(
             "escrow-tier2-boundary",
-            "did:agentmesh:base:client",
-            "did:agentmesh:base:provider",
+            "did:agentme:base:client",
+            "did:agentme:base:provider",
             10_000_000, // $10 USDC - exactly Tier 2 minimum
         )
         .unwrap();
@@ -73,8 +73,8 @@ async fn test_tier2_dispute_minimum_boundary() {
     // Verify dispute was created
     let dispute = arbitrator.get_dispute(&dispute_id).unwrap();
     assert_eq!(dispute.amount_usdc, 10_000_000, "Amount should match");
-    assert_eq!(dispute.client_did, "did:agentmesh:base:client");
-    assert_eq!(dispute.provider_did, "did:agentmesh:base:provider");
+    assert_eq!(dispute.client_did, "did:agentme:base:client");
+    assert_eq!(dispute.provider_did, "did:agentme:base:provider");
 }
 
 #[tokio::test]
@@ -87,15 +87,15 @@ async fn test_full_dispute_lifecycle_tier2_with_evidence() {
     let dispute_id = arbitrator
         .create_dispute(
             "escrow-tier2-evidence",
-            "did:agentmesh:base:client-2",
-            "did:agentmesh:base:provider-2",
+            "did:agentme:base:client-2",
+            "did:agentme:base:provider-2",
             100_000_000, // $100 USDC
         )
         .unwrap();
 
     // Submit evidence from client
     let client_evidence = Evidence::new(
-        "did:agentmesh:base:client-2",
+        "did:agentme:base:client-2",
         EvidenceType::Text,
         "Service Not Delivered",
         "The provider failed to deliver the agreed service within the deadline.",
@@ -106,7 +106,7 @@ async fn test_full_dispute_lifecycle_tier2_with_evidence() {
 
     // Submit evidence from provider
     let provider_evidence = Evidence::new(
-        "did:agentmesh:base:provider-2",
+        "did:agentme:base:provider-2",
         EvidenceType::Text,
         "Service Delivered on Time",
         "Service was delivered as agreed. Here is the proof of completion.",
@@ -133,7 +133,7 @@ async fn test_full_dispute_lifecycle_tier3_juror_selection() {
     // Register a pool of jurors
     for i in 0..20 {
         pool.register_juror(
-            format!("did:agentmesh:base:juror-e2e-{}", i),
+            format!("did:agentme:base:juror-e2e-{}", i),
             200_000_000 + (i as u64) * 50_000_000, // $200-$1150 stakes
             vec![0],                               // tier 0 qualified
         )
@@ -160,7 +160,7 @@ async fn test_juror_voting_session_creation() {
     // Register jurors
     for i in 0..10 {
         pool.register_juror(
-            format!("did:agentmesh:base:voter-{}", i),
+            format!("did:agentme:base:voter-{}", i),
             500_000_000, // $500 stake
             vec![0],
         )
@@ -182,7 +182,7 @@ async fn test_juror_voting_session_creation() {
 async fn test_trust_score_for_new_agent() {
     // New agents should start with zero trust
     let service = TrustService::new("https://sepolia.base.org".to_string(), None);
-    let did = "did:agentmesh:base:new-trust-test";
+    let did = "did:agentme:base:new-trust-test";
 
     let trust = service.get_trust(did).await.unwrap();
 
@@ -197,7 +197,7 @@ async fn test_trust_score_for_new_agent() {
 async fn test_trust_verification() {
     // Test the verify function
     let service = TrustService::new("https://sepolia.base.org".to_string(), None);
-    let did = "did:agentmesh:base:verify-test";
+    let did = "did:agentme:base:verify-test";
 
     // New agent with zero trust shouldn't pass any threshold
     let passes_low = service.verify(did, 0.1).await.unwrap();
@@ -214,7 +214,7 @@ async fn test_trust_cache_operations() {
     let config = TrustCacheConfig::default();
     let cache = TrustCache::new(config);
 
-    let did = "did:agentmesh:base:cache-test";
+    let did = "did:agentme:base:cache-test";
     let info = TrustInfo {
         did: did.to_string(),
         score: 0.85,
@@ -261,8 +261,8 @@ async fn test_trust_endorsement_recording() {
     // Test adding endorsements
     let service = TrustService::new("https://sepolia.base.org".to_string(), None);
 
-    let endorser = "did:agentmesh:base:endorser";
-    let target = "did:agentmesh:base:endorsed";
+    let endorser = "did:agentme:base:endorser";
+    let target = "did:agentme:base:endorsed";
 
     // Add endorsement
     service
@@ -290,7 +290,7 @@ async fn test_discovered_agents_have_trust_data() {
     let discovery = DiscoveryService::new();
     let trust = TrustService::new("https://sepolia.base.org".to_string(), None);
 
-    let did = "did:agentmesh:base:discovered-agent";
+    let did = "did:agentme:base:discovered-agent";
 
     // Register an agent
     let card = CapabilityCard {
@@ -306,7 +306,7 @@ async fn test_discovered_agents_have_trust_data() {
             output_schema: None,
         }],
         authentication: None,
-        agentmesh: Some(AgentMeshExtension {
+        agentme: Some(AgentMeExtension {
             did: did.to_string(),
             trust_score: Some(0.75),
             stake: Some(500_000_000),
@@ -336,7 +336,7 @@ async fn test_search_returns_registered_agents() {
 
     // Register multiple agents
     for i in 0..5 {
-        let did = format!("did:agentmesh:base:searchable-{}", i);
+        let did = format!("did:agentme:base:searchable-{}", i);
 
         let card = CapabilityCard {
             name: format!("Searchable Agent {}", i),
@@ -351,7 +351,7 @@ async fn test_search_returns_registered_agents() {
                 output_schema: None,
             }],
             authentication: None,
-            agentmesh: Some(AgentMeshExtension {
+            agentme: Some(AgentMeExtension {
                 did,
                 trust_score: Some(0.5 + (i as f64 * 0.1)),
                 stake: Some(500_000_000),
@@ -423,17 +423,17 @@ async fn test_multi_agent_collaboration_setup() {
     // Create a network of collaborating agents
     let agents = vec![
         (
-            "did:agentmesh:base:coordinator",
+            "did:agentme:base:coordinator",
             "Coordinator Agent",
             vec!["orchestration"],
         ),
         (
-            "did:agentmesh:base:analyzer",
+            "did:agentme:base:analyzer",
             "Analyzer Agent",
             vec!["analysis", "data-processing"],
         ),
         (
-            "did:agentmesh:base:executor",
+            "did:agentme:base:executor",
             "Executor Agent",
             vec!["task-execution"],
         ),
@@ -459,7 +459,7 @@ async fn test_multi_agent_collaboration_setup() {
                 })
                 .collect(),
             authentication: None,
-            agentmesh: Some(AgentMeshExtension {
+            agentme: Some(AgentMeExtension {
                 did: did.to_string(),
                 trust_score: Some(0.9),
                 stake: Some(1_000_000_000),
@@ -501,8 +501,8 @@ async fn test_escrow_dispute_resolution_flow() {
     let arbitration_config = AIArbitrationConfig::default();
     let arbitrator = AIArbitrator::new(arbitration_config).unwrap();
 
-    let client_did = "did:agentmesh:base:escrow-client";
-    let provider_did = "did:agentmesh:base:escrow-provider";
+    let client_did = "did:agentme:base:escrow-client";
+    let provider_did = "did:agentme:base:escrow-provider";
 
     // 1. Create dispute for escrow
     let dispute_id = arbitrator
@@ -553,7 +553,7 @@ async fn test_concurrent_agent_operations() {
     for i in 0..20 {
         let discovery = Arc::clone(&discovery);
         let handle = tokio::spawn(async move {
-            let did = format!("did:agentmesh:base:concurrent-e2e-{}", i);
+            let did = format!("did:agentme:base:concurrent-e2e-{}", i);
             let card = CapabilityCard {
                 name: format!("Concurrent Agent {}", i),
                 description: "Agent for concurrency test".to_string(),
@@ -561,7 +561,7 @@ async fn test_concurrent_agent_operations() {
                 provider: None,
                 capabilities: vec![],
                 authentication: None,
-                agentmesh: Some(AgentMeshExtension {
+                agentme: Some(AgentMeExtension {
                     did: did.clone(),
                     trust_score: Some(0.8),
                     stake: Some(500_000_000),
@@ -603,7 +603,7 @@ async fn test_trust_cache_under_concurrent_access() {
         let cache = Arc::clone(&cache);
         handles.push(tokio::spawn(async move {
             for j in 0..10 {
-                let did = format!("did:agentmesh:base:cache-stress-{}", (i * 10 + j) % 20);
+                let did = format!("did:agentme:base:cache-stress-{}", (i * 10 + j) % 20);
                 let info = TrustInfo {
                     did: did.clone(),
                     score: 0.5 + (i as f64 * 0.01),
@@ -625,7 +625,7 @@ async fn test_trust_cache_under_concurrent_access() {
         let cache = Arc::clone(&cache);
         handles.push(tokio::spawn(async move {
             for j in 0..10 {
-                let did = format!("did:agentmesh:base:cache-stress-{}", (i * 10 + j) % 20);
+                let did = format!("did:agentme:base:cache-stress-{}", (i * 10 + j) % 20);
                 let _ = cache.get(&did).await;
             }
         }));
@@ -648,7 +648,7 @@ async fn test_trust_cache_under_concurrent_access() {
 #[tokio::test]
 async fn test_record_success_updates_trust() {
     let service = TrustService::new("https://sepolia.base.org".to_string(), None);
-    let did = "did:agentmesh:base:success-recording";
+    let did = "did:agentme:base:success-recording";
 
     // Record successful transaction
     service.record_success(did, 1_000_000).await.unwrap();
@@ -662,7 +662,7 @@ async fn test_record_success_updates_trust() {
 #[tokio::test]
 async fn test_record_failure_updates_trust() {
     let service = TrustService::new("https://sepolia.base.org".to_string(), None);
-    let did = "did:agentmesh:base:failure-recording";
+    let did = "did:agentme:base:failure-recording";
 
     // Record failed transaction
     service.record_failure(did, "timeout").await.unwrap();
@@ -676,7 +676,7 @@ async fn test_record_failure_updates_trust() {
 #[tokio::test]
 async fn test_mixed_transactions_affect_reputation() {
     let service = TrustService::new("https://sepolia.base.org".to_string(), None);
-    let did = "did:agentmesh:base:mixed-transactions";
+    let did = "did:agentme:base:mixed-transactions";
 
     // Record 8 successes and 2 failures (80% success rate)
     for _ in 0..8 {

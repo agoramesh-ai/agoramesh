@@ -1,7 +1,7 @@
 /**
  * AI Arbitration Service (Tier 2 Dispute Resolution)
  *
- * Implements AI-assisted dispute arbitration for AgentMesh escrows.
+ * Implements AI-assisted dispute arbitration for AgentMe escrows.
  * Uses Claude API for evidence analysis with human validation.
  *
  * Flow:
@@ -186,7 +186,7 @@ export interface ArbitrationFullResult {
  * Configuration for AI arbitration service
  */
 export interface AIArbitrationConfig {
-  /** Address of the AgentMeshEscrow contract */
+  /** Address of the AgentMeEscrow contract */
   escrowAddress: `0x${string}`;
   /** RPC URL for the chain */
   rpcUrl: string;

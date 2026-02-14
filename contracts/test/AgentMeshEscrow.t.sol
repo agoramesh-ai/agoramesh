@@ -32,8 +32,8 @@ contract AgentMeshEscrowTest is Test {
     address public client = address(0x4);
     address public provider = address(0x5);
 
-    bytes32 public clientDid = keccak256("did:agentmesh:client");
-    bytes32 public providerDid = keccak256("did:agentmesh:provider");
+    bytes32 public clientDid = keccak256("did:agentme:client");
+    bytes32 public providerDid = keccak256("did:agentme:provider");
 
     string public clientCID = "QmClientCapabilityCard123";
     string public providerCID = "QmProviderCapabilityCard456";

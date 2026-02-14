@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 /// @title IChainRegistry - Interface for Multi-Chain Registry
-/// @notice Manages supported blockchain networks for AgentMesh
-/// @dev Part of the AgentMesh multi-chain infrastructure
+/// @notice Manages supported blockchain networks for AgentMe
+/// @dev Part of the AgentMe multi-chain infrastructure
 interface IChainRegistry {
     // ============ Structs ============
 

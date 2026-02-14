@@ -55,7 +55,7 @@ contract TestnetScenarios is Script {
         usdc = IERC20(USDC);
 
         // Generate unique DID for this test run
-        testDid = keccak256(abi.encodePacked("did:agentmesh:test:", deployer, block.timestamp));
+        testDid = keccak256(abi.encodePacked("did:agentme:test:", deployer, block.timestamp));
 
         vm.startBroadcast(deployerPrivateKey);
 

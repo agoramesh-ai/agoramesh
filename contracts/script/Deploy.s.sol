@@ -12,8 +12,8 @@ import "../src/VerifiedNamespaces.sol";
 import "../src/AgentToken.sol";
 import "../src/NFTBoundReputation.sol";
 
-/// @title Deploy - AgentMesh Deployment Script
-/// @notice Deploys all AgentMesh contracts to Base L2
+/// @title Deploy - AgentMe Deployment Script
+/// @notice Deploys all AgentMe contracts to Base L2
 /// @dev Run with: forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast
 contract Deploy is Script {
     // ============ USDC Addresses ============
@@ -50,7 +50,7 @@ contract Deploy is Script {
         address usdc = isMainnet ? USDC_MAINNET : USDC_SEPOLIA;
         address lzEndpoint = isMainnet ? LZ_ENDPOINT_MAINNET : LZ_ENDPOINT_SEPOLIA;
 
-        console.log("Deploying AgentMesh to chain:", block.chainid);
+        console.log("Deploying AgentMe to chain:", block.chainid);
         console.log("Admin:", admin);
         console.log("USDC:", usdc);
         console.log("LayerZero Endpoint:", lzEndpoint);
@@ -99,7 +99,7 @@ contract Deploy is Script {
         console.log("7. VerifiedNamespaces deployed at:", c.namespaces);
 
         // 8. AgentToken (ERC-721 + ERC-2981 for agent ownership)
-        c.agentToken = address(new AgentToken("AgentMesh Agents", "AGENT", usdc, admin, admin));
+        c.agentToken = address(new AgentToken("AgentMe Agents", "AGENT", usdc, admin, admin));
         console.log("8. AgentToken deployed at:", c.agentToken);
 
         // 9. NFTBoundReputation (reputation tied to agent NFTs)

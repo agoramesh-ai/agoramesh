@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * AgentMesh E2E Demo — Discover & Verify (read-only)
+ * AgentMe E2E Demo — Discover & Verify (read-only)
  *
  * Demonstrates the full Discover -> Verify flow against the live production API.
  * No wallet, no private key, no configuration required.
@@ -37,7 +37,7 @@ interface Capability {
   description: string;
 }
 
-interface AgentMeshExtension {
+interface AgentMeExtension {
   did: string;
   trust_score: number;
   stake: number;
@@ -54,7 +54,7 @@ interface AgentCard {
   description: string;
   url: string;
   capabilities: Capability[];
-  'x-agentmesh': AgentMeshExtension;
+  'x-agentme': AgentMeExtension;
 }
 
 interface TrustInfo {
@@ -286,7 +286,7 @@ async function step4_fetchAgentCard(): Promise<AgentJson> {
 // =============================================================================
 
 async function main(): Promise<void> {
-  header('AgentMesh E2E Demo');
+  header('AgentMe E2E Demo');
 
   try {
     // Step 1: Health check

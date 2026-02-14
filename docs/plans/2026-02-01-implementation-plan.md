@@ -1,6 +1,6 @@
-# AgentMesh Implementation Plan
+# AgentMe Implementation Plan
 
-**Goal:** Build a working AgentMesh MVP with Rust P2P node, Solidity smart contracts on Base L2, and TypeScript SDK.
+**Goal:** Build a working AgentMe MVP with Rust P2P node, Solidity smart contracts on Base L2, and TypeScript SDK.
 
 **Architecture:**
 - Rust node handles P2P networking (libp2p), agent discovery (Kademlia DHT), and message propagation (GossipSub)
@@ -98,13 +98,13 @@ clean:
 ```toml
 # node/Cargo.toml
 [package]
-name = "agentmesh-node"
+name = "agentme-node"
 version = "0.1.0"
 edition = "2021"
-authors = ["AgentMesh Team"]
-description = "Decentralized P2P node for AgentMesh protocol"
+authors = ["AgentMe Team"]
+description = "Decentralized P2P node for AgentMe protocol"
 license = "MIT"
-repository = "https://github.com/timutti/agentmesh"
+repository = "https://github.com/agentmecz/agentme"
 
 [dependencies]
 # Async runtime
@@ -160,7 +160,7 @@ tempfile = "3.10"
 tokio-test = "0.4"
 
 [[bin]]
-name = "agentmesh"
+name = "agentme"
 path = "src/main.rs"
 ```
 
@@ -168,7 +168,7 @@ path = "src/main.rs"
 
 ```rust
 // node/src/lib.rs
-//! AgentMesh Node - Decentralized P2P networking for AI agents
+//! AgentMe Node - Decentralized P2P networking for AI agents
 
 pub mod config;
 pub mod network;
@@ -188,8 +188,8 @@ use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
-#[command(name = "agentmesh")]
-#[command(about = "AgentMesh P2P Node", long_about = None)]
+#[command(name = "agentme")]
+#[command(about = "AgentMe P2P Node", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -204,7 +204,7 @@ enum Commands {
         chain: String,
 
         /// Data directory
-        #[arg(long, default_value = "~/.agentmesh")]
+        #[arg(long, default_value = "~/.agentme")]
         data_dir: String,
     },
     /// Start the node
@@ -214,7 +214,7 @@ enum Commands {
         port: u16,
 
         /// Config file path
-        #[arg(long, default_value = "~/.agentmesh/config.yaml")]
+        #[arg(long, default_value = "~/.agentme/config.yaml")]
         config: String,
     },
     /// Show node health status
@@ -232,13 +232,13 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Init { chain, data_dir } => {
-            println!("Initializing AgentMesh node...");
+            println!("Initializing AgentMe node...");
             println!("Chain: {}", chain);
             println!("Data directory: {}", data_dir);
             // TODO: Implement init logic
         }
         Commands::Start { port, config } => {
-            println!("Starting AgentMesh node on port {}...", port);
+            println!("Starting AgentMe node on port {}...", port);
             println!("Config: {}", config);
             // TODO: Implement start logic
         }
@@ -313,7 +313,7 @@ pub struct DiscoveryConfig {
 impl Default for NodeConfig {
     fn default() -> Self {
         Self {
-            name: "agentmesh-node".to_string(),
+            name: "agentme-node".to_string(),
             listen_addresses: vec![
                 "/ip4/0.0.0.0/tcp/9000".to_string(),
                 "/ip4/0.0.0.0/udp/9000/quic-v1".to_string(),
@@ -392,7 +392,7 @@ base-sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basesca
 {
   "name": "@agentme/sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for AgentMesh protocol",
+  "description": "TypeScript SDK for AgentMe protocol",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -422,7 +422,7 @@ base-sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basesca
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/timutti/agentmesh"
+    "url": "https://github.com/agentmecz/agentme"
   }
 }
 ```
@@ -454,7 +454,7 @@ base-sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basesca
 
 ```typescript
 // sdk/src/index.ts
-export { AgentMeshClient, type AgentMeshClientConfig } from './client';
+export { AgentMeClient, type AgentMeClientConfig } from './client';
 export { DiscoveryClient, type DiscoverOptions, type Agent } from './discovery';
 export { TrustClient, type TrustScore } from './trust';
 export { PaymentClient, type PaymentOptions } from './payment';
@@ -733,8 +733,8 @@ contract TrustRegistryTest is Test {
     address public oracle = address(0x3);
     address public arbiter = address(0x4);
 
-    bytes32 public aliceDid = keccak256("did:agentmesh:base:alice");
-    bytes32 public bobDid = keccak256("did:agentmesh:base:bob");
+    bytes32 public aliceDid = keccak256("did:agentme:base:alice");
+    bytes32 public bobDid = keccak256("did:agentme:base:bob");
     string public aliceCID = "ipfs://QmAliceCapabilityCard";
 
     function setUp() public {
@@ -994,7 +994,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ITrustRegistry.sol";
 
-/// @title AgentMesh Trust Registry
+/// @title AgentMe Trust Registry
 /// @notice Manages agent registration, reputation, staking, and endorsements
 /// @dev ERC-8004 compatible trust layer implementation
 contract TrustRegistry is ITrustRegistry, AccessControl, ReentrancyGuard {
@@ -1341,21 +1341,21 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 1.3: AgentMeshEscrow Contract
+### Task 1.3: AgentMeEscrow Contract
 
 **Files:**
-- Create: `contracts/src/AgentMeshEscrow.sol`
-- Create: `contracts/src/interfaces/IAgentMeshEscrow.sol`
-- Create: `contracts/test/AgentMeshEscrow.t.sol`
+- Create: `contracts/src/AgentMeEscrow.sol`
+- Create: `contracts/src/interfaces/IAgentMeEscrow.sol`
+- Create: `contracts/test/AgentMeEscrow.t.sol`
 
-**Step 1: Create IAgentMeshEscrow interface**
+**Step 1: Create IAgentMeEscrow interface**
 
 ```solidity
-// contracts/src/interfaces/IAgentMeshEscrow.sol
+// contracts/src/interfaces/IAgentMeEscrow.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-interface IAgentMeshEscrow {
+interface IAgentMeEscrow {
     enum State {
         AWAITING_DEPOSIT,
         FUNDED,
@@ -1419,12 +1419,12 @@ interface IAgentMeshEscrow {
 **Step 2: Write failing tests**
 
 ```solidity
-// contracts/test/AgentMeshEscrow.t.sol
+// contracts/test/AgentMeEscrow.t.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgentMeEscrow.sol";
 import "../src/TrustRegistry.sol";
 
 contract MockUSDC2 is ERC20 {
@@ -1435,8 +1435,8 @@ contract MockUSDC2 is ERC20 {
     function mint(address to, uint256 amount) external { _mint(to, amount); }
 }
 
-contract AgentMeshEscrowTest is Test {
-    AgentMeshEscrow public escrow;
+contract AgentMeEscrowTest is Test {
+    AgentMeEscrow public escrow;
     TrustRegistry public registry;
     MockUSDC2 public usdc;
 
@@ -1444,8 +1444,8 @@ contract AgentMeshEscrowTest is Test {
     address public provider = address(0x2);
     address public arbiter = address(0x3);
 
-    bytes32 public clientDid = keccak256("did:agentmesh:base:client");
-    bytes32 public providerDid = keccak256("did:agentmesh:base:provider");
+    bytes32 public clientDid = keccak256("did:agentme:base:client");
+    bytes32 public providerDid = keccak256("did:agentme:base:provider");
     bytes32 public taskHash = keccak256("translate document XYZ");
 
     uint256 constant AMOUNT = 100 * 10**6; // 100 USDC
@@ -1454,7 +1454,7 @@ contract AgentMeshEscrowTest is Test {
     function setUp() public {
         usdc = new MockUSDC2();
         registry = new TrustRegistry(address(usdc));
-        escrow = new AgentMeshEscrow(address(registry));
+        escrow = new AgentMeEscrow(address(registry));
 
         escrow.grantRole(escrow.ARBITER_ROLE(), arbiter);
 
@@ -1480,11 +1480,11 @@ contract AgentMeshEscrowTest is Test {
             block.timestamp + DEADLINE
         );
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        IAgentMeEscrow.Escrow memory e = escrow.getEscrow(escrowId);
         assertEq(e.clientDid, clientDid);
         assertEq(e.providerDid, providerDid);
         assertEq(e.amount, AMOUNT);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.AWAITING_DEPOSIT));
+        assertEq(uint256(e.state), uint256(IAgentMeEscrow.State.AWAITING_DEPOSIT));
     }
 
     function test_FundAndRelease() public {
@@ -1501,7 +1501,7 @@ contract AgentMeshEscrowTest is Test {
         escrow.fundEscrow(escrowId);
         vm.stopPrank();
 
-        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeshEscrow.State.FUNDED));
+        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeEscrow.State.FUNDED));
 
         // Provider delivers
         vm.prank(provider);
@@ -1514,7 +1514,7 @@ contract AgentMeshEscrowTest is Test {
         escrow.releaseEscrow(escrowId);
 
         assertEq(usdc.balanceOf(provider), providerBalanceBefore + AMOUNT);
-        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeshEscrow.State.RELEASED));
+        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeEscrow.State.RELEASED));
     }
 
     function test_ClaimTimeout() public {
@@ -1538,7 +1538,7 @@ contract AgentMeshEscrowTest is Test {
         escrow.claimTimeout(escrowId);
 
         assertEq(usdc.balanceOf(client), clientBalanceBefore + AMOUNT);
-        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeshEscrow.State.REFUNDED));
+        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeEscrow.State.REFUNDED));
     }
 
     function test_DisputeResolution() public {
@@ -1557,7 +1557,7 @@ contract AgentMeshEscrowTest is Test {
         vm.prank(client);
         escrow.initiateDispute(escrowId, "quality issue");
 
-        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeshEscrow.State.DISPUTED));
+        assertEq(uint256(escrow.getEscrow(escrowId).state), uint256(IAgentMeEscrow.State.DISPUTED));
 
         // Resolve: 70% to provider, 30% to client
         vm.prank(arbiter);
@@ -1572,13 +1572,13 @@ contract AgentMeshEscrowTest is Test {
 **Step 3: Run tests to verify failure**
 
 ```bash
-cd contracts && forge test --match-contract AgentMeshEscrowTest -vvv
+cd contracts && forge test --match-contract AgentMeEscrowTest -vvv
 ```
 
-**Step 4: Implement AgentMeshEscrow**
+**Step 4: Implement AgentMeEscrow**
 
 ```solidity
-// contracts/src/AgentMeshEscrow.sol
+// contracts/src/AgentMeEscrow.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
@@ -1586,12 +1586,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./interfaces/IAgentMeshEscrow.sol";
+import "./interfaces/IAgentMeEscrow.sol";
 import "./interfaces/ITrustRegistry.sol";
 
-/// @title AgentMesh Escrow
+/// @title AgentMe Escrow
 /// @notice Manages escrow for agent-to-agent transactions
-contract AgentMeshEscrow is IAgentMeshEscrow, AccessControl, ReentrancyGuard {
+contract AgentMeEscrow is IAgentMeEscrow, AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bytes32 public constant ARBITER_ROLE = keccak256("ARBITER_ROLE");
@@ -1751,14 +1751,14 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControl, ReentrancyGuard {
 **Step 5: Run tests**
 
 ```bash
-cd contracts && forge test --match-contract AgentMeshEscrowTest -vvv
+cd contracts && forge test --match-contract AgentMeEscrowTest -vvv
 ```
 
 **Step 6: Commit**
 
 ```bash
 git add contracts/
-git commit -m "feat(contracts): implement AgentMeshEscrow
+git commit -m "feat(contracts): implement AgentMeEscrow
 
 - Escrow lifecycle: create → fund → deliver → release
 - Timeout-based automatic refund
@@ -1785,7 +1785,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
 import "../src/TrustRegistry.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgentMeEscrow.sol";
 
 contract Deploy is Script {
     // Base Sepolia USDC
@@ -1804,8 +1804,8 @@ contract Deploy is Script {
         console.log("TrustRegistry deployed at:", address(registry));
 
         // Deploy Escrow
-        AgentMeshEscrow escrow = new AgentMeshEscrow(address(registry));
-        console.log("AgentMeshEscrow deployed at:", address(escrow));
+        AgentMeEscrow escrow = new AgentMeEscrow(address(registry));
+        console.log("AgentMeEscrow deployed at:", address(escrow));
 
         // Grant escrow the ORACLE_ROLE to record transactions
         registry.grantRole(registry.ORACLE_ROLE(), address(escrow));
@@ -1818,7 +1818,7 @@ contract Deploy is Script {
         console.log("Chain ID:", block.chainid);
         console.log("USDC:", usdc);
         console.log("TrustRegistry:", address(registry));
-        console.log("AgentMeshEscrow:", address(escrow));
+        console.log("AgentMeEscrow:", address(escrow));
     }
 }
 ```
@@ -1912,7 +1912,7 @@ use std::hash::{Hash, Hasher};
 use std::time::Duration;
 
 #[derive(NetworkBehaviour)]
-pub struct AgentMeshBehaviour {
+pub struct AgentMeBehaviour {
     /// Kademlia DHT for agent discovery
     pub kademlia: kad::Behaviour<kad::store::MemoryStore>,
     /// GossipSub for pub/sub messaging
@@ -1923,7 +1923,7 @@ pub struct AgentMeshBehaviour {
     pub mdns: mdns::tokio::Behaviour,
 }
 
-impl AgentMeshBehaviour {
+impl AgentMeBehaviour {
     pub fn new(local_peer_id: PeerId, keypair: &libp2p::identity::Keypair) -> Self {
         // Kademlia config
         let store = kad::store::MemoryStore::new(local_peer_id);
@@ -1953,7 +1953,7 @@ impl AgentMeshBehaviour {
 
         // Identify config
         let identify = identify::Behaviour::new(identify::Config::new(
-            "/agentmesh/1.0.0".to_string(),
+            "/agentme/1.0.0".to_string(),
             keypair.public(),
         ));
 
@@ -1977,7 +1977,7 @@ impl AgentMeshBehaviour {
 // node/src/network/swarm.rs
 use crate::config::NodeConfig;
 use crate::error::{Error, Result};
-use crate::network::behaviour::{AgentMeshBehaviour, AgentMeshBehaviourEvent};
+use crate::network::behaviour::{AgentMeBehaviour, AgentMeBehaviourEvent};
 use crate::network::transport::build_transport;
 
 use libp2p::{
@@ -1994,13 +1994,13 @@ use tracing::{debug, info, warn};
 
 /// GossipSub topics
 pub mod topics {
-    pub const DISCOVERY: &str = "/agentmesh/discovery/1.0.0";
-    pub const CAPABILITY: &str = "/agentmesh/capability/1.0.0";
-    pub const TRUST: &str = "/agentmesh/trust/1.0.0";
+    pub const DISCOVERY: &str = "/agentme/discovery/1.0.0";
+    pub const CAPABILITY: &str = "/agentme/capability/1.0.0";
+    pub const TRUST: &str = "/agentme/trust/1.0.0";
 }
 
 pub struct SwarmManager {
-    swarm: Swarm<AgentMeshBehaviour>,
+    swarm: Swarm<AgentMeBehaviour>,
     pending_kad_queries: HashMap<QueryId, mpsc::Sender<kad::QueryResult>>,
 }
 
@@ -2014,7 +2014,7 @@ impl SwarmManager {
         let transport = build_transport(&keypair)
             .map_err(|e| Error::Network(e.to_string()))?;
 
-        let behaviour = AgentMeshBehaviour::new(local_peer_id, &keypair);
+        let behaviour = AgentMeBehaviour::new(local_peer_id, &keypair);
 
         let swarm = SwarmBuilder::with_tokio_executor(transport, behaviour, local_peer_id)
             .build();
@@ -2086,16 +2086,16 @@ impl SwarmManager {
                 SwarmEvent::NewListenAddr { address, .. } => {
                     info!("Listening on {:?}", address);
                 }
-                SwarmEvent::Behaviour(AgentMeshBehaviourEvent::Mdns(event)) => {
+                SwarmEvent::Behaviour(AgentMeBehaviourEvent::Mdns(event)) => {
                     self.handle_mdns_event(event);
                 }
-                SwarmEvent::Behaviour(AgentMeshBehaviourEvent::Kademlia(event)) => {
+                SwarmEvent::Behaviour(AgentMeBehaviourEvent::Kademlia(event)) => {
                     self.handle_kad_event(event);
                 }
-                SwarmEvent::Behaviour(AgentMeshBehaviourEvent::Gossipsub(event)) => {
+                SwarmEvent::Behaviour(AgentMeBehaviourEvent::Gossipsub(event)) => {
                     self.handle_gossipsub_event(event);
                 }
-                SwarmEvent::Behaviour(AgentMeshBehaviourEvent::Identify(event)) => {
+                SwarmEvent::Behaviour(AgentMeBehaviourEvent::Identify(event)) => {
                     self.handle_identify_event(event);
                 }
                 SwarmEvent::ConnectionEstablished { peer_id, .. } => {

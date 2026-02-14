@@ -200,7 +200,7 @@ dev-restart:
 # Docker
 # =============================================================================
 
-DOCKER_REGISTRY ?= ghcr.io/agentmesh
+DOCKER_REGISTRY ?= ghcr.io/agentme
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 docker-build:
@@ -239,16 +239,16 @@ k8s-delete:
 	$(KUBECTL) delete -k deploy/k8s/
 
 k8s-status:
-	$(KUBECTL) -n agentmesh get pods,svc,ingress
+	$(KUBECTL) -n agentme get pods,svc,ingress
 
 k8s-logs:
-	$(KUBECTL) -n agentmesh logs -l app.kubernetes.io/name=agentmesh-node --tail=100 -f
+	$(KUBECTL) -n agentme logs -l app.kubernetes.io/name=agentme-node --tail=100 -f
 
 k8s-restart:
-	$(KUBECTL) -n agentmesh rollout restart deployment/agentmesh-node
+	$(KUBECTL) -n agentme rollout restart deployment/agentme-node
 
 k8s-scale:
-	$(KUBECTL) -n agentmesh scale deployment/agentmesh-node --replicas=$(REPLICAS)
+	$(KUBECTL) -n agentme scale deployment/agentme-node --replicas=$(REPLICAS)
 
 # =============================================================================
 # CI/CD helpers

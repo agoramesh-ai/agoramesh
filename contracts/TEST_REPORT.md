@@ -1,4 +1,4 @@
-# AgentMesh Solidity Contracts Test Report
+# AgentMe Solidity Contracts Test Report
 
 **Date:** 2026-02-03
 **Network:** Base Sepolia Testnet
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-All 314 unit tests pass across 10 test suites. The deployed contracts on Base Sepolia testnet are functioning correctly. The contracts implement the AgentMesh specification with high fidelity.
+All 314 unit tests pass across 10 test suites. The deployed contracts on Base Sepolia testnet are functioning correctly. The contracts implement the AgentMe specification with high fidelity.
 
 ### Test Results Overview
 
@@ -290,7 +290,7 @@ Stream cancellation: PASSED
 
 ```bash
 # Run all tests
-cd /Users/vladimir.beran/Documents/Cursor/agentmesh/contracts
+cd /Users/vladimir.beran/Documents/Cursor/agentme/contracts
 forge test -vvv
 
 # Run specific test file
@@ -310,7 +310,7 @@ forge script script/TestnetScenarios.s.sol:TestTrustRegistryOnly --rpc-url base_
 
 ## 8. Conclusion
 
-The AgentMesh Solidity contracts are well-tested and specification-compliant. All 314 unit tests pass, and testnet verification confirms correct deployment and functionality.
+The AgentMe Solidity contracts are well-tested and specification-compliant. All 314 unit tests pass, and testnet verification confirms correct deployment and functionality.
 
 ### Key Achievements
 

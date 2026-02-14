@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import "./interfaces/IChainRegistry.sol";
 
-/// @title ChainRegistry - Multi-Chain Registry for AgentMesh
+/// @title ChainRegistry - Multi-Chain Registry for AgentMe
 /// @notice Manages supported blockchain networks and their configurations
 /// @dev Implements IChainRegistry with AccessControl for role-based permissions
 contract ChainRegistry is IChainRegistry, AccessControlEnumerable {

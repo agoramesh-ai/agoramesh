@@ -1,4 +1,4 @@
-# AgentMesh Payment Layer Specification
+# AgentMe Payment Layer Specification
 
 **Version:** 1.0.0
 **Status:** Draft
@@ -13,7 +13,7 @@ The Payment Layer enables micropayments between AI agents using the x402 protoco
 
 ## x402 Protocol Integration
 
-AgentMesh is fully compatible with the [x402 protocol](https://x402.org/) developed by Coinbase.
+AgentMe is fully compatible with the [x402 protocol](https://x402.org/) developed by Coinbase.
 
 ### Flow Diagram
 
@@ -54,10 +54,10 @@ Agent A (Client)                    Agent B (Provider)
 // TypeScript - Express server with x402 middleware
 import express from 'express';
 import { x402Middleware } from '@x402/express';
-import { AgentMeshTrust } from '@agentme/sdk';
+import { AgentMeTrust } from '@agentme/sdk';
 
 const app = express();
-const trust = new AgentMeshTrust();
+const trust = new AgentMeTrust();
 
 // Dynamic pricing based on trust score
 app.use('/translate', async (req, res, next) => {
@@ -105,7 +105,7 @@ app.listen(4021);
 
 ```typescript
 // TypeScript - Agent client with automatic payment handling
-import { AgentMeshClient, DiscoveryResult } from '@agentme/sdk';
+import { AgentMeClient, DiscoveryResult } from '@agentme/sdk';
 import { wrapAxiosWithPayment, x402Client } from '@x402/axios';
 import { privateKeyToAccount } from 'viem/accounts';
 
@@ -113,14 +113,14 @@ const signer = privateKeyToAccount(process.env.AGENT_PRIVATE_KEY as `0x${string}
 const x402 = new x402Client();
 x402.registerExactEvmScheme({ signer });
 
-const agentmesh = new AgentMeshClient({
+const agentme = new AgentMeClient({
   did: process.env.AGENT_DID,
   x402Client: x402
 });
 
 async function translateWithBestAgent(document: string): Promise<string> {
   // 1. Discover translation agents
-  const agents = await agentmesh.discover({
+  const agents = await agentme.discover({
     query: 'translate legal documents Czech to English',
     minTrust: 0.8,
     maxPrice: '0.10'
@@ -140,7 +140,7 @@ async function translateWithBestAgent(document: string): Promise<string> {
 
   // 3. Execute with automatic payment
   // x402 wrapper handles 402 → pay → retry automatically
-  const response = await agentmesh.execute(bestAgent, {
+  const response = await agentme.execute(bestAgent, {
     skill: 'translate.legal',
     input: { text: document, sourceLang: 'cs', targetLang: 'en' }
   });
@@ -175,7 +175,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract AgentMeshEscrow is ReentrancyGuard, AccessControl {
+contract AgentMeEscrow is ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
 
     bytes32 public constant ARBITRATOR_ROLE = keccak256("ARBITRATOR_ROLE");
@@ -359,7 +359,7 @@ const stream = await StreamingPayment.create({
 });
 
 // Start task
-const task = await agentmesh.execute(provider, {
+const task = await agentme.execute(provider, {
   skill: 'transcribe.realtime',
   input: { audioStreamUrl },
   paymentStream: stream

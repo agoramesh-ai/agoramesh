@@ -1,4 +1,4 @@
-//! Arbitration Integration for AgentMesh.
+//! Arbitration Integration for AgentMe.
 //!
 //! This module provides a tiered dispute resolution system:
 //!
@@ -23,7 +23,7 @@
 //! - Due process with equal opportunity for both parties
 //!
 //! ```rust,ignore
-//! use agentmesh_node::arbitration::{AIArbitrator, AIArbitrationConfig, Evidence};
+//! use agentme_node::arbitration::{AIArbitrator, AIArbitrationConfig, Evidence};
 //!
 //! let config = AIArbitrationConfig::default();
 //! let arbitrator = AIArbitrator::new(config);
@@ -53,7 +53,7 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use agentmesh_node::arbitration::{KlerosClient, KlerosConfig, DisputeStatus};
+//! use agentme_node::arbitration::{KlerosClient, KlerosConfig, DisputeStatus};
 //!
 //! let config = KlerosConfig {
 //!     rpc_url: "https://sepolia.base.org".to_string(),
@@ -265,7 +265,7 @@ impl DisputeStatus {
     }
 }
 
-/// Ruling options for AgentMesh disputes.
+/// Ruling options for AgentMe disputes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Ruling {
     /// Ruling not yet given or abstained (0).
@@ -366,7 +366,7 @@ pub struct KlerosConfig {
     /// Kleros arbitrator contract address.
     pub arbitrator_address: String,
 
-    /// Court/subcourt ID for AgentMesh disputes.
+    /// Court/subcourt ID for AgentMe disputes.
     pub court_id: u64,
 
     /// Number of jurors for initial round.
@@ -523,7 +523,7 @@ impl KlerosClient {
     /// Get the arbitration cost for a dispute with given number of choices.
     ///
     /// # Arguments
-    /// * `choices` - Number of possible rulings (typically 3 for AgentMesh)
+    /// * `choices` - Number of possible rulings (typically 3 for AgentMe)
     ///
     /// # Returns
     /// Cost in wei (ETH for gas, not USDC)
@@ -642,7 +642,7 @@ impl KlerosClient {
     /// Calculate the minimum stake required for Tier 3 disputes.
     ///
     /// Based on Kleros economics: jurors must stake PNK tokens.
-    /// For AgentMesh, we require a minimum USDC stake equivalent.
+    /// For AgentMe, we require a minimum USDC stake equivalent.
     ///
     /// # Arguments
     /// * `disputed_amount` - Amount in dispute (USDC with 6 decimals)
@@ -683,7 +683,7 @@ impl KlerosClient {
     ///
     /// # Arguments
     /// * `evidence_uri` - IPFS URI containing the evidence bundle
-    /// * `choices` - Number of possible rulings (typically 3 for AgentMesh)
+    /// * `choices` - Number of possible rulings (typically 3 for AgentMe)
     /// * `arbitration_cost` - Cost in wei to pay for arbitration
     ///
     /// # Returns
@@ -3057,14 +3057,14 @@ mod tests {
     #[test]
     fn test_evidence_new() {
         let evidence = Evidence::new(
-            "did:agentmesh:base:client123",
+            "did:agentme:base:client123",
             EvidenceType::Text,
             "Issue Description",
             "The service was not delivered as promised",
         );
 
         assert!(!evidence.id.is_empty());
-        assert_eq!(evidence.submitter_did, "did:agentmesh:base:client123");
+        assert_eq!(evidence.submitter_did, "did:agentme:base:client123");
         assert_eq!(evidence.evidence_type, EvidenceType::Text);
         assert_eq!(evidence.title, "Issue Description");
         assert!(evidence.data_uri.is_none());
@@ -3074,7 +3074,7 @@ mod tests {
     #[test]
     fn test_evidence_with_data_uri() {
         let evidence = Evidence::new(
-            "did:agentmesh:base:client123",
+            "did:agentme:base:client123",
             EvidenceType::Image,
             "Screenshot",
             "Evidence of failure",
@@ -3157,15 +3157,15 @@ mod tests {
     fn test_ai_dispute_new() {
         let dispute = AIDispute::new(
             "escrow-123",
-            "did:agentmesh:base:client",
-            "did:agentmesh:base:provider",
+            "did:agentme:base:client",
+            "did:agentme:base:provider",
             100_000_000, // $100 USDC
         );
 
         assert!(!dispute.id.is_empty());
         assert_eq!(dispute.escrow_id, "escrow-123");
-        assert_eq!(dispute.client_did, "did:agentmesh:base:client");
-        assert_eq!(dispute.provider_did, "did:agentmesh:base:provider");
+        assert_eq!(dispute.client_did, "did:agentme:base:client");
+        assert_eq!(dispute.provider_did, "did:agentme:base:provider");
         assert_eq!(dispute.amount_usdc, 100_000_000);
         assert_eq!(dispute.state, AIDisputeState::AwaitingEvidence);
         assert!(dispute.client_evidence.is_empty());
@@ -3324,8 +3324,8 @@ mod tests {
 
         let result = arbitrator.create_dispute(
             "escrow-123",
-            "did:agentmesh:base:client",
-            "did:agentmesh:base:provider",
+            "did:agentme:base:client",
+            "did:agentme:base:provider",
             100_000_000, // $100 USDC (valid for Tier 2)
         );
 
@@ -3817,9 +3817,9 @@ mod tests {
 
     #[test]
     fn test_juror_new() {
-        let juror = Juror::new("did:agentmesh:base:juror1", 500_000_000, vec![0, 1]);
+        let juror = Juror::new("did:agentme:base:juror1", 500_000_000, vec![0, 1]);
 
-        assert_eq!(juror.did, "did:agentmesh:base:juror1");
+        assert_eq!(juror.did, "did:agentme:base:juror1");
         assert_eq!(juror.stake_usdc, 500_000_000);
         assert_eq!(juror.status, JurorStatus::Active);
         assert_eq!(juror.courts, vec![0, 1]);

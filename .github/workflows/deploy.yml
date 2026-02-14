@@ -26,11 +26,11 @@ jobs:
           - component: node
             context: ./node
             dockerfile: node/Dockerfile
-            image: ghcr.io/timutti/agentmesh-node
+            image: ghcr.io/agentmecz/agentme-node
           - component: bridge
             context: .
             dockerfile: bridge/Dockerfile
-            image: ghcr.io/timutti/agentmesh-bridge
+            image: ghcr.io/agentmecz/agentme-bridge
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
@@ -82,7 +82,7 @@ jobs:
           username: root
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: deploy/production/docker-compose.yml
-          target: /opt/agentmesh/
+          target: /opt/agentme/
           strip_components: 2
 
       - name: Deploy via SSH
@@ -92,7 +92,7 @@ jobs:
           username: root
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd /opt/agentmesh
+            cd /opt/agentme
             docker compose pull
             docker compose up -d --remove-orphans
             echo "--- Waiting for containers to start ---"

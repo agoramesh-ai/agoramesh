@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title IStreamingPayments - Interface for AgentMesh Streaming Payments
+/// @title IStreamingPayments - Interface for AgentMe Streaming Payments
 /// @notice Enables continuous payment streams for ongoing agent services
 /// @dev Inspired by Sablier's linear streaming model, optimized for agent marketplace
 interface IStreamingPayments {

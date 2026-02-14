@@ -1,4 +1,4 @@
-# AgentMesh Smart Contract Security Audit Preparation
+# AgentMe Smart Contract Security Audit Preparation
 
 **Date:** 2026-02-02
 **Auditor:** Security Audit Preparation Team
@@ -9,14 +9,14 @@
 
 ## Executive Summary
 
-This document provides a comprehensive security analysis of the AgentMesh smart contract suite in preparation for a formal security audit. The contracts implement a decentralized marketplace and trust layer for AI agents, including agent registration, reputation management, escrow payments, streaming payments, dispute resolution, cross-chain synchronization, verified namespaces, and NFT-bound agent tokens.
+This document provides a comprehensive security analysis of the AgentMe smart contract suite in preparation for a formal security audit. The contracts implement a decentralized marketplace and trust layer for AI agents, including agent registration, reputation management, escrow payments, streaming payments, dispute resolution, cross-chain synchronization, verified namespaces, and NFT-bound agent tokens.
 
 ### Contracts Analyzed
 
 | Contract | SLOC | Purpose | Risk Level |
 |----------|------|---------|------------|
 | TrustRegistry.sol | ~530 | Agent registration, reputation, staking, endorsements | HIGH |
-| AgentMeshEscrow.sol | ~320 | Escrow for agent transactions | HIGH |
+| AgentMeEscrow.sol | ~320 | Escrow for agent transactions | HIGH |
 | StreamingPayments.sol | ~385 | Sablier-inspired payment streams | HIGH |
 | TieredDisputeResolution.sol | ~570 | Multi-tier dispute resolution | HIGH |
 | ChainRegistry.sol | ~245 | Multi-chain configuration registry | MEDIUM |
@@ -106,7 +106,7 @@ The TrustRegistry contract manages agent registration, reputation tracking, stak
 
 ---
 
-## 2. AgentMeshEscrow.sol
+## 2. AgentMeEscrow.sol
 
 ### Overview
 Manages escrow for agent-to-agent transactions with state machine-based lifecycle and dispute resolution integration.
@@ -604,7 +604,7 @@ Reputation system bound to AgentToken NFTs, where reputation follows the token o
 Multiple contracts use `ORACLE_ROLE` and `ARBITER_ROLE` but they are defined separately in each contract. Ensure the same addresses are granted these roles across all contracts.
 
 ### 2. Trust Registry Dependencies
-- AgentMeshEscrow depends on TrustRegistry for agent verification
+- AgentMeEscrow depends on TrustRegistry for agent verification
 - StreamingPayments depends on TrustRegistry for sender DID lookup
 - NFTBoundReputation is independent (uses AgentToken instead)
 
@@ -631,7 +631,7 @@ None of the contracts are upgradeable. Consider:
 | Contract | Admin Capability | Risk |
 |----------|------------------|------|
 | TrustRegistry | Grant/revoke ORACLE and ARBITER roles | Can manipulate reputation |
-| AgentMeshEscrow | Grant ARBITER role, resolve disputes | Can steal escrowed funds |
+| AgentMeEscrow | Grant ARBITER role, resolve disputes | Can steal escrowed funds |
 | StreamingPayments | Admin role (minimal powers) | Low risk |
 | TieredDisputeResolution | Grant ORACLE role, configure contracts | Can manipulate dispute outcomes |
 | ChainRegistry | Add/remove chains, set addresses | Can redirect to malicious contracts |
@@ -655,7 +655,7 @@ None of the contracts are upgradeable. Consider:
 1. **TieredDisputeResolution:** Implement actual arbiter selection and voting verification
 2. **CrossChainTrustSync:** Complete LayerZero integration
 3. **NFTBoundReputation:** Add stake withdrawal mechanism
-4. **AgentMeshEscrow:** Grant ORACLE_ROLE to escrow contract or redesign
+4. **AgentMeEscrow:** Grant ORACLE_ROLE to escrow contract or redesign
 
 ### High Priority
 
@@ -725,7 +725,7 @@ None of the contracts are upgradeable. Consider:
                 +----------------------+
 
 +------------------+      +---------------+
-|  TrustRegistry   |<-----| AgentMeshEscrow|
+|  TrustRegistry   |<-----| AgentMeEscrow|
 +--------+---------+      +-------+-------+
          |                        |
          v                        v

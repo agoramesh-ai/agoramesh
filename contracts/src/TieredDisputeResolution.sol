@@ -9,7 +9,7 @@ import "./interfaces/IDisputeResolution.sol";
 import "./interfaces/IAgentMeshEscrow.sol";
 import "./interfaces/ITrustRegistry.sol";
 
-/// @title TieredDisputeResolution - AgentMesh Dispute Resolution
+/// @title TieredDisputeResolution - AgentMe Dispute Resolution
 /// @notice Implements tiered dispute resolution: Auto, AI-Assisted, and Community
 /// @dev Follows spec: Tier 1 (<$10), Tier 2 ($10-$1000), Tier 3 (>$1000)
 contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable, ReentrancyGuard {

@@ -4,7 +4,7 @@
   "agentVersion": "1.0.0",
   "protocolVersion": "1.0",
   "provider": {
-    "name": "AgentMesh",
+    "name": "AgentMe",
     "url": "https://agentme.cz"
   },
   "capabilities": {
@@ -15,7 +15,7 @@
   },
   "authentication": {
     "schemes": ["did", "bearer"],
-    "didMethods": ["did:agentmesh", "did:key"]
+    "didMethods": ["did:agentme", "did:key"]
   },
   "richSkills": [
     {

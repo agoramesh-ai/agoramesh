@@ -1,5 +1,5 @@
 /**
- * AgentMesh Semantic Search
+ * AgentMe Semantic Search
  *
  * Provides client-side semantic search capabilities using vector embeddings.
  * Supports multiple embedding providers for flexible integration.

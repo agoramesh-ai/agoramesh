@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { keccak256, toHex, parseUnits } from 'viem';
-import { AgentMeshClient, didToHash } from '../../src/client.js';
+import { AgentMeClient, didToHash } from '../../src/client.js';
 import { PaymentClient } from '../../src/payment.js';
 import { EscrowState, USDC_DECIMALS } from '../../src/types.js';
 import {
@@ -27,7 +27,7 @@ import {
 } from './setup.js';
 
 describe('Escrow E2E', () => {
-  let client: AgentMeshClient;
+  let client: AgentMeClient;
   let payment: PaymentClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
@@ -38,7 +38,7 @@ describe('Escrow E2E', () => {
     mockWalletClient = createMockWalletClient(mockPublicClient);
 
     // Create client with test config
-    client = new AgentMeshClient({
+    client = new AgentMeClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -284,7 +284,7 @@ describe('Escrow E2E', () => {
 
     it('should identify provider role', async () => {
       // Create a payment client as the provider
-      const providerClient = new AgentMeshClient({
+      const providerClient = new AgentMeClient({
         rpcUrl: TEST_RPC_URL,
         chainId: TEST_CHAIN_ID,
         privateKey: TEST_PRIVATE_KEYS.provider,
@@ -382,7 +382,7 @@ describe('Escrow E2E', () => {
 
     it('should throw when escrow contract not configured', async () => {
       // Create client without escrow address
-      const clientWithoutEscrow = new AgentMeshClient({
+      const clientWithoutEscrow = new AgentMeClient({
         rpcUrl: TEST_RPC_URL,
         chainId: TEST_CHAIN_ID,
         privateKey: TEST_PRIVATE_KEYS.client,

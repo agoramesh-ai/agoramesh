@@ -23,7 +23,7 @@ contract IntegrationMockUSDC is ERC20 {
     }
 }
 
-/// @title Integration Tests for AgentMesh Escrow Lifecycle
+/// @title Integration Tests for AgentMe Escrow Lifecycle
 /// @notice End-to-end tests covering Escrow, DisputeResolution, and TrustRegistry
 contract IntegrationTest is Test {
     AgentMeshEscrow public escrow;
@@ -44,8 +44,8 @@ contract IntegrationTest is Test {
     // Extra arbiters needed for COMMUNITY tier appeal rounds
     address[6] public extraArbiters;
 
-    bytes32 public clientDid = keccak256("did:agentmesh:integration:client");
-    bytes32 public providerDid = keccak256("did:agentmesh:integration:provider");
+    bytes32 public clientDid = keccak256("did:agentme:integration:client");
+    bytes32 public providerDid = keccak256("did:agentme:integration:provider");
 
     bytes32 public taskHash = keccak256("integration-test-task");
     bytes32 public outputHash = keccak256("integration-test-output");

@@ -1,6 +1,6 @@
-//! AgentMesh Node Library
+//! AgentMe Node Library
 //!
-//! This crate provides the core functionality for running an AgentMesh node,
+//! This crate provides the core functionality for running an AgentMe node,
 //! including P2P networking, agent discovery, trust management, and HTTP API.
 
 pub mod api;
