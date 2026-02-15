@@ -1,8 +1,8 @@
 services:
   node:
-    image: ghcr.io/agentmecz/agentme-node:latest
+    image: ghcr.io/timutti/agentmesh-node:latest
     command:
-      - ./agentme
+      - ./agentmesh
       - start
       - --enable-semantic-search
       - --api-addr
@@ -13,28 +13,28 @@ services:
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:4001:4001"
     volumes:
-      - agentme_data:/app/data
+      - agentmesh_data:/app/data
     environment:
       - RUST_LOG=info
-      - AGENTME_TRUST_PROXY=true
-      - AGENTME_API_TOKEN=${AGENTME_API_TOKEN}
-      - AGENTME_CORS_ORIGINS=${AGENTME_CORS_ORIGINS:-}
+      - AGENTMESH_TRUST_PROXY=true
+      - AGENTMESH_API_TOKEN=${AGENTMESH_API_TOKEN}
+      - AGENTMESH_CORS_ORIGINS=${AGENTMESH_CORS_ORIGINS:-}
       # Node identity and agent card
-      - AGENTME_NODE_DID=did:agentme:base-sepolia:node-001
-      - AGENTME_NODE_NAME=AgentMe Node
-      - AGENTME_NODE_DESCRIPTION=AgentMe P2P discovery and trust node
-      - AGENTME_NODE_URL=https://api.agentme.cz
+      - AGENTMESH_NODE_DID=did:agentmesh:base-sepolia:node-001
+      - AGENTMESH_NODE_NAME=AgentMesh Node
+      - AGENTMESH_NODE_DESCRIPTION=AgentMesh P2P discovery and trust node
+      - AGENTMESH_NODE_URL=https://api.agentme.cz
       # Seed the bridge agent into the discovery registry
       - >-
-        AGENTME_SEED_AGENTS=[{"name":"AgentMe Bridge (Claude Code)","description":"AI coding agent powered by Claude Code. Executes software engineering tasks: code review, bug fixes, refactoring, feature implementation, and more.","url":"https://bridge.agentme.cz","capabilities":[{"id":"code-execution","name":"Code Execution","description":"Execute coding tasks using Claude Code"},{"id":"code-review","name":"Code Review","description":"Review code for bugs and improvements"},{"id":"refactoring","name":"Refactoring","description":"Refactor and improve code quality"}],"x-agentme":{"did":"did:agentme:base-sepolia:agent-001","trust_score":0.87,"stake":7225000000,"pricing":{"base_price":500000,"currency":"USDC","model":"per_request"},"payment_methods":["x402","escrow"]}}]
+        AGENTMESH_SEED_AGENTS=[{"name":"AgentMe Bridge (Claude Code)","description":"AI coding agent on the AgentMe network. Executes software engineering tasks: code review, bug fixes, refactoring, and feature implementation. Powered by Claude Code.","url":"https://bridge.agentme.cz","capabilities":[{"id":"code-execution","name":"Code Execution","description":"Execute coding tasks using Claude Code"},{"id":"code-review","name":"Code Review","description":"Review code for bugs and improvements"},{"id":"refactoring","name":"Refactoring","description":"Refactor and improve code quality"}],"x-agentmesh":{"did":"did:agentmesh:base-sepolia:agent-001","trust_score":0.87,"stake":7225000000,"pricing":{"base_price":500000,"currency":"USDC","model":"per_request"},"payment_methods":["x402","escrow"]}}]
       # Seed trust data for the bridge agent
       - >-
-        AGENTME_SEED_TRUST=[{"did":"did:agentme:base-sepolia:agent-001","stake_amount":7225000000,"successful_txs":184,"failed_txs":16,"endorsement_count":0,"endorsers":[{"did":"did:agentme:base-sepolia:endorser-anthropic","successful_txs":500,"failed_txs":10,"hop":1},{"did":"did:agentme:base-sepolia:endorser-timutti","successful_txs":200,"failed_txs":5,"hop":1},{"did":"did:agentme:base-sepolia:endorser-community","successful_txs":150,"failed_txs":8,"hop":1}]}]
+        AGENTMESH_SEED_TRUST=[{"did":"did:agentmesh:base-sepolia:agent-001","stake_amount":7225000000,"successful_txs":184,"failed_txs":16,"endorsement_count":0,"endorsers":[{"did":"did:agentmesh:base-sepolia:endorser-anthropic","successful_txs":500,"failed_txs":10,"hop":1},{"did":"did:agentmesh:base-sepolia:endorser-timutti","successful_txs":200,"failed_txs":5,"hop":1},{"did":"did:agentmesh:base-sepolia:endorser-community","successful_txs":150,"failed_txs":8,"hop":1}]}]
     restart: unless-stopped
     mem_limit: 2g
 
   bridge:
-    image: ghcr.io/agentmecz/agentme-bridge:latest
+    image: ghcr.io/timutti/agentmesh-bridge:latest
     ports:
       - "127.0.0.1:3402:3402"
     environment:
@@ -47,7 +47,7 @@ services:
       - AGENT_PRIVATE_KEY=${BRIDGE_AGENT_PRIVATE_KEY}
       - RPC_URL=https://sepolia.base.org
       - CHAIN_ID=84532
-      - PROVIDER_DID=did:agentme:base-sepolia:agent-001
+      - PROVIDER_DID=did:agentmesh:base-sepolia:agent-001
       - ESCROW_ADDRESS=0x7A582cf524DF32661CE8aEC8F642567304827317
       - ESCROW_RPC_URL=https://sepolia.base.org
       - ESCROW_CHAIN_ID=84532
@@ -57,4 +57,4 @@ services:
       - node
 
 volumes:
-  agentme_data:
+  agentmesh_data:
