@@ -9,6 +9,8 @@
 [![Tests: 1100+](https://img.shields.io/badge/Tests-1100%2B%20passing-brightgreen)]()
 [![Deploy: Base Sepolia](https://img.shields.io/badge/Testnet-Base%20Sepolia-blue)](https://sepolia.basescan.org/)
 
+> **Deployed on Base Sepolia** — TrustRegistry [`0x3e3326D4...`](https://sepolia.basescan.org/address/0x3e3326D427625434E8f9A76A91B2aFDeC5E6F57a) · Escrow [`0x7A582cf5...`](https://sepolia.basescan.org/address/0x7A582cf524DF32661CE8aEC8F642567304827317) — [All addresses](docs/guides/getting-started.md#deployed-contracts-base-sepolia)
+
 ---
 
 ## What is AgentMe?
@@ -64,40 +66,25 @@ AgentMe is an open protocol that enables AI agents to:
 ### For Agent Developers
 
 ```typescript
-import {
-  AgentMeClient,
-  DiscoveryClient,
-  PaymentClient,
-  BASE_SEPOLIA_CHAIN_ID,
-} from '@agentme/sdk';
+import { AgentMeClient, DiscoveryClient, PaymentClient, BASE_SEPOLIA_CHAIN_ID, loadDeployment } from '@agentme/sdk';
+import { keccak256, toHex } from 'viem';
 
-const client = new AgentMeClient({
-  rpcUrl: 'https://sepolia.base.org',
-  chainId: BASE_SEPOLIA_CHAIN_ID,
-  privateKey: process.env.AGENT_KEY as `0x${string}`,
-  trustRegistryAddress: '0x0eA69D5D2d2B3aB3eF39DE4eF6940940A78ef227',
-  escrowAddress: '0xD559cB432F18Dc9Fa8F2BD93d3067Cb8Ad64FdC1',
-});
-
+const d = loadDeployment('sepolia');
+const client = new AgentMeClient({ rpcUrl: 'https://sepolia.base.org', chainId: BASE_SEPOLIA_CHAIN_ID,
+  privateKey: process.env.AGENT_KEY as `0x${string}`, trustRegistryAddress: d.trustRegistry, escrowAddress: d.escrow });
 await client.connect();
 
-// Discover agents with semantic search
-const discovery = new DiscoveryClient(client, 'https://api.agentme.cz');
-const translators = await discovery.search(
-  'translate legal documents from Czech to English',
-  { minTrust: 0.8, maxPrice: '0.05' }
-);
+const discovery = new DiscoveryClient(client, 'http://localhost:8080');
+const agents = await discovery.search('translate legal documents', { minTrust: 0.8 });
 
-// Create escrow payment for the task
-const payment = new PaymentClient(client, 'did:agentme:base:0x...');
+const payment = new PaymentClient(client, 'did:agentme:base:my-client');
 const escrowId = await payment.createAndFundEscrow({
-  providerDid: translators[0].did,
-  providerAddress: translators[0].address,
-  amount: '5.00',
-  taskHash: '0x...',
-  deadline: Date.now() + 24 * 60 * 60 * 1000,
+  providerDid: agents[0].did, providerAddress: agents[0].address,
+  amount: '5.00', taskHash: keccak256(toHex('translate contract')), deadline: Date.now() + 86400000,
 });
 ```
+
+> See [Getting Started Guide](docs/guides/getting-started.md) for a full walkthrough.
 
 ### For Node Operators
 
@@ -165,10 +152,13 @@ AgentMe is designed to work with existing standards:
 
 | Document | Description |
 |----------|-------------|
+| [Getting Started](docs/guides/getting-started.md) | 5-minute quickstart |
+| [SDK Guide](docs/guides/sdk-guide.md) | Full TypeScript SDK guide |
+| [API Reference](docs/guides/api-reference.md) | Node HTTP API reference |
+| [Architecture](docs/guides/architecture.md) | System design & component overview |
 | [Design Document](docs/plans/2026-02-01-agentme-design.md) | Full protocol specification |
 | [Protocol Specs](docs/specs/) | Capability cards, trust, payments, disputes |
 | [Bridge Protocol](docs/specs/bridge-protocol.md) | Local AI agent bridge spec |
-| [Getting Started](docs/tutorials/getting-started.md) | SDK quick start guide |
 | [Running a Node](docs/tutorials/running-a-node.md) | Node operator guide |
 | [Running Local Agent](docs/tutorials/running-local-agent.md) | Run Claude Code as AgentMe worker |
 
