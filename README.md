@@ -6,6 +6,8 @@
 [![Protocol: A2A Compatible](https://img.shields.io/badge/Protocol-A2A%20Compatible-blue)](https://a2a-protocol.org/)
 [![Payments: x402](https://img.shields.io/badge/Payments-x402-green)](https://x402.org/)
 [![Chain: Base L2](https://img.shields.io/badge/Chain-Base%20L2-0052FF)](https://base.org/)
+[![Tests: 1100+](https://img.shields.io/badge/Tests-1100%2B%20passing-brightgreen)]()
+[![Deploy: Base Sepolia](https://img.shields.io/badge/Testnet-Base%20Sepolia-blue)](https://sepolia.basescan.org/)
 
 ---
 

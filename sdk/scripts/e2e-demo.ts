@@ -581,9 +581,14 @@ async function main() {
           escrowId: escrowId.toString(),
         };
 
+        const bridgeHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (process.env.BRIDGE_API_TOKEN) {
+          bridgeHeaders['Authorization'] = `Bearer ${process.env.BRIDGE_API_TOKEN}`;
+        }
+
         const taskRes = await fetch(`${BRIDGE_URL}/task`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: bridgeHeaders,
           body: JSON.stringify(taskPayload),
         });
 
@@ -628,27 +633,40 @@ async function main() {
     // =========================================================================
     log(9, 'Releasing escrow');
 
-    try {
-      const releaseTx = await walletClient.writeContract({
-        address: deployment.escrow,
-        abi: ESCROW_ABI,
-        functionName: 'releaseEscrow',
-        args: [escrowId],
-      });
-      console.log(`  Release TX: ${releaseTx}`);
-      await publicClient.waitForTransactionReceipt({ hash: releaseTx });
+    // Check current escrow state first — bridge may have already released it
+    const preReleaseEscrow = await publicClient.readContract({
+      address: deployment.escrow,
+      abi: ESCROW_ABI,
+      functionName: 'getEscrow',
+      args: [escrowId],
+    });
+    const preState = ESCROW_STATE_NAMES[preReleaseEscrow.state] ?? preReleaseEscrow.state;
 
-      const finalEscrow = await publicClient.readContract({
-        address: deployment.escrow,
-        abi: ESCROW_ABI,
-        functionName: 'getEscrow',
-        args: [escrowId],
-      });
-      console.log(`  Final state: ${ESCROW_STATE_NAMES[finalEscrow.state] ?? finalEscrow.state}`);
-    } catch (err) {
-      // Release may fail if escrow is in wrong state (e.g. not DELIVERED)
-      console.log(`  Release skipped (escrow may require delivery confirmation first)`);
-      console.log(`  Error: ${err instanceof Error ? err.message : String(err)}`);
+    if (preReleaseEscrow.state === 3 /* RELEASED */) {
+      console.log(`  Escrow already released by bridge ✓`);
+    } else if (preReleaseEscrow.state === 2 /* DELIVERED */) {
+      try {
+        const releaseTx = await walletClient.writeContract({
+          address: deployment.escrow,
+          abi: ESCROW_ABI,
+          functionName: 'releaseEscrow',
+          args: [escrowId],
+        });
+        console.log(`  Release TX: ${releaseTx}`);
+        await publicClient.waitForTransactionReceipt({ hash: releaseTx });
+
+        const finalEscrow = await publicClient.readContract({
+          address: deployment.escrow,
+          abi: ESCROW_ABI,
+          functionName: 'getEscrow',
+          args: [escrowId],
+        });
+        console.log(`  Final state: ${ESCROW_STATE_NAMES[finalEscrow.state] ?? finalEscrow.state}`);
+      } catch (err) {
+        console.log(`  Release failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } else {
+      console.log(`  Escrow in state ${preState} — cannot release yet (needs DELIVERED or bridge auto-release)`);
     }
   } else {
     log(5, 'Skipping escrow steps (insufficient USDC balance)');

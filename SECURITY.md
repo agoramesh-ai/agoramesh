@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability in AgentMe, please report it responsibly.
 
-**Email:** vladimir.beran@etnetera.cz
+**Email:** prdko@agentme.cz
 
 Please include:
 
