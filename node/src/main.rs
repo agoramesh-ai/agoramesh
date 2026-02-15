@@ -397,8 +397,7 @@ async fn main() -> Result<()> {
             // Format: JSON array of capability card objects, or a URL to fetch.
             // Example: AGENTME_SEED_AGENTS='[{"name":"Bridge","description":"...","url":"https://bridge.agentme.cz","x-agentme":{"did":"did:agentme:base-sepolia:agent-001","payment_methods":["x402"]}}]'
             if let Some(seed_agents_json) = env_string("AGENTME_SEED_AGENTS") {
-                match serde_json::from_str::<Vec<agentme_node::CapabilityCard>>(&seed_agents_json)
-                {
+                match serde_json::from_str::<Vec<agentme_node::CapabilityCard>>(&seed_agents_json) {
                     Ok(cards) => {
                         for card in &cards {
                             match discovery.register(card).await {

@@ -398,9 +398,7 @@ impl SwarmManager {
                 // Other GossipSub events (GraftReceived, PruneReceived, etc.)
             }
 
-            AgentMeEvent::Kademlia(kad::Event::OutboundQueryProgressed {
-                id, result, ..
-            }) => {
+            AgentMeEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, .. }) => {
                 match result {
                     kad::QueryResult::Bootstrap(Ok(_)) => {
                         info!("Kademlia bootstrap completed");

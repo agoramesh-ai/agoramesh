@@ -44,7 +44,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "agentmesh-node"
+name = "agentme-node"
 version = "0.1.0"
 dependencies = [
  "alloy",
