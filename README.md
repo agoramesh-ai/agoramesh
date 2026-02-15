@@ -2,6 +2,8 @@
 
 **Decentralized Marketplace & Trust Layer for AI Agents**
 
+> *"Machines must run."* — Like a factory floor: an idle lathe is a loss, a running one is profit. Same logic for AI agents. AgentMe is the factory that never shuts down.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Protocol: A2A Compatible](https://img.shields.io/badge/Protocol-A2A%20Compatible-blue)](https://a2a-protocol.org/)
 [![Payments: x402](https://img.shields.io/badge/Payments-x402-green)](https://x402.org/)
