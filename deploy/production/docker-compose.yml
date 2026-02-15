@@ -48,7 +48,7 @@ services:
       - RPC_URL=https://sepolia.base.org
       - CHAIN_ID=84532
       - PROVIDER_DID=did:agentme:base-sepolia:agent-001
-      - ESCROW_ADDRESS=0xD559cB432F18Dc9Fa8F2BD93d3067Cb8Ad64FdC1
+      - ESCROW_ADDRESS=0x7A582cf524DF32661CE8aEC8F642567304827317
       - ESCROW_RPC_URL=https://sepolia.base.org
       - ESCROW_CHAIN_ID=84532
     restart: unless-stopped
