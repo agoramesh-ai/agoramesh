@@ -171,6 +171,16 @@ const ESCROW_ABI = [
     outputs: [],
   },
   {
+    name: 'confirmDelivery',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'escrowId', type: 'uint256' },
+      { name: 'outputHash', type: 'bytes32' },
+    ],
+    outputs: [],
+  },
+  {
     name: 'releaseEscrow',
     type: 'function',
     stateMutability: 'nonpayable',
@@ -314,16 +324,42 @@ async function main() {
     ? createWalletClient({ account: providerAccount, chain, transport: http(RPC_URL) })
     : walletClient;
 
-  // Agent identities
-  const clientDid = `did:agentme:base:client${Date.now().toString(36)}`;
+  // Agent identities — check if wallets already have registered agents
+  let clientDid = `did:agentme:base:client${Date.now().toString(36)}`;
+  let clientDidHash = didToHash(clientDid);
   // Use bridge's provider DID if available (matches PROVIDER_DID env in bridge)
   const bridgeProviderDid = process.env.PROVIDER_DID ?? `did:agentme:local:agent-001`;
-  const providerDid = bridgeProviderDid;
-  const clientDidHash = didToHash(clientDid);
-  const providerDidHash = didToHash(providerDid);
+  let providerDid = bridgeProviderDid;
+  let providerDidHash = didToHash(providerDid);
+
+  // Check if client wallet already has a registered agent (reuse it)
+  const existingClientDid = await publicClient.readContract({
+    address: deployment.trustRegistry,
+    abi: [{ name: 'getAgentByOwner', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ name: 'didHash', type: 'bytes32' }] }],
+    functionName: 'getAgentByOwner',
+    args: [account.address],
+  });
+  if (existingClientDid && existingClientDid !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
+    clientDidHash = existingClientDid;
+    clientDid = `(existing: ${existingClientDid.slice(0, 10)}...)`;
+  }
+
+  // Check if provider wallet already has a registered agent
+  if (hasSeparateProvider) {
+    const existingProviderDid = await publicClient.readContract({
+      address: deployment.trustRegistry,
+      abi: [{ name: 'getAgentByOwner', type: 'function', stateMutability: 'view', inputs: [{ name: 'owner', type: 'address' }], outputs: [{ name: 'didHash', type: 'bytes32' }] }],
+      functionName: 'getAgentByOwner',
+      args: [providerAccount.address],
+    });
+    if (existingProviderDid && existingProviderDid !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
+      providerDidHash = existingProviderDid;
+      providerDid = `(existing: ${existingProviderDid.slice(0, 10)}...)`;
+    }
+  }
 
   console.log(`Client DID: ${clientDid}`);
-  console.log(`Provider DID: ${providerDid} (matching bridge)`);
+  console.log(`Provider DID: ${providerDid}`);
 
   // =========================================================================
   // Step 1: Check balances
@@ -338,7 +374,7 @@ async function main() {
     process.exit(1);
   }
 
-  const usdcBalance = await publicClient.readContract({
+  let usdcBalance = await publicClient.readContract({
     address: deployment.usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
@@ -495,6 +531,29 @@ async function main() {
   // =========================================================================
   const escrowAmount = parseUnits('1', 6); // 1 USDC
 
+  // Auto-mint USDC on local network if balance is zero
+  if (usdcBalance < escrowAmount && deployment.chainId === 31337) {
+    log(5, 'Minting test USDC (local network)');
+    try {
+      const mintTx = await walletClient.writeContract({
+        address: deployment.usdc,
+        abi: [{ name: 'mint', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }], outputs: [] }],
+        functionName: 'mint',
+        args: [account.address, parseUnits('10', 6)],
+      });
+      await publicClient.waitForTransactionReceipt({ hash: mintTx });
+      usdcBalance = await publicClient.readContract({
+        address: deployment.usdc,
+        abi: ERC20_ABI,
+        functionName: 'balanceOf',
+        args: [account.address],
+      }) as bigint;
+      console.log(`  Minted 10 USDC, balance: ${formatUnits(usdcBalance, 6)} USDC`);
+    } catch (err) {
+      console.log(`  Mint failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   if (usdcBalance >= escrowAmount) {
     log(5, 'Creating escrow (1 USDC)');
 
@@ -629,11 +688,42 @@ async function main() {
     }
 
     // =========================================================================
-    // Step 9: Release escrow
+    // Step 9: Confirm delivery (provider confirms task completion)
     // =========================================================================
-    log(9, 'Releasing escrow');
+    log(9, 'Confirming delivery');
 
-    // Check current escrow state first — bridge may have already released it
+    const preConfirmEscrow = await publicClient.readContract({
+      address: deployment.escrow,
+      abi: ESCROW_ABI,
+      functionName: 'getEscrow',
+      args: [escrowId],
+    });
+
+    if (preConfirmEscrow.state === 1 /* FUNDED */) {
+      try {
+        const providerClient = hasSeparateProvider ? providerWalletClient : walletClient;
+        const outputHash = keccak256(toHex('demo-task-output-result'));
+        const confirmTx = await providerClient.writeContract({
+          address: deployment.escrow,
+          abi: ESCROW_ABI,
+          functionName: 'confirmDelivery',
+          args: [escrowId, outputHash],
+        });
+        console.log(`  Confirm TX: ${confirmTx}`);
+        await publicClient.waitForTransactionReceipt({ hash: confirmTx });
+        console.log(`  Delivery confirmed by provider ✓`);
+      } catch (err) {
+        console.log(`  Confirm failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } else if (preConfirmEscrow.state >= 2) {
+      console.log(`  Already past FUNDED state (${ESCROW_STATE_NAMES[preConfirmEscrow.state] ?? preConfirmEscrow.state})`);
+    }
+
+    // =========================================================================
+    // Step 10: Release escrow (client releases funds to provider)
+    // =========================================================================
+    log(10, 'Releasing escrow');
+
     const preReleaseEscrow = await publicClient.readContract({
       address: deployment.escrow,
       abi: ESCROW_ABI,
@@ -642,8 +732,8 @@ async function main() {
     });
     const preState = ESCROW_STATE_NAMES[preReleaseEscrow.state] ?? preReleaseEscrow.state;
 
-    if (preReleaseEscrow.state === 3 /* RELEASED */) {
-      console.log(`  Escrow already released by bridge ✓`);
+    if (preReleaseEscrow.state === 4 /* RELEASED */) {
+      console.log(`  Escrow already released ✓`);
     } else if (preReleaseEscrow.state === 2 /* DELIVERED */) {
       try {
         const releaseTx = await walletClient.writeContract({
@@ -666,7 +756,7 @@ async function main() {
         console.log(`  Release failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     } else {
-      console.log(`  Escrow in state ${preState} — cannot release yet (needs DELIVERED or bridge auto-release)`);
+      console.log(`  Escrow in state ${preState} — cannot release yet (needs DELIVERED state)`);
     }
   } else {
     log(5, 'Skipping escrow steps (insufficient USDC balance)');
@@ -675,9 +765,9 @@ async function main() {
   }
 
   // =========================================================================
-  // Step 10: Verify trust score
+  // Step 11: Verify trust score
   // =========================================================================
-  log(10, 'Verifying trust scores on-chain');
+  log(11, 'Verifying trust scores on-chain');
 
   const [repScore, stakeScore, endorseScore, compositeScore] =
     await publicClient.readContract({
