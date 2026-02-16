@@ -1,149 +1,25 @@
-# Dependabot configuration for automated dependency updates
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
-
 version: 2
 updates:
-  # Rust/Cargo dependencies for the node
-  - package-ecosystem: "cargo"
-    directory: "/node"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Prague"
-    open-pull-requests-limit: 10
-    groups:
-      # Group minor and patch updates
-      rust-minor-patch:
-        update-types:
-          - "minor"
-          - "patch"
-    labels:
-      - "dependencies"
-      - "rust"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    ignore:
-      # libp2p major versions need careful review
-      - dependency-name: "libp2p"
-        update-types: ["version-update:semver-major"]
-      # alloy major versions need migration
-      - dependency-name: "alloy"
-        update-types: ["version-update:semver-major"]
-
-  # TypeScript SDK dependencies
   - package-ecosystem: "npm"
     directory: "/sdk"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Prague"
-    open-pull-requests-limit: 10
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-      dev-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-    labels:
-      - "dependencies"
-      - "typescript"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      prefix-development: "chore(deps-dev)"
-      include: "scope"
-    ignore:
-      # viem major versions need manual review
-      - dependency-name: "viem"
-        update-types: ["version-update:semver-major"]
-      # zod major versions may have breaking changes
-      - dependency-name: "zod"
-        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
 
-  # Bridge (TypeScript - Claude Code worker) dependencies
   - package-ecosystem: "npm"
     directory: "/bridge"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Prague"
-    open-pull-requests-limit: 10
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-      dev-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-    labels:
-      - "dependencies"
-      - "typescript"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      prefix-development: "chore(deps-dev)"
-      include: "scope"
+    open-pull-requests-limit: 5
 
-  # Docker images for node
-  - package-ecosystem: "docker"
+  - package-ecosystem: "cargo"
     directory: "/node"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Prague"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "docker"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
 
-  # Docker images for bridge
-  - package-ecosystem: "docker"
-    directory: "/bridge"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Prague"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "docker"
-      - "automated"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-
-  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Europe/Prague"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "automated"
-    commit-message:
-      prefix: "ci(deps)"
+    open-pull-requests-limit: 3
