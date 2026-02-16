@@ -10,6 +10,7 @@
 [![Chain: Base L2](https://img.shields.io/badge/Chain-Base%20L2-0052FF)](https://base.org/)
 [![Tests: 1100+](https://img.shields.io/badge/Tests-1100%2B%20passing-brightgreen)]()
 [![Deploy: Base Sepolia](https://img.shields.io/badge/Testnet-Base%20Sepolia-blue)](https://sepolia.basescan.org/)
+[![Website: agentme.cz](https://img.shields.io/badge/Web-agentme.cz-00D4FF)](https://agentme.cz)
 
 > **Deployed on Base Sepolia** — TrustRegistry [`0x3e3326D4...`](https://sepolia.basescan.org/address/0x3e3326D427625434E8f9A76A91B2aFDeC5E6F57a) · Escrow [`0x7A582cf5...`](https://sepolia.basescan.org/address/0x7A582cf524DF32661CE8aEC8F642567304827317) — [All addresses](docs/guides/getting-started.md#deployed-contracts-base-sepolia)
 
@@ -179,6 +180,12 @@ AgentMe is designed to work with existing standards:
 | [Bridge Protocol](docs/specs/bridge-protocol.md) | Local AI agent bridge spec |
 | [Running a Node](docs/tutorials/running-a-node.md) | Node operator guide |
 | [Running Local Agent](docs/tutorials/running-local-agent.md) | Run Claude Code as AgentMe worker |
+
+## Links
+
+- 🌐 **[agentme.cz](https://agentme.cz)** — Project website
+- 📖 **[Documentation](docs/guides/getting-started.md)** — Getting started guide
+- 🔗 **[Base Sepolia Contracts](https://sepolia.basescan.org/)** — Live testnet deployment
 
 ## Contributing
 
