@@ -91,6 +91,44 @@ jobs:
         working-directory: contracts
         run: forge test -vvv
 
+      - name: Coverage report
+        working-directory: contracts
+        run: forge coverage
+
+      - name: Gas snapshot
+        working-directory: contracts
+        run: forge snapshot
+
+  # ==========================================================================
+  # Slither Static Analysis
+  # ==========================================================================
+  slither:
+    name: Slither Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@8789b3e21e6c11b2697f5eb56eddae542f746c10 # v1
+        with:
+          version: stable
+
+      - name: Build contracts
+        working-directory: contracts
+        run: forge build
+
+      - name: Run Slither
+        uses: crytic/slither-action@6918e2cfcf88c5ca44a40e22da22b0c6e1a3bf69 # v0.4.1
+        with:
+          sarif: results.sarif
+          solc-version: '0.8.24'
+          target: contracts/
+          fail-on: none
+
   # ==========================================================================
   # TypeScript SDK
   # ==========================================================================
