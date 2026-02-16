@@ -761,15 +761,6 @@ describe('AgentMesh E2E Integration', () => {
     });
 
     it('should release escrow', async () => {
-      // Check state before release
-      const preEscrow = await publicClient.readContract({
-        address: deployment.escrow,
-        abi: ESCROW_ABI,
-        functionName: 'getEscrow',
-        args: [escrowId],
-      });
-      console.log(`Pre-release escrow state: ${preEscrow.state}, escrowId: ${escrowId}`);
-
       // Client releases escrow after provider confirmed delivery
       const tx = await clientWalletClient.writeContract({
         address: deployment.escrow,
