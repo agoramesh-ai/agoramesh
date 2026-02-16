@@ -120,6 +120,57 @@ const ESCROW_ABI = [
       { name: 'deadline', type: 'uint256', indexed: false },
     ],
   },
+  // Custom Errors
+  {
+    type: 'error',
+    name: 'AgentNotActive',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'EscrowNotFound',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidState',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidAmount',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidDeadline',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidProviderAddress',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotAuthorized',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotClient',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotProvider',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'DeadlineNotPassed',
+    inputs: [],
+  },
 ] as const;
 
 // =============================================================================

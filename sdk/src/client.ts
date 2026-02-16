@@ -94,6 +94,47 @@ const TRUST_REGISTRY_ABI = [
     inputs: [{ name: 'didHash', type: 'bytes32' }],
     outputs: [{ name: '', type: 'bool' }],
   },
+  // Custom Errors
+  {
+    type: 'error',
+    name: 'OwnerAlreadyHasAgent',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AgentNotActive',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AgentAlreadyRegistered',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AgentNotRegistered',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidDIDHash',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidCapabilityCardCID',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotAgentOwner',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InsufficientStake',
+    inputs: [],
+  },
 ] as const;
 
 // =============================================================================

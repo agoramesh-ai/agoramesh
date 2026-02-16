@@ -96,6 +96,47 @@ const TRUST_REGISTRY_ABI = [
     inputs: [{ name: 'didHash', type: 'bytes32' }],
     outputs: [{ name: '', type: 'bool' }],
   },
+  // Custom Errors
+  {
+    type: 'error',
+    name: 'OwnerAlreadyHasAgent',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AgentNotActive',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AgentAlreadyRegistered',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'AgentNotRegistered',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidDIDHash',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidCapabilityCardCID',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotAgentOwner',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InsufficientStake',
+    inputs: [],
+  },
 ] as const;
 
 const ESCROW_ABI = [
@@ -162,6 +203,57 @@ const ESCROW_ABI = [
       { name: 'provider', indexed: true, type: 'address' },
       { name: 'amount', type: 'uint256' },
     ],
+  },
+  // Custom Errors
+  {
+    type: 'error',
+    name: 'AgentNotActive',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'EscrowNotFound',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidState',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidAmount',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidDeadline',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidProviderAddress',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotAuthorized',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotClient',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotProvider',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'DeadlineNotPassed',
+    inputs: [],
   },
 ] as const;
 
