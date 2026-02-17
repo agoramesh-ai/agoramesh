@@ -71,9 +71,9 @@ impl EmbeddingService {
         let model = TextEmbedding::try_new(init_options)
             .map_err(|e| Error::Search(format!("Failed to initialize embedding model: {}", e)))?;
 
-        let cache = Arc::new(RwLock::new(lru::LruCache::new(
-            std::num::NonZeroUsize::new(config.max_cache_size).unwrap(),
-        )));
+        let cache_size = std::num::NonZeroUsize::new(config.max_cache_size)
+            .ok_or_else(|| Error::Config("max_cache_size must be greater than 0".to_string()))?;
+        let cache = Arc::new(RwLock::new(lru::LruCache::new(cache_size)));
 
         Ok(Self {
             model,

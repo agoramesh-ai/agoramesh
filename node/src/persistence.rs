@@ -246,31 +246,40 @@ impl MemoryStore {
 
 impl Store for MemoryStore {
     fn get(&self, key: &str) -> Result<Option<Vec<u8>>> {
-        Ok(self.data.read().unwrap().get(key).cloned())
+        let guard = self.data.read().map_err(|_| {
+            Error::Persistence("Memory store lock poisoned (read)".to_string())
+        })?;
+        Ok(guard.get(key).cloned())
     }
 
     fn put(&self, key: &str, value: &[u8]) -> Result<()> {
-        self.data
-            .write()
-            .unwrap()
-            .insert(key.to_string(), value.to_vec());
+        let mut guard = self.data.write().map_err(|_| {
+            Error::Persistence("Memory store lock poisoned (write)".to_string())
+        })?;
+        guard.insert(key.to_string(), value.to_vec());
         Ok(())
     }
 
     fn delete(&self, key: &str) -> Result<()> {
-        self.data.write().unwrap().remove(key);
+        let mut guard = self.data.write().map_err(|_| {
+            Error::Persistence("Memory store lock poisoned (write)".to_string())
+        })?;
+        guard.remove(key);
         Ok(())
     }
 
     fn contains(&self, key: &str) -> Result<bool> {
-        Ok(self.data.read().unwrap().contains_key(key))
+        let guard = self.data.read().map_err(|_| {
+            Error::Persistence("Memory store lock poisoned (read)".to_string())
+        })?;
+        Ok(guard.contains_key(key))
     }
 
     fn iter_prefix(&self, prefix: &str) -> Result<Vec<(String, Vec<u8>)>> {
-        Ok(self
-            .data
-            .read()
-            .unwrap()
+        let guard = self.data.read().map_err(|_| {
+            Error::Persistence("Memory store lock poisoned (read)".to_string())
+        })?;
+        Ok(guard
             .iter()
             .filter(|(k, _)| k.starts_with(prefix))
             .map(|(k, v)| (k.clone(), v.clone()))
@@ -278,7 +287,10 @@ impl Store for MemoryStore {
     }
 
     fn keys(&self) -> Result<Vec<String>> {
-        Ok(self.data.read().unwrap().keys().cloned().collect())
+        let guard = self.data.read().map_err(|_| {
+            Error::Persistence("Memory store lock poisoned (read)".to_string())
+        })?;
+        Ok(guard.keys().cloned().collect())
     }
 }
 

@@ -85,8 +85,12 @@ impl RateLimitService {
     /// Create a new rate limiter with the given configuration.
     pub fn new(config: RateLimitConfig) -> Self {
         let limiter = if config.enabled && config.requests_per_second > 0 {
-            let quota = Quota::per_second(NonZeroU32::new(config.requests_per_second).unwrap())
-                .allow_burst(NonZeroU32::new(config.burst_size.max(1)).unwrap());
+            // Safety: guarded by > 0 check above; .max(1) ensures burst_size is non-zero
+            let rps = NonZeroU32::new(config.requests_per_second)
+                .expect("requests_per_second already verified > 0");
+            let burst = NonZeroU32::new(config.burst_size.max(1))
+                .expect("burst_size.max(1) is always >= 1");
+            let quota = Quota::per_second(rps).allow_burst(burst);
             Some(Arc::new(RateLimiter::keyed(quota)))
         } else {
             None
@@ -261,18 +265,15 @@ where
 
                     // Add rate limit headers to response
                     let headers = response.headers_mut();
-                    headers.insert(
-                        headers::X_RATELIMIT_LIMIT,
-                        limit.to_string().parse().unwrap(),
-                    );
-                    headers.insert(
-                        headers::X_RATELIMIT_REMAINING,
-                        remaining.to_string().parse().unwrap(),
-                    );
-                    headers.insert(
-                        headers::X_RATELIMIT_RESET,
-                        reset_after_secs.to_string().parse().unwrap(),
-                    );
+                    if let Ok(val) = limit.to_string().parse() {
+                        headers.insert(headers::X_RATELIMIT_LIMIT, val);
+                    }
+                    if let Ok(val) = remaining.to_string().parse() {
+                        headers.insert(headers::X_RATELIMIT_REMAINING, val);
+                    }
+                    if let Ok(val) = reset_after_secs.to_string().parse() {
+                        headers.insert(headers::X_RATELIMIT_RESET, val);
+                    }
 
                     Ok(response)
                 }
@@ -294,7 +295,7 @@ where
                         .header(headers::X_RATELIMIT_REMAINING, "0")
                         .header("Content-Type", "application/json")
                         .body(Body::from(error_body.to_string()))
-                        .unwrap();
+                        .expect("building 429 response with valid headers");
 
                     Ok(response)
                 }

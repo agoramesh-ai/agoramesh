@@ -67,4 +67,8 @@ pub enum Error {
     /// Validation error (invalid input data).
     #[error("Validation error: {0}")]
     Validation(String),
+
+    /// Internal error (system-level failures like clock errors).
+    #[error("Internal error: {0}")]
+    Internal(String),
 }

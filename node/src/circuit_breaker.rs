@@ -204,7 +204,7 @@ impl CircuitBreaker {
 
     /// Get current circuit state.
     pub fn state(&self) -> CircuitState {
-        let guard = self.state.read().unwrap();
+        let guard = self.state.read().unwrap_or_else(|e| e.into_inner());
         guard.state
     }
 
@@ -278,7 +278,7 @@ impl CircuitBreaker {
 
     /// Force the circuit to open (for testing or manual intervention).
     pub fn force_open(&self) {
-        let mut guard = self.state.write().unwrap();
+        let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
         if guard.state != CircuitState::Open {
             guard.state = CircuitState::Open;
             guard.opened_at = Some(Instant::now());
@@ -292,7 +292,7 @@ impl CircuitBreaker {
 
     /// Force the circuit to close (for testing or manual intervention).
     pub fn force_close(&self) {
-        let mut guard = self.state.write().unwrap();
+        let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
         if guard.state != CircuitState::Closed {
             guard.state = CircuitState::Closed;
             guard.opened_at = None;
@@ -306,7 +306,7 @@ impl CircuitBreaker {
 
     /// Reset the circuit breaker to initial state.
     pub fn reset(&self) {
-        let mut guard = self.state.write().unwrap();
+        let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
         guard.state = CircuitState::Closed;
         guard.opened_at = None;
         guard.half_open_remaining = self.config.half_open_calls;
@@ -320,7 +320,7 @@ impl CircuitBreaker {
         // First, check and potentially transition state
         self.check_state_transition();
 
-        let mut guard = self.state.write().unwrap();
+        let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
 
         match guard.state {
             CircuitState::Closed => Ok(()),
@@ -352,7 +352,7 @@ impl CircuitBreaker {
     }
 
     fn check_state_transition(&self) {
-        let mut guard = self.state.write().unwrap();
+        let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
 
         // Open -> HalfOpen after timeout
         if guard.state == CircuitState::Open {
@@ -376,7 +376,7 @@ impl CircuitBreaker {
 
         let failure_rate = self.metrics.failure_rate();
         if failure_rate >= self.config.failure_rate_threshold {
-            let mut guard = self.state.write().unwrap();
+            let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
             if guard.state == CircuitState::Closed || guard.state == CircuitState::HalfOpen {
                 guard.state = CircuitState::Open;
                 guard.opened_at = Some(Instant::now());
@@ -390,13 +390,13 @@ impl CircuitBreaker {
     }
 
     fn maybe_close_circuit(&self) {
-        let guard = self.state.read().unwrap();
+        let guard = self.state.read().unwrap_or_else(|e| e.into_inner());
         if guard.state == CircuitState::HalfOpen {
             drop(guard); // Release read lock before write
 
             // In half-open, a success indicates recovery
             // Reset metrics and close circuit
-            let mut guard = self.state.write().unwrap();
+            let mut guard = self.state.write().unwrap_or_else(|e| e.into_inner());
             if guard.state == CircuitState::HalfOpen {
                 guard.state = CircuitState::Closed;
                 guard.opened_at = None;

@@ -447,7 +447,7 @@ impl MessageHandler {
                 // Validate timestamp is not in the future (with 5 minute grace period)
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .map_err(|e| Error::Internal(format!("System clock error: {}", e)))?
                     .as_secs();
                 let grace_period = 300; // 5 minutes
                 if timestamp > now + grace_period {
@@ -524,7 +524,7 @@ impl MessageHandler {
                 // Validate timestamp is not in the future
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .map_err(|e| Error::Internal(format!("System clock error: {}", e)))?
                     .as_secs();
                 let grace_period = 300; // 5 minutes
                 if timestamp > now + grace_period {
@@ -651,7 +651,7 @@ impl MessageHandler {
         // Validate timestamp
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .map_err(|e| Error::Internal(format!("System clock error: {}", e)))?
             .as_secs();
         let grace_period = 300; // 5 minutes
         if timestamp > now + grace_period {
@@ -709,7 +709,7 @@ impl MessageHandler {
         // Validate timestamp
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .map_err(|e| Error::Internal(format!("System clock error: {}", e)))?
             .as_secs();
         let grace_period = 300;
         if timestamp > now + grace_period {
@@ -782,7 +782,7 @@ impl MessageHandler {
         // Validate timestamp
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .map_err(|e| Error::Internal(format!("System clock error: {}", e)))?
             .as_secs();
         let grace_period = 300;
         if timestamp > now + grace_period {

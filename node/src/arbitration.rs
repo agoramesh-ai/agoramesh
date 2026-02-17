@@ -720,7 +720,7 @@ impl KlerosClient {
         // For now, generate a mock dispute ID based on timestamp
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .map_err(|e| Error::Internal(format!("System clock error: {}", e)))?
             .as_secs();
 
         // Use timestamp + hash of evidence URI as mock dispute ID
