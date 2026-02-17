@@ -335,7 +335,11 @@ impl MultiChainClient {
             Ok(total_score / total_weight)
         } else if !errors.is_empty() {
             // All chains failed, return the first error
-            Err(errors.into_iter().next().expect("errors verified non-empty").1)
+            Err(errors
+                .into_iter()
+                .next()
+                .expect("errors verified non-empty")
+                .1)
         } else {
             Err(Error::Config("No scores available".to_string()))
         }

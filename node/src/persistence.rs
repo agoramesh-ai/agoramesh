@@ -246,39 +246,44 @@ impl MemoryStore {
 
 impl Store for MemoryStore {
     fn get(&self, key: &str) -> Result<Option<Vec<u8>>> {
-        let guard = self.data.read().map_err(|_| {
-            Error::Persistence("Memory store lock poisoned (read)".to_string())
-        })?;
+        let guard = self
+            .data
+            .read()
+            .map_err(|_| Error::Persistence("Memory store lock poisoned (read)".to_string()))?;
         Ok(guard.get(key).cloned())
     }
 
     fn put(&self, key: &str, value: &[u8]) -> Result<()> {
-        let mut guard = self.data.write().map_err(|_| {
-            Error::Persistence("Memory store lock poisoned (write)".to_string())
-        })?;
+        let mut guard = self
+            .data
+            .write()
+            .map_err(|_| Error::Persistence("Memory store lock poisoned (write)".to_string()))?;
         guard.insert(key.to_string(), value.to_vec());
         Ok(())
     }
 
     fn delete(&self, key: &str) -> Result<()> {
-        let mut guard = self.data.write().map_err(|_| {
-            Error::Persistence("Memory store lock poisoned (write)".to_string())
-        })?;
+        let mut guard = self
+            .data
+            .write()
+            .map_err(|_| Error::Persistence("Memory store lock poisoned (write)".to_string()))?;
         guard.remove(key);
         Ok(())
     }
 
     fn contains(&self, key: &str) -> Result<bool> {
-        let guard = self.data.read().map_err(|_| {
-            Error::Persistence("Memory store lock poisoned (read)".to_string())
-        })?;
+        let guard = self
+            .data
+            .read()
+            .map_err(|_| Error::Persistence("Memory store lock poisoned (read)".to_string()))?;
         Ok(guard.contains_key(key))
     }
 
     fn iter_prefix(&self, prefix: &str) -> Result<Vec<(String, Vec<u8>)>> {
-        let guard = self.data.read().map_err(|_| {
-            Error::Persistence("Memory store lock poisoned (read)".to_string())
-        })?;
+        let guard = self
+            .data
+            .read()
+            .map_err(|_| Error::Persistence("Memory store lock poisoned (read)".to_string()))?;
         Ok(guard
             .iter()
             .filter(|(k, _)| k.starts_with(prefix))
@@ -287,9 +292,10 @@ impl Store for MemoryStore {
     }
 
     fn keys(&self) -> Result<Vec<String>> {
-        let guard = self.data.read().map_err(|_| {
-            Error::Persistence("Memory store lock poisoned (read)".to_string())
-        })?;
+        let guard = self
+            .data
+            .read()
+            .map_err(|_| Error::Persistence("Memory store lock poisoned (read)".to_string()))?;
         Ok(guard.keys().cloned().collect())
     }
 }

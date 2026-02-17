@@ -1001,7 +1001,11 @@ contract DisputeResolutionTest is Test {
         assertEq(d.escrowId, escrowId, "Escrow ID should match");
         assertEq(d.amount, 5 * 1e6, "Amount should match");
         assertEq(uint256(d.tier), uint256(IDisputeResolution.Tier.AUTO), "Tier should be AUTO");
-        assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.EVIDENCE_PERIOD), "State should be EVIDENCE_PERIOD");
+        assertEq(
+            uint256(d.state),
+            uint256(IDisputeResolution.DisputeState.EVIDENCE_PERIOD),
+            "State should be EVIDENCE_PERIOD"
+        );
         assertEq(d.clientEvidenceCID, evidenceCID, "Client evidence should match");
         assertEq(d.providerEvidenceCID, bytes32(0), "Provider evidence should be empty");
         assertEq(d.appealRound, 0, "Appeal round should be 0");
@@ -1794,9 +1798,7 @@ contract DisputeResolutionTest is Test {
 
     function test_determineTier_zeroAmount() public {
         assertEq(
-            uint256(disputeResolution.determineTier(0)),
-            uint256(IDisputeResolution.Tier.AUTO),
-            "$0 should be Tier 1"
+            uint256(disputeResolution.determineTier(0)), uint256(IDisputeResolution.Tier.AUTO), "$0 should be Tier 1"
         );
     }
 
