@@ -73,6 +73,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: recursive
+          persist-credentials: true
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@8789b3e21e6c11b2697f5eb56eddae542f746c10 # v1
@@ -93,7 +94,15 @@ jobs:
 
       - name: Coverage report
         working-directory: contracts
-        run: forge coverage
+        run: |
+          forge coverage --no-match-contract "Script|CrossChain" 2>&1 | tee coverage.txt
+          # Extract total line coverage and enforce minimum
+          LINE_PCT=$(grep "Total" coverage.txt | grep -oP '\d+\.\d+%' | head -1 | tr -d '%')
+          echo "Line coverage: ${LINE_PCT}%"
+          if [ "$(echo "$LINE_PCT < 60" | bc)" -eq 1 ]; then
+            echo "::error::Coverage dropped below 60%! Current: ${LINE_PCT}%"
+            exit 1
+          fi
 
       - name: Gas snapshot
         working-directory: contracts
@@ -111,6 +120,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: recursive
+          persist-credentials: true
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@8789b3e21e6c11b2697f5eb56eddae542f746c10 # v1
