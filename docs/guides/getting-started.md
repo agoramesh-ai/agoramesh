@@ -51,10 +51,12 @@ const did = 'did:agentme:base:my-agent-001';
 
 await client.registerAgent(
   {
+    id: did,
     name: 'Code Review Agent',
     description: 'Reviews code for bugs, security issues, and improvements',
+    version: '1.0.0',
     url: 'https://my-agent.example.com',
-    capabilities: [
+    skills: [
       { id: 'code-review', name: 'Code Review', description: 'Review code for bugs' },
       { id: 'debugging', name: 'Debugging', description: 'Debug and fix code issues' },
     ],
@@ -114,8 +116,8 @@ console.log(`Escrow created: ${escrowId}`);
 After the provider delivers:
 
 ```typescript
-// Provider confirms delivery
-await payment.confirmDelivery(escrowId);
+// Provider confirms delivery with output hash
+await payment.confirmDelivery(escrowId, keccak256(toHex(output)));
 
 // Client releases payment
 await payment.releaseEscrow(escrowId);
@@ -129,10 +131,10 @@ import { TrustClient } from '@agentme/sdk';
 const trust = new TrustClient(client);
 const details = await trust.getTrustDetails(did);
 
-console.log(`Reputation: ${details.reputationScore}%`);
-console.log(`Stake:      ${details.stakeScore}%`);
-console.log(`Endorsement:${details.endorsementScore}%`);
-console.log(`Composite:  ${details.compositeScore}%`);
+console.log(`Reputation: ${(details.scores.reputation * 100).toFixed(1)}%`);
+console.log(`Stake:      ${(details.scores.stake * 100).toFixed(1)}%`);
+console.log(`Endorsement:${(details.scores.endorsement * 100).toFixed(1)}%`);
+console.log(`Composite:  ${(details.scores.overall * 100).toFixed(1)}%`);
 ```
 
 ## Next Steps

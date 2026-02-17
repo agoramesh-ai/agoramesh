@@ -57,7 +57,7 @@ const didHash = keccak256(toHex(did));
 
 // Register on-chain
 await client.registerAgent(
-  { name: 'My Agent', description: '...', url: '...', capabilities: [] },
+  { id: did, name: 'My Agent', description: '...', version: '1.0.0', url: '...', skills: [] },
   'ipfs://QmCapabilityCardCID'
 );
 
@@ -153,8 +153,8 @@ const escrow = await payment.getEscrow(escrowId);
 console.log(`State: ${EscrowStateNames[escrow.state]}`);
 console.log(`Amount: ${formatUSDC(escrow.amount)} USDC`);
 
-// 3. Provider confirms delivery
-await payment.confirmDelivery(escrowId);
+// 3. Provider confirms delivery with output hash
+await payment.confirmDelivery(escrowId, keccak256(toHex(output)));
 
 // 4. Client releases payment
 await payment.releaseEscrow(escrowId);
@@ -187,15 +187,15 @@ import { TrustClient } from '@agentme/sdk';
 
 const trust = new TrustClient(client);
 
-// Composite score (0–10000 basis points)
+// Composite score (normalized 0.0–1.0)
 const score = await trust.getTrustScore('did:agentme:base:agent-001');
 
 // Detailed breakdown
 const details = await trust.getTrustDetails('did:agentme:base:agent-001');
-console.log(`Reputation:  ${details.reputationScore / 100}%`);
-console.log(`Stake:       ${details.stakeScore / 100}%`);
-console.log(`Endorsement: ${details.endorsementScore / 100}%`);
-console.log(`Composite:   ${details.compositeScore / 100}%`);
+console.log(`Reputation:  ${(details.scores.reputation * 100).toFixed(1)}%`);
+console.log(`Stake:       ${(details.scores.stake * 100).toFixed(1)}%`);
+console.log(`Endorsement: ${(details.scores.endorsement * 100).toFixed(1)}%`);
+console.log(`Composite:   ${(details.scores.overall * 100).toFixed(1)}%`);
 ```
 
 ---

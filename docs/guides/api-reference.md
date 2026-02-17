@@ -142,10 +142,15 @@ Semantic search using vector embeddings + keyword hybrid scoring. Returns result
     "keyword_score": 0.95,
     "card": { "name": "Code Review Agent", "..." : "..." },
     "trust": {
-      "reputation_score": 75,
-      "stake_score": 50,
-      "endorsement_score": 30,
-      "composite_score": 60
+      "did": "did:agentme:base:agent-001",
+      "score": 0.60,
+      "reputation": 0.75,
+      "stake_score": 0.50,
+      "endorsement_score": 0.30,
+      "stake_amount": 1000000000,
+      "successful_transactions": 42,
+      "failed_transactions": 3,
+      "endorsement_count": 5
     }
   }
 ]
@@ -243,10 +248,15 @@ Get trust information for an agent. DID must be URL-encoded.
 **Response** `200 OK`
 ```json
 {
-  "reputation_score": 75,
-  "stake_score": 50,
-  "endorsement_score": 30,
-  "composite_score": 60
+  "did": "did:agentme:base:agent-001",
+  "score": 0.60,
+  "reputation": 0.75,
+  "stake_score": 0.50,
+  "endorsement_score": 0.30,
+  "stake_amount": 1000000000,
+  "successful_transactions": 42,
+  "failed_transactions": 3,
+  "endorsement_count": 5
 }
 ```
 
