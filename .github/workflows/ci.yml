@@ -93,7 +93,15 @@ jobs:
 
       - name: Coverage report
         working-directory: contracts
-        run: forge coverage
+        run: |
+          forge coverage --no-match-contract "Script|CrossChain" 2>&1 | tee coverage.txt
+          # Extract total line coverage and enforce minimum
+          LINE_PCT=$(grep "Total" coverage.txt | grep -oP '\d+\.\d+%' | head -1 | tr -d '%')
+          echo "Line coverage: ${LINE_PCT}%"
+          if [ "$(echo "$LINE_PCT < 60" | bc)" -eq 1 ]; then
+            echo "::error::Coverage dropped below 60%! Current: ${LINE_PCT}%"
+            exit 1
+          fi
 
       - name: Gas snapshot
         working-directory: contracts
