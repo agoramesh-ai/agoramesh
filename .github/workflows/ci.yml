@@ -128,6 +128,7 @@ jobs:
           solc-version: '0.8.24'
           target: contracts/
           fail-on: none
+          slither-config: contracts/slither.config.json
 
   # ==========================================================================
   # TypeScript SDK

@@ -1,0 +1,6 @@
+{
+  "filter_paths": ["lib/"],
+  "exclude_informational": false,
+  "exclude_low": false,
+  "fail_on": "none"
+}
