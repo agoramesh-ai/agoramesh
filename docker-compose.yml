@@ -14,7 +14,7 @@ services:
     container_name: agentme-anvil
     entrypoint: ["anvil", "--host", "0.0.0.0", "--chain-id", "31337"]
     ports:
-      - "8545:8545"
+      - "127.0.0.1:8545:8545"
     healthcheck:
       test: ["CMD", "cast", "block-number", "--rpc-url", "http://localhost:8545"]
       interval: 5s
@@ -50,8 +50,8 @@ services:
     container_name: agentme-node
     command: ["./agentme", "start", "--enable-semantic-search", "--api-addr", "0.0.0.0:8080", "--p2p-addr", "/ip4/0.0.0.0/tcp/4001"]
     ports:
-      - "8080:8080"   # HTTP API
-      - "4001:4001"   # P2P libp2p
+      - "127.0.0.1:8080:8080"   # HTTP API (localhost only, nginx proxies)
+      - "127.0.0.1:4001:4001"   # P2P libp2p (localhost only)
     environment:
       - RUST_LOG=info
       - AGENTME_NETWORK=local
