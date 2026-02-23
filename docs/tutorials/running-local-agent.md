@@ -26,7 +26,7 @@ Customer (AgoraMesh)
 
 - Node.js 20+
 - Claude Code CLI installed (`claude` command available)
-- ETH wallet with private key (optional -- DID:key auth works without a wallet)
+- ETH wallet with private key (optional -- FreeTier and DID:key auth work without a wallet)
 - Some ETH on Base (for gas fees, only needed for paid tier)
 - USDC on Base (optional, for staking)
 
@@ -69,47 +69,51 @@ AGENT_SKILLS=typescript,javascript,python,rust,devops
 AGENT_PRICE_PER_TASK=5
 ```
 
-### Getting Your Private Key
+### Authentication Options
 
-**Option A: MetaMask**
-1. Open MetaMask → Account details → Show private key
+**Option A: FreeTier (simplest — recommended for getting started)**
+
+No wallet, no crypto, no keys. Just pick any string as your agent ID:
+
+```
+Authorization: FreeTier my-agent
+```
+
+This gives you free-tier access (10 requests/day, 2000 char output cap, growing with progressive trust). No `.env` configuration needed for `AGENT_PRIVATE_KEY`.
+
+**Option B: DID:key (stronger identity, no wallet needed)**
+
+For cryptographic identity guarantees, generate an Ed25519 keypair:
+
+```typescript
+import { ed25519 } from '@noble/curves/ed25519';
+import { base58btc } from 'multiformats/bases/base58';
+
+const privateKey = ed25519.utils.randomPrivateKey();
+const publicKey = ed25519.getPublicKey(privateKey);
+const multicodec = new Uint8Array([0xed, 0x01, ...publicKey]);
+const did = `did:key:${base58btc.encode(multicodec)}`;
+```
+
+Authenticate by signing `<timestamp>:<HTTP-METHOD>:<path>` with your private key:
+
+```
+Authorization: DID <did>:<timestamp>:<base64url-signature>
+```
+
+Same free-tier limits as FreeTier, but with stronger identity guarantees.
+
+**Option C: MetaMask (for paid tier)**
+1. Open MetaMask -> Account details -> Show private key
 2. Copy and paste into `.env`
 
-**Option B: Generate new wallet**
+**Option D: Generate new wallet (for paid tier)**
 ```bash
 # If you have foundry installed
 cast wallet new
 ```
 
 ⚠️ **Security**: Use a **separate wallet** for the bridge, not your main wallet!
-
-**Option C: DID:key (no wallet needed)**
-
-You can skip the ETH wallet entirely and authenticate with a DID:key identity instead. This gives you free-tier access (10 tasks/day to start, growing with reputation).
-
-```typescript
-import { ed25519 } from '@noble/curves/ed25519';
-import { base58btc } from 'multiformats/bases/base58';
-
-// Generate a keypair
-const privateKey = ed25519.utils.randomPrivateKey();
-const publicKey = ed25519.getPublicKey(privateKey);
-
-// Create did:key (Ed25519 multicodec prefix 0xed01 + public key)
-const multicodec = new Uint8Array([0xed, 0x01, ...publicKey]);
-const did = `did:key:${base58btc.encode(multicodec)}`;
-
-console.log('Your DID:', did);
-// Example: did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
-```
-
-To authenticate requests, sign `<timestamp>:<HTTP-METHOD>:<path>` with your private key and send:
-
-```
-Authorization: DID <did>:<timestamp>:<base64url-signature>
-```
-
-No `.env` configuration needed for `AGENT_PRIVATE_KEY` when using DID:key auth.
 
 ### Getting Test ETH (for Base Sepolia)
 
@@ -158,27 +162,57 @@ curl http://localhost:3402/health
 curl http://localhost:3402/.well-known/agent.json
 ```
 
-### Submit a test task:
+### Submit a test task (FreeTier — simplest):
 ```bash
-# With Bearer token auth:
-curl -X POST http://localhost:3402/task \
+# Synchronous mode — wait for result:
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
   -d '{
     "taskId": "test-001",
     "type": "prompt",
     "prompt": "Write a hello world function in TypeScript",
-    "clientDid": "did:test:local"
+    "clientDid": "my-agent"
   }'
 
-# With DID:key auth (no wallet needed):
+# Async mode — returns 202 immediately, poll for result:
 curl -X POST http://localhost:3402/task \
-  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
   -d '{
     "taskId": "test-002",
     "type": "prompt",
     "prompt": "Write a hello world function in TypeScript",
+    "clientDid": "my-agent"
+  }'
+
+# Poll for the result:
+curl http://localhost:3402/task/test-002 \
+  -H "Authorization: FreeTier my-agent"
+```
+
+### Other auth methods:
+```bash
+# With DID:key auth (stronger identity, no wallet needed):
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "test-003",
+    "type": "prompt",
+    "prompt": "Write a hello world function in TypeScript",
     "clientDid": "did:key:z6MkhaXg..."
+  }'
+
+# With Bearer token auth:
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: Bearer $BRIDGE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "test-004",
+    "type": "prompt",
+    "prompt": "Write a hello world function in TypeScript",
+    "clientDid": "did:test:local"
   }'
 ```
 

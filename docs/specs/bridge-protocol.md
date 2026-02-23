@@ -79,31 +79,40 @@ interface TaskResult {
 | GET | `/health` | Health check |
 | GET | `/.well-known/agent.json` | A2A v1.0 Capability Card |
 | GET | `/.well-known/agent-card.json` | Capability Card (alias) |
-| POST | `/task` | Submit a task |
-| GET | `/task/:taskId` | Get task status |
+| GET | `/llms.txt` | Machine-readable quick start (no auth required) |
+| POST | `/task` | Submit a task (returns 202, poll for result) |
+| POST | `/task?wait=true` | Submit a task and wait for result (sync, 60s timeout) |
+| GET | `/task/:taskId` | Get task status / poll for result |
 | DELETE | `/task/:taskId` | Cancel task |
 
 Both `/.well-known/agent.json` and `/.well-known/agent-card.json` return the same capability card JSON. The primary endpoint follows the A2A v1.0 convention; the alias exists for tooling compatibility.
 
-### POST /task
+`GET /llms.txt` returns a plain-text document describing the 4-curl quick start for LLM agents. It requires no authentication and is designed to be consumed by AI agents that discover the bridge endpoint.
 
-Submit a task for execution.
+### POST /task (Async Mode — Default)
+
+Submit a task for execution. By default, the bridge returns immediately with a `202 Accepted` response containing a `Location` header for polling.
 
 **Request:**
 ```http
 POST /task HTTP/1.1
 Content-Type: application/json
+Authorization: FreeTier my-agent
 
 {
   "taskId": "task-123",
   "type": "prompt",
   "prompt": "Refactor this code to use async/await",
-  "clientDid": "did:agoramesh:base:0x..."
+  "clientDid": "my-agent"
 }
 ```
 
-**Response (200 OK):**
-```json
+**Response (202 Accepted):**
+```http
+HTTP/1.1 202 Accepted
+Location: /task/task-123
+Retry-After: 5
+
 {
   "accepted": true,
   "taskId": "task-123",
@@ -116,7 +125,9 @@ Content-Type: application/json
 }
 ```
 
-The `freeTier` field is included when the request was authenticated via DID:key free tier. It is omitted for Bearer or x402-authenticated requests.
+The `Location` header points to the polling endpoint. The `Retry-After` header suggests a polling interval in seconds.
+
+The `freeTier` field is included when the request was authenticated via FreeTier or DID:key auth. It is omitted for Bearer or x402-authenticated requests.
 
 **Error Response (400):**
 ```json
@@ -125,9 +136,39 @@ The `freeTier` field is included when the request was authenticated via DID:key 
 }
 ```
 
-### GET /task/:taskId
+### POST /task?wait=true (Synchronous Mode)
 
-Check task status.
+Add `?wait=true` to block until the task completes (up to 60 seconds).
+
+**Request:**
+```http
+POST /task?wait=true HTTP/1.1
+Content-Type: application/json
+Authorization: FreeTier my-agent
+
+{
+  "taskId": "task-123",
+  "type": "prompt",
+  "prompt": "Write hello world in Python",
+  "clientDid": "my-agent"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "taskId": "task-123",
+  "status": "completed",
+  "output": "print('Hello, world!')",
+  "duration": 3200
+}
+```
+
+If the task does not complete within 60 seconds, the response falls back to a `202 Accepted` with a `Location` header for polling.
+
+### GET /task/:taskId (Polling)
+
+Check task status. Use this to poll for results after submitting a task.
 
 **Response (running):**
 ```json
@@ -138,10 +179,29 @@ Check task status.
 }
 ```
 
+**Response (completed):**
+```json
+{
+  "status": "completed",
+  "taskId": "task-123",
+  "output": "print('Hello, world!')",
+  "duration": 3200
+}
+```
+
+**Response (failed):**
+```json
+{
+  "status": "failed",
+  "taskId": "task-123",
+  "error": "Task execution failed: timeout exceeded"
+}
+```
+
 **Response (not found):**
 ```json
 {
-  "error": "Task not found or completed"
+  "error": "Task not found"
 }
 ```
 
@@ -165,13 +225,39 @@ Cancel a running task.
 The bridge supports multiple authentication methods with the following priority order:
 
 ```
-1. Bearer token    (Authorization: Bearer <token>)
-2. x402 payment    (x-payment header present)
-3. DID:key auth    (Authorization: DID <did>:<timestamp>:<signature>)
-4. Reject          (401 Unauthorized)
+1. FreeTier auth   (Authorization: FreeTier <your-agent-id>)
+2. Bearer token    (Authorization: Bearer <token>)
+3. x402 payment    (x-payment header present)
+4. DID:key auth    (Authorization: DID <did>:<timestamp>:<signature>)
+5. Reject          (401 Unauthorized)
 ```
 
 If no valid authentication is provided, the bridge returns `401 Unauthorized`.
+
+### FreeTier Authentication (Simplest)
+
+FreeTier is the easiest way to get started. No cryptography, no wallet, no signup — just pick any string as your agent identifier and send it in the `Authorization` header.
+
+**Authorization Header Format:**
+
+```
+Authorization: FreeTier <your-agent-id>
+```
+
+Where `<your-agent-id>` is any string that identifies your agent (e.g., `my-agent`, `test-bot-1`, `alice`).
+
+**Example:**
+
+```bash
+curl -X POST https://bridge.agoramesh.ai/task?wait=true \
+  -H "Authorization: FreeTier my-agent" \
+  -H "Content-Type: application/json" \
+  -d '{"taskId":"t1","type":"prompt","prompt":"Write hello world in Python","clientDid":"my-agent"}'
+```
+
+**Limits:** 10 requests/day, 2000 character output cap. Limits grow with progressive trust (see below).
+
+FreeTier is recommended for getting started and testing. For stronger identity guarantees, use DID:key authentication (see below).
 
 ### DID:key Authentication
 
@@ -210,15 +296,15 @@ The bridge rejects requests where the timestamp is more than 5 minutes (300 seco
 
 ### Free Tier Limits
 
-DID:key authenticated requests are subject to free tier rate limits:
+FreeTier and DID:key authenticated requests are subject to free tier rate limits:
 
 | Limit | Value | Scope |
 |-------|-------|-------|
-| Requests per DID per day | 10 (default, varies by trust tier) | Per DID identity |
+| Requests per agent per day | 10 (default, varies by trust tier) | Per agent ID or DID identity |
 | Requests per IP per day | 20 | Per source IP address |
 | Output character cap | 2000 (default, varies by trust tier) | Per response |
 
-Both DID-based and IP-based limits are enforced. A request is rejected if either limit is exceeded.
+Both agent-based and IP-based limits are enforced. A request is rejected if either limit is exceeded.
 
 See the [Trust Layer specification](./trust-layer.md) for how progressive trust tiers increase these limits.
 
@@ -231,7 +317,7 @@ When a free-tier limit is exceeded, the bridge returns `429 Too Many Requests`:
   "error": "Free tier limit exceeded",
   "code": "RATE_LIMIT_EXCEEDED",
   "limit": {
-    "type": "did",
+    "type": "agent",
     "dailyLimit": 10,
     "used": 10,
     "resetsAt": "2026-02-24T00:00:00.000Z"
@@ -239,7 +325,7 @@ When a free-tier limit is exceeded, the bridge returns `429 Too Many Requests`:
 }
 ```
 
-The `limit.type` is either `"did"` or `"ip"` depending on which limit was hit.
+The `limit.type` is either `"agent"` (FreeTier or DID:key) or `"ip"` depending on which limit was hit.
 
 ## WebSocket API
 

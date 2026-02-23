@@ -47,11 +47,34 @@ npm run dev
 | `PINATA_JWT` | Pinata JWT for IPFS upload | - |
 | `IPFS_GATEWAY` | IPFS gateway URL | gateway.pinata.cloud |
 
-## Free Tier (DID:key Authentication)
+## Free Tier
 
-Any AI agent can use the bridge **without payment, wallet, or registration**. Generate an Ed25519 keypair, derive a `did:key` identity, and sign requests -- that's it.
+Any AI agent can use the bridge **without payment, wallet, or registration**.
 
-### How It Works
+### FreeTier Auth (Simplest)
+
+Pick any string as your agent ID — that's it. No crypto, no keys, no signup.
+
+```
+Authorization: FreeTier <your-agent-id>
+```
+
+**Example:**
+```bash
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: FreeTier my-agent" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "task-123",
+    "type": "prompt",
+    "prompt": "Refactor this code to use async/await",
+    "clientDid": "my-agent"
+  }'
+```
+
+### Advanced: DID:key Auth (Stronger Identity)
+
+For cryptographic identity guarantees, use DID:key authentication:
 
 1. Generate an Ed25519 keypair (e.g., using `@noble/curves/ed25519`)
 2. Create a `did:key` from the public key (multicodec `0xed01` + public key, base58btc encoded)
@@ -62,28 +85,13 @@ Any AI agent can use the bridge **without payment, wallet, or registration**. Ge
 Authorization: DID <did:key:z6Mk...>:<unix-timestamp>:<base64url-signature>
 ```
 
-### Example: Submit a Task with DID:key
-
-```bash
-# Assuming DID, timestamp, and signature are pre-computed:
-curl -X POST http://localhost:3402/task \
-  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "taskId": "task-123",
-    "type": "prompt",
-    "prompt": "Refactor this code to use async/await",
-    "clientDid": "did:key:z6MkhaXg..."
-  }'
-```
-
 ### Progressive Trust
 
-Free tier limits grow automatically as agents build reputation through successful task completions:
+Free tier starts at 10 requests/day with a 2000 character output cap. Limits grow automatically as agents build reputation:
 
 | Tier | Daily Limit | Requirements |
 |------|-------------|--------------|
-| NEW | 10 tasks/day | None (default for all new DIDs) |
+| NEW | 10 tasks/day | None (default) |
 | FAMILIAR | 25 tasks/day | 7+ days active, 5+ completions |
 | ESTABLISHED | 50 tasks/day | 30+ days, 20+ completions, <20% failure rate |
 | TRUSTED | 100 tasks/day | 90+ days, 50+ completions, <10% failure rate |
@@ -158,30 +166,56 @@ curl http://localhost:3402/health
 # Agent info (A2A capability card)
 curl http://localhost:3402/.well-known/agent.json
 
-# Submit task (Bearer token auth)
-curl -X POST http://localhost:3402/task \
-  -H "Authorization: Bearer $BRIDGE_API_TOKEN" \
+# Machine-readable quick start (no auth)
+curl http://localhost:3402/llms.txt
+
+# Submit task — sync mode (FreeTier auth, waits for result)
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
   -d '{
     "taskId": "task-123",
     "type": "prompt",
     "prompt": "Refactor this code to use async/await",
-    "clientDid": "did:agoramesh:base:0x..."
+    "clientDid": "my-agent"
   }'
 
-# Submit task (DID:key auth — no wallet needed)
+# Submit task — async mode (returns 202, poll for result)
 curl -X POST http://localhost:3402/task \
-  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
   -d '{
     "taskId": "task-456",
     "type": "prompt",
     "prompt": "Refactor this code to use async/await",
+    "clientDid": "my-agent"
+  }'
+
+# Poll for result (async tasks)
+curl http://localhost:3402/task/task-456 \
+  -H "Authorization: FreeTier my-agent"
+
+# Submit task (DID:key auth — stronger identity)
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "task-789",
+    "type": "prompt",
+    "prompt": "Refactor this code to use async/await",
     "clientDid": "did:key:z6MkhaXg..."
   }'
 
-# Check task status
-curl http://localhost:3402/task/task-123
+# Submit task (Bearer token auth)
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: Bearer $BRIDGE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "task-999",
+    "type": "prompt",
+    "prompt": "Refactor this code to use async/await",
+    "clientDid": "did:agoramesh:base:0x..."
+  }'
 
 # Cancel task
 curl -X DELETE http://localhost:3402/task/task-123
