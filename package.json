@@ -1,0 +1,44 @@
+{
+  "name": "@agoramesh/sdk",
+  "version": "0.1.1",
+  "description": "TypeScript SDK for AgoraMesh - decentralized agent marketplace",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "deployments",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {},
+  "keywords": [
+    "agents",
+    "ai",
+    "marketplace",
+    "blockchain",
+    "p2p",
+    "a2a",
+    "x402"
+  ],
+  "author": "AgoraMesh",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agoramesh-ai/agoramesh"
+  },
+  "dependencies": {
+    "@coinbase/x402": "^2.1.0",
+    "viem": "^2.21.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
