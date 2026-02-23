@@ -99,7 +99,7 @@ describe('DID:key free tier — REST (POST /task)', () => {
         clientDid: did,
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
     expect(res.body.taskId).toBe('did-test-1');
   });
@@ -197,7 +197,7 @@ describe('DID:key free tier — REST (POST /task)', () => {
         clientDid: 'did:test:bearer',
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
   });
 
@@ -216,7 +216,7 @@ describe('DID:key free tier — REST (POST /task)', () => {
         clientDid: did,
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.freeTier).toBeDefined();
     expect(res.body.freeTier.tier).toBe('new');
     expect(typeof res.body.freeTier.remaining).toBe('number');
@@ -343,7 +343,7 @@ describe('DID:key free tier — no auth mode', () => {
         clientDid: 'did:test:noauth',
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
   });
 });

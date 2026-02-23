@@ -60,10 +60,25 @@ const ProviderSchema = z.object({
   contact: z.string().optional(),
 });
 
+const AuthSchemeInstructionsSchema = z.object({
+  headerFormat: z.string(),
+  identifierRules: z.string().optional(),
+  limits: z.string().optional(),
+  example: z.string().optional(),
+  signaturePayload: z.string().optional(),
+  keyType: z.string().optional(),
+  multicodecPrefix: z.string().optional(),
+  encoding: z.string().optional(),
+  note: z.string().optional(),
+});
+
 const AuthenticationSchema = z.object({
   schemes: z.array(z.string()),
   didMethods: z.array(z.string()).optional(),
-  instructions: z.string().optional(),
+  instructions: z.union([
+    z.string(),
+    z.record(z.string(), AuthSchemeInstructionsSchema),
+  ]).optional(),
 });
 
 const WalletProviderSchema = z.object({

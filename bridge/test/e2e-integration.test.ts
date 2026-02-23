@@ -83,7 +83,7 @@ describe('E2E: REST API task lifecycle', () => {
     const task = createValidTask();
     const res = await request(app).post('/task').send(task);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
     expect(res.body.taskId).toBe(task.taskId);
     expect(res.body.estimatedTime).toBe(30);
@@ -97,11 +97,12 @@ describe('E2E: REST API task lifecycle', () => {
       .get(`/task/${task.taskId}`)
       .set('x-client-did', task.clientDid);
 
-    // Task may already be running or completed; we just check it's accessible
+    // Task may be running, completed, or already cleaned up
     expect([200, 404]).toContain(res.status);
     if (res.status === 200) {
       expect(res.body.taskId).toBe(task.taskId);
-      expect(res.body.status).toBe('running');
+      // May be 'running' or already completed (returned as TaskResult)
+      expect(['running', 'completed', 'failed']).toContain(res.body.status);
     }
   });
 
@@ -132,7 +133,7 @@ describe('E2E: REST API task lifecycle', () => {
       .set('x-client-did', 'did:agoramesh:base:0xabc');
 
     expect(res.status).toBe(404);
-    expect(res.body.error).toBe('Task not found or completed');
+    expect(res.body.error).toBe('Task not found');
   });
 
   it('rejects task with missing required fields', async () => {
@@ -387,7 +388,7 @@ describe('E2E: Escrow validation integration', () => {
     const task = createValidTask({ escrowId: '42' });
     const res = await request(app).post('/task').send(task);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
     expect(mockEscrow.validateEscrow).toHaveBeenCalledWith(
       42n,
@@ -487,7 +488,7 @@ describe('E2E: Escrow validation integration', () => {
     const task = createValidTask(); // No escrowId
     const res = await request(app).post('/task').send(task);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
     // validateEscrow should NOT be called when no escrowId provided
     expect(mockEscrow.validateEscrow).not.toHaveBeenCalled();
@@ -507,7 +508,7 @@ describe('E2E: Escrow validation integration', () => {
     const res = await request(app).post('/task').send(task);
 
     // Should accept since no escrow client to validate against
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.accepted).toBe(true);
 
     await server.stop();
@@ -546,7 +547,7 @@ describe('E2E: Rate limiting behavior', () => {
 
     // All should be accepted
     for (const res of results) {
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
     }
 
     await server.stop();
@@ -573,7 +574,7 @@ describe('E2E: Rate limiting behavior', () => {
     }
 
     // First 3 should succeed, rest should be rate limited
-    const successCount = results.filter((r) => r.status === 200).length;
+    const successCount = results.filter((r) => r.status === 202).length;
     const rateLimitedCount = results.filter((r) => r.status === 429).length;
 
     expect(successCount).toBe(3);
@@ -1020,7 +1021,7 @@ describe('E2E: Concurrent task submissions', () => {
     );
 
     for (let i = 0; i < results.length; i++) {
-      expect(results[i].status).toBe(200);
+      expect(results[i].status).toBe(202);
       expect(results[i].body.accepted).toBe(true);
       expect(results[i].body.taskId).toBe(`concurrent-${i}`);
     }

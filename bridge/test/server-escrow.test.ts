@@ -209,7 +209,7 @@ describe('BridgeServer Escrow Integration', () => {
           escrowId: '1',
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(res.body.accepted).toBe(true);
     });
 
@@ -234,7 +234,7 @@ describe('BridgeServer Escrow Integration', () => {
           // No escrowId - direct payment or trust-based
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(res.body.accepted).toBe(true);
       expect(mockEscrowClient.validateEscrow).not.toHaveBeenCalled();
     });
@@ -323,7 +323,7 @@ describe('BridgeServer Escrow Integration', () => {
           escrowId: '1',
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(res.body.accepted).toBe(true);
 
       // Wait for async task execution
@@ -352,7 +352,7 @@ describe('BridgeServer Escrow Integration', () => {
           escrowId: '1', // Even with escrowId, should work (just not validated)
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(res.body.accepted).toBe(true);
     });
   });

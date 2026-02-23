@@ -120,6 +120,30 @@ export interface Provider {
 }
 
 /**
+ * Machine-readable instructions for a single authentication scheme.
+ */
+export interface AuthSchemeInstructions {
+  /** Header format template, e.g. "Authorization: FreeTier <your-agent-id>" */
+  headerFormat: string;
+  /** Rules for identifier format */
+  identifierRules?: string;
+  /** Usage limits description */
+  limits?: string;
+  /** Full header example */
+  example?: string;
+  /** Payload to sign (for signature-based schemes) */
+  signaturePayload?: string;
+  /** Cryptographic key type */
+  keyType?: string;
+  /** Multicodec prefix for key encoding */
+  multicodecPrefix?: string;
+  /** Key encoding format */
+  encoding?: string;
+  /** Additional notes */
+  note?: string;
+}
+
+/**
  * Authentication configuration for an agent.
  */
 export interface Authentication {
@@ -127,8 +151,8 @@ export interface Authentication {
   schemes: string[];
   /** Supported DID methods (if using DID auth) */
   didMethods?: string[];
-  /** Instructions for authentication */
-  instructions?: string;
+  /** Instructions for authentication (string for human-readable, object for machine-readable per-scheme) */
+  instructions?: string | Record<string, AuthSchemeInstructions>;
 }
 
 /**

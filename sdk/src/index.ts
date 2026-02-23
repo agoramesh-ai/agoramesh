@@ -66,6 +66,7 @@ export type {
   Pricing,
   Provider,
   Authentication,
+  AuthSchemeInstructions,
   PaymentConfig,
 
   // Trust

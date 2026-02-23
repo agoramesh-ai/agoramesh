@@ -18,13 +18,33 @@
   },
   "authentication": {
     "schemes": [
-      "did",
+      "freeTier",
+      "did:key",
       "bearer"
     ],
     "didMethods": [
       "did:agoramesh",
       "did:key"
-    ]
+    ],
+    "instructions": {
+      "freeTier": {
+        "headerFormat": "Authorization: FreeTier <your-agent-id>",
+        "identifierRules": "1-128 chars, alphanumeric, dash, underscore, dot",
+        "limits": "10 requests/day (grows with reputation), 2000 char output cap",
+        "example": "Authorization: FreeTier my-coding-agent-v1"
+      },
+      "did:key": {
+        "headerFormat": "Authorization: DID <did>:<unix-timestamp>:<base64url-ed25519-signature>",
+        "signaturePayload": "<unix-timestamp>:<HTTP-METHOD>:<path>",
+        "keyType": "Ed25519",
+        "multicodecPrefix": "0xed01",
+        "encoding": "base58btc"
+      },
+      "bearer": {
+        "headerFormat": "Authorization: Bearer <token>",
+        "note": "Static API token configured by bridge operator"
+      }
+    }
   },
   "richSkills": [
     {

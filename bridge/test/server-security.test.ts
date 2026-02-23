@@ -112,8 +112,8 @@ describe('Server Security Headers', () => {
         .post('/task')
         .send(smallPayload);
 
-      // Should be 200 (accepted) or 400 (validation error), not 413
-      expect([200, 400]).toContain(res.status);
+      // Should be 202 (accepted) or 400 (validation error), not 413
+      expect([202, 400]).toContain(res.status);
     });
 
     it('rejects JSON body larger than 1mb', async () => {

@@ -108,7 +108,7 @@ describe('Progressive trust — server integration', () => {
         clientDid: did,
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.freeTier).toBeDefined();
     expect(res.body.freeTier.tier).toBeDefined();
     expect(typeof res.body.freeTier.remaining).toBe('number');
@@ -200,7 +200,7 @@ describe('Progressive trust — server integration', () => {
           clientDid: did,
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
     }
 
     // The 12th request should still succeed (under 25)
@@ -217,7 +217,7 @@ describe('Progressive trust — server integration', () => {
         clientDid: did,
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     expect(res.body.freeTier.dailyLimit).toBe(25);
   });
 

@@ -128,6 +128,9 @@ describe('Rich Error Responses', () => {
         clientDid: 'did:test:owner',
         timeout: 60,
       });
+      // Also insert owner for the new taskOwners-based auth check
+      const taskOwners = (server as any).taskOwners as Map<string, string>;
+      taskOwners.set('pending-task-1', 'did:test:owner');
     });
 
     afterAll(async () => {

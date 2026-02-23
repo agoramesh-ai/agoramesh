@@ -73,7 +73,18 @@ export const TaskInputSchema = z.object({
 
 export type TaskInput = z.infer<typeof TaskInputSchema>;
 
+// === Task polling constants ===
+
+/** How long completed task results are kept in memory (1 hour) */
+export const TASK_RESULT_TTL = 3600000;
+
+/** Maximum time to wait for sync mode (?wait=true) before falling back to 202 (60s) */
+export const TASK_SYNC_TIMEOUT = 60000;
+
 // === Free tier constants ===
+
+/** FreeTier identifier validation: 1-128 chars, alphanumeric + dash + underscore + dot */
+export const FREETIER_ID_PATTERN = /^[a-zA-Z0-9._-]{1,128}$/;
 
 /** Maximum free tier requests per DID per day */
 export const FREE_TIER_DAILY_LIMIT = 10;

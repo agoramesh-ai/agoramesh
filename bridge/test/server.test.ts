@@ -145,7 +145,7 @@ describe('BridgeServer', () => {
           clientDid: 'did:test:client',
         });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(res.body.accepted).toBe(true);
       expect(res.body.taskId).toBe('task-valid-1');
     });
@@ -169,7 +169,7 @@ describe('BridgeServer', () => {
       const res = await request(app).get('/task/unknown-task');
 
       expect(res.status).toBe(404);
-      expect(res.body.error).toBe('Task not found or completed');
+      expect(res.body.error).toBe('Task not found');
     });
   });
 

@@ -66,6 +66,7 @@ export interface A2ATask {
 
 export interface A2ABridge {
   getPendingTask(taskId: string): TaskInput | undefined;
+  getCompletedTask(taskId: string): TaskResult | undefined;
   submitTask(task: TaskInput): Promise<TaskResult>;
   cancelTask(taskId: string): boolean;
 }
@@ -169,15 +170,23 @@ function handleTasksGet(
   }
 
   const taskId = params.id;
+
+  // Check if task is still pending/running
   const task = bridge.getPendingTask(taskId);
-  if (!task) {
-    return jsonRpcError(id, A2A_ERRORS.TASK_NOT_FOUND, `Task ${taskId} not found`);
+  if (task) {
+    return jsonRpcSuccess(id, {
+      id: taskId,
+      status: { state: 'working' as A2ATaskState },
+    } satisfies A2ATask);
   }
 
-  return jsonRpcSuccess(id, {
-    id: taskId,
-    status: { state: 'working' as A2ATaskState },
-  } satisfies A2ATask);
+  // Check if task has completed
+  const completedResult = bridge.getCompletedTask(taskId);
+  if (completedResult) {
+    return jsonRpcSuccess(id, taskResultToA2ATask(taskId, completedResult));
+  }
+
+  return jsonRpcError(id, A2A_ERRORS.TASK_NOT_FOUND, `Task ${taskId} not found`);
 }
 
 function handleTasksCancel(

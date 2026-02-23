@@ -458,3 +458,108 @@ describe('Agent Card endpoint (free tier + wallet provisioning)', () => {
     expect(res.body.capabilities.freeTier).toBe(true);
   });
 });
+
+// ===========================================================================
+// Tests with authentication instructions
+// ===========================================================================
+
+describe('Agent Card endpoint (authentication instructions)', () => {
+  let server: BridgeServer;
+  let app: any;
+
+  const authInstructionsConfig: RichAgentConfig = {
+    name: 'auth-instructions-agent',
+    description: 'Agent with structured auth instructions',
+    skills: ['coding'],
+    pricePerTask: 5,
+    privateKey: '0xdeadbeef',
+    workspaceDir: '/tmp/auth-instructions-workspace',
+    allowedCommands: ['claude'],
+    taskTimeout: 120,
+    authentication: {
+      schemes: ['freeTier', 'did:key', 'bearer'],
+      didMethods: ['did:agoramesh', 'did:key'],
+      instructions: {
+        freeTier: {
+          headerFormat: 'Authorization: FreeTier <your-agent-id>',
+          identifierRules: '1-128 chars, alphanumeric, dash, underscore, dot',
+          limits: '10 requests/day (grows with reputation), 2000 char output cap',
+          example: 'Authorization: FreeTier my-coding-agent-v1',
+        },
+        'did:key': {
+          headerFormat: 'Authorization: DID <did>:<unix-timestamp>:<base64url-ed25519-signature>',
+          signaturePayload: '<unix-timestamp>:<HTTP-METHOD>:<path>',
+          keyType: 'Ed25519',
+          multicodecPrefix: '0xed01',
+          encoding: 'base58btc',
+        },
+        bearer: {
+          headerFormat: 'Authorization: Bearer <token>',
+          note: 'Static API token configured by bridge operator',
+        },
+      },
+    },
+  };
+
+  beforeAll(() => {
+    server = new BridgeServer(authInstructionsConfig);
+    app = (server as any).app;
+  });
+
+  afterAll(async () => {
+    await server.stop();
+  });
+
+  it('includes authentication.instructions in agent card', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    expect(res.body.authentication).toBeDefined();
+    expect(res.body.authentication.instructions).toBeDefined();
+    expect(typeof res.body.authentication.instructions).toBe('object');
+  });
+
+  it('includes freeTier scheme in authentication instructions', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    const ft = res.body.authentication.instructions.freeTier;
+    expect(ft).toBeDefined();
+    expect(ft.headerFormat).toContain('FreeTier');
+    expect(ft.example).toContain('FreeTier');
+    expect(ft.identifierRules).toBeDefined();
+    expect(ft.limits).toBeDefined();
+  });
+
+  it('includes did:key scheme in authentication instructions', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    const dk = res.body.authentication.instructions['did:key'];
+    expect(dk).toBeDefined();
+    expect(dk.headerFormat).toContain('DID');
+    expect(dk.signaturePayload).toBeDefined();
+    expect(dk.keyType).toBe('Ed25519');
+  });
+
+  it('includes bearer scheme in authentication instructions', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    const br = res.body.authentication.instructions.bearer;
+    expect(br).toBeDefined();
+    expect(br.headerFormat).toContain('Bearer');
+    expect(br.note).toBeDefined();
+  });
+
+  it('contains headerFormat for each listed scheme', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    const instructions = res.body.authentication.instructions;
+    expect(instructions.freeTier.headerFormat).toBeDefined();
+    expect(instructions['did:key'].headerFormat).toBeDefined();
+    expect(instructions.bearer.headerFormat).toBeDefined();
+  });
+
+  it('includes authentication schemes list', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    expect(res.body.authentication.schemes).toEqual(['freeTier', 'did:key', 'bearer']);
+  });
+});

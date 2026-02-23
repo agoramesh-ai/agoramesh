@@ -8,7 +8,7 @@ import type { AddressInfo } from 'net';
 import { timingSafeEqual } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
-import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity } from './types.js';
+import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
 import { handleA2ARequest, type A2ABridge } from './a2a.js';
@@ -194,6 +194,11 @@ export class BridgeServer {
   private executor: ClaudeExecutor;
   private config: BridgeServerConfig;
   private pendingTasks: Map<string, TaskInput> = new Map();
+  private completedTasks: Map<string, { result: TaskResult; expiresAt: number }> = new Map();
+  private taskOwners: Map<string, string> = new Map();
+  private taskResultListeners: Map<string, Array<(result: TaskResult) => void>> = new Map();
+  private _syncTimeout: number = TASK_SYNC_TIMEOUT;
+  private cleanupInterval?: ReturnType<typeof setInterval>;
   private taskWebSockets: Map<string, WebSocket> = new Map();
   private escrowClient?: EscrowClient;
   private providerDid?: `0x${string}`;
@@ -267,6 +272,9 @@ export class BridgeServer {
 
     this.setupRoutes();
     this.setupWebSocket();
+
+    // Periodic cleanup of expired completed tasks (every 5 minutes)
+    this.cleanupInterval = setInterval(() => this.cleanupCompletedTasks(), 5 * 60 * 1000);
   }
 
   private isApiTokenValid(req: Request): boolean {
@@ -317,7 +325,12 @@ export class BridgeServer {
         return this.handleDIDAuth(req, res, next);
       }
 
-      // Path 4 (fallback for x402): if x402 middleware exists and we didn't have a DID header,
+      // Path 4: FreeTier simple auth (zero-crypto)
+      if (authHeader && authHeader.startsWith('FreeTier ')) {
+        return this.handleFreeTierAuth(req, res, next);
+      }
+
+      // Path 5 (fallback for x402): if x402 middleware exists and we didn't have a DID header,
       // let x402 middleware handle (will return 402 with payment requirements)
       if (x402Middleware) {
         return x402Middleware(req, res, next);
@@ -327,10 +340,10 @@ export class BridgeServer {
         'Unauthorized',
         ErrorCode.UNAUTHORIZED,
         {
-          message: 'Authenticate via Bearer token, x402 payment, or DID:key signature. See agent card for supported methods.',
+          message: 'Authenticate using one of these methods (simplest first):',
           agentCard: '/.well-known/agent.json',
           documentation: this.config.documentationUrl,
-          authMethods: ['bearer', 'x402', 'did:key'],
+          authMethods: ['freetier', 'did:key', 'bearer', 'x402'],
         }
       ));
     };
@@ -393,6 +406,46 @@ export class BridgeServer {
     // Record usage and attach DID identity
     this.freeTierLimiter.recordUsage(parsed.did, clientIP);
     (req as DIDRequest).didIdentity = { did: parsed.did, tier: 'free' } satisfies DIDIdentity;
+
+    return next();
+  }
+
+  private handleFreeTierAuth(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization!;
+    const identifier = authHeader.slice('FreeTier '.length);
+
+    // Validate identifier format
+    if (!FREETIER_ID_PATTERN.test(identifier)) {
+      return res.status(401).json(buildRichError(
+        'Invalid FreeTier identifier',
+        ErrorCode.UNAUTHORIZED,
+        {
+          message: 'FreeTier identifier must be 1-128 characters: alphanumeric, dash, underscore, or dot.',
+          agentCard: '/.well-known/agent.json',
+          authMethods: ['freetier'],
+        }
+      ));
+    }
+
+    // Check free tier limits (use trust-based limits)
+    const trustLimits = this.trustStore.getLimitsForDID(identifier);
+    const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+    const check = this.freeTierLimiter.canProceed(identifier, clientIP, trustLimits.dailyLimit);
+    if (!check.allowed) {
+      return res.status(429).json(buildRichError(
+        'Free tier limit exceeded',
+        ErrorCode.RATE_LIMITED,
+        {
+          message: check.reason || 'Daily limit reached. Upgrade to paid tier for unlimited access.',
+          agentCard: '/.well-known/agent.json',
+          authMethods: ['x402', 'bearer'],
+        }
+      ));
+    }
+
+    // Record usage and attach identity
+    this.freeTierLimiter.recordUsage(identifier, clientIP);
+    (req as DIDRequest).didIdentity = { did: identifier, tier: 'free' } satisfies DIDIdentity;
 
     return next();
   }
@@ -530,6 +583,12 @@ export class BridgeServer {
     this.app.get('/.well-known/agent.json', agentCardHandler);
     this.app.get('/.well-known/agent-card.json', agentCardHandler);
 
+    // llms.txt — public machine-readable documentation (no auth required)
+    this.app.get('/llms.txt', (req: Request, res: Response) => {
+      const baseUrl = this.config.url || `${req.protocol}://${req.get('host')}`;
+      res.type('text/plain').send(this.buildLlmsTxt(baseUrl));
+    });
+
     // Sandbox endpoint — no auth, strict rate limit
     const sandboxLimiter = rateLimit({
       windowMs: 60 * 60 * 1000, // 1 hour
@@ -592,6 +651,7 @@ export class BridgeServer {
       const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
       const bridge: A2ABridge = {
         getPendingTask: (taskId) => this.getPendingTask(taskId),
+        getCompletedTask: (taskId) => this.getCompletedTask(taskId),
         submitTask: async (task) => {
           const result = await this.submitTask(task);
           // Record trust for DID:key authenticated requests
@@ -628,11 +688,27 @@ export class BridgeServer {
         }
 
         this.pendingTasks.set(task.taskId, task);
+        this.taskOwners.set(task.taskId, task.clientDid);
 
         // Execute async, return acknowledgement
         const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
         this.executeTask(task).then(async (result) => {
           this.pendingTasks.delete(task.taskId);
+
+          // Store completed result with TTL for polling
+          this.completedTasks.set(task.taskId, {
+            result,
+            expiresAt: Date.now() + TASK_RESULT_TTL,
+          });
+
+          // Notify sync mode listeners
+          const listeners = this.taskResultListeners.get(task.taskId);
+          if (listeners) {
+            for (const listener of listeners) {
+              listener(result);
+            }
+            this.taskResultListeners.delete(task.taskId);
+          }
 
           // Record trust for DID:key authenticated requests
           if (didIdentity) {
@@ -659,6 +735,70 @@ export class BridgeServer {
           this.pendingTasks.delete(task.taskId);
         });
 
+        // Sync mode: wait for result if ?wait=true
+        const waitMode = req.query.wait === 'true';
+        if (waitMode) {
+          const syncTimeout = this._syncTimeout;
+          try {
+            const result = await new Promise<TaskResult>((resolve, reject) => {
+              // Check if already completed (race condition: task finished before we set up listener)
+              const existing = this.completedTasks.get(task.taskId);
+              if (existing) {
+                resolve(existing.result);
+                return;
+              }
+
+              const timer = setTimeout(() => {
+                // Remove listener on timeout
+                const list = this.taskResultListeners.get(task.taskId);
+                if (list) {
+                  const idx = list.indexOf(resolve);
+                  if (idx >= 0) list.splice(idx, 1);
+                  if (list.length === 0) this.taskResultListeners.delete(task.taskId);
+                }
+                reject(new Error('sync_timeout'));
+              }, syncTimeout);
+
+              const listener = (r: TaskResult) => {
+                clearTimeout(timer);
+                resolve(r);
+              };
+
+              const existing2 = this.taskResultListeners.get(task.taskId);
+              if (existing2) {
+                existing2.push(listener);
+              } else {
+                this.taskResultListeners.set(task.taskId, [listener]);
+              }
+            });
+
+            // Return full result synchronously
+            const syncResponse: Record<string, unknown> = {
+              taskId: result.taskId,
+              status: result.status,
+              output: result.output,
+              error: result.error,
+              duration: result.duration,
+            };
+
+            // Include free tier info when authenticated via DID:key
+            const didIdForResponse = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
+            if (didIdForResponse) {
+              const tLimits = this.trustStore.getLimitsForDID(didIdForResponse.did);
+              const tProfile = this.trustStore.getProfile(didIdForResponse.did);
+              syncResponse.freeTier = {
+                tier: tProfile.tier,
+                remaining: this.freeTierLimiter.getRemainingQuota(didIdForResponse.did, tLimits.dailyLimit),
+                dailyLimit: tLimits.dailyLimit,
+              };
+            }
+
+            return res.status(200).json(syncResponse);
+          } catch {
+            // Timeout — fall through to 202
+          }
+        }
+
         const response: Record<string, unknown> = {
           accepted: true,
           taskId: task.taskId,
@@ -677,7 +817,10 @@ export class BridgeServer {
           };
         }
 
-        res.json(response);
+        res.status(202)
+          .header('Location', `/task/${task.taskId}`)
+          .header('Retry-After', '5')
+          .json(response);
       } catch (error) {
         // Use safe error response to prevent information leakage
         const safeError = createSafeErrorResponse(error, 'POST /task');
@@ -685,31 +828,51 @@ export class BridgeServer {
       }
     });
 
-    // Get task status
+    // Get task status (supports polling: pending -> completed/failed -> 404 after TTL)
     this.app.get('/task/:taskId', taskAuthMiddleware, (req: Request, res: Response) => {
-      const task = this.pendingTasks.get(req.params.taskId);
-      if (!task) {
-        return res.status(404).json(buildRichError(
-          'Task not found or completed',
-          ErrorCode.NOT_FOUND,
-        ));
-      }
+      const taskId = req.params.taskId;
       const clientDid = req.headers['x-client-did'] as string;
-      if (!clientDid || clientDid !== task.clientDid) {
-        return res.status(403).json(buildRichError(
-          'Forbidden',
-          ErrorCode.FORBIDDEN,
-          {
-            message: 'Include x-client-did header matching the task creator DID.',
-          }
-        ));
+
+      // Verify owner across all states
+      const owner = this.taskOwners.get(taskId);
+      if (owner) {
+        if (!clientDid || clientDid !== owner) {
+          return res.status(403).json(buildRichError(
+            'Forbidden',
+            ErrorCode.FORBIDDEN,
+            {
+              message: 'Include x-client-did header matching the task creator DID.',
+            }
+          ));
+        }
       }
-      // Only return status, not full task data
-      res.json({
-        status: 'running',
-        taskId: task.taskId,
-        type: task.type,
-      });
+
+      // 1. Check pendingTasks -> running
+      const pendingTask = this.pendingTasks.get(taskId);
+      if (pendingTask) {
+        return res.json({
+          status: 'running',
+          taskId: pendingTask.taskId,
+          type: pendingTask.type,
+        });
+      }
+
+      // 2. Check completedTasks -> return full result (if not expired)
+      const completed = this.completedTasks.get(taskId);
+      if (completed) {
+        if (Date.now() < completed.expiresAt) {
+          return res.json(completed.result);
+        }
+        // Expired — clean up and fall through to 404
+        this.completedTasks.delete(taskId);
+        this.taskOwners.delete(taskId);
+      }
+
+      // 3. Not found
+      return res.status(404).json(buildRichError(
+        'Task not found',
+        ErrorCode.NOT_FOUND,
+      ));
     });
 
     // Cancel task
@@ -847,6 +1010,14 @@ export class BridgeServer {
     return this.pendingTasks.get(taskId);
   }
 
+  getCompletedTask(taskId: string): TaskResult | undefined {
+    const entry = this.completedTasks.get(taskId);
+    if (entry && Date.now() < entry.expiresAt) {
+      return entry.result;
+    }
+    return undefined;
+  }
+
   async submitTask(task: TaskInput): Promise<TaskResult> {
     this.pendingTasks.set(task.taskId, task);
     try {
@@ -878,6 +1049,16 @@ export class BridgeServer {
     }
     // Periodically save trust data
     this.trustStore.save();
+  }
+
+  private cleanupCompletedTasks(): void {
+    const now = Date.now();
+    for (const [taskId, entry] of this.completedTasks) {
+      if (now >= entry.expiresAt) {
+        this.completedTasks.delete(taskId);
+        this.taskOwners.delete(taskId);
+      }
+    }
   }
 
   private broadcastResult(result: TaskResult) {
@@ -969,6 +1150,52 @@ export class BridgeServer {
     return card;
   }
 
+  /**
+   * Build llms.txt content following the llmstxt.org specification.
+   * Provides machine-readable documentation for AI agents discovering this bridge.
+   */
+  private buildLlmsTxt(baseUrl: string): string {
+    return `# AgoraMesh Bridge
+
+> AI agent marketplace bridge. Submit coding tasks to a Claude Code agent and get results via HTTP. Free tier available — no signup, no wallet, no crypto.
+
+## Quick Start
+
+1. Check if bridge is running:
+   curl ${baseUrl}/health
+
+2. See what this agent can do:
+   curl ${baseUrl}/.well-known/agent.json
+
+3. Submit a task (free, no signup):
+   curl -X POST ${baseUrl}/task?wait=true \\
+     -H "Authorization: FreeTier my-agent" \\
+     -H "Content-Type: application/json" \\
+     -d '{"taskId":"t1","type":"prompt","prompt":"Write hello world in Python","clientDid":"my-agent"}'
+
+4. For async tasks, poll for results:
+   curl ${baseUrl}/task/t1 -H "Authorization: FreeTier my-agent"
+
+## Authentication Methods
+
+- **FreeTier** (simplest): \`Authorization: FreeTier <your-agent-id>\` — 10 requests/day, no signup
+- **DID:key** (stronger identity): \`Authorization: DID <did>:<timestamp>:<base64url-signature>\` — Ed25519 signed
+- **Bearer** (operator token): \`Authorization: Bearer <token>\`
+- **x402** (pay-per-request): Include \`x-payment\` header with USDC payment
+
+## Documentation
+
+- [Agent Card](${baseUrl}/.well-known/agent.json): Capabilities, skills, pricing, auth instructions
+- [API Specification](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/specs/bridge-protocol.md): Full REST + A2A JSON-RPC API
+- [Getting Started](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/tutorials/getting-started.md): SDK quick start
+
+## Optional
+
+- [Trust Layer](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/specs/trust-layer.md): Reputation and staking system
+- [Payment Layer](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/specs/payment-layer.md): x402 and escrow details
+`;
+  }
+
   start(port: number): Promise<void> {
     const host = this.config.host || '127.0.0.1';
     return new Promise((resolve) => {
@@ -993,6 +1220,9 @@ export class BridgeServer {
   }
 
   stop(): Promise<void> {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
     return new Promise((resolve) => {
       this.wss.close();
       this.server.close(() => resolve());
