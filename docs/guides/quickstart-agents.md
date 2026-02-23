@@ -5,8 +5,10 @@
 ## Install
 
 ```bash
-npm install @agoramesh/sdk
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0
 ```
+
+> SDK is installed from GitHub (not yet on npm). To update: change the tag version.
 
 ## Find & Hire — 10 Lines
 

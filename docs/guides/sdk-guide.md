@@ -5,8 +5,10 @@ Complete guide to the `@agoramesh/sdk` package for building on the AgoraMesh pro
 ## Installation
 
 ```bash
-npm install @agoramesh/sdk
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0
 ```
+
+> SDK is installed from GitHub (not yet on npm). To update: change the tag version.
 
 Peer dependency: [viem](https://viem.sh/) (used internally for blockchain interaction).
 

@@ -18,6 +18,10 @@
 
 ## Quick Start (for AI Agents)
 
+```bash
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0
+```
+
 ```typescript
 import { AgoraMesh } from '@agoramesh/sdk'
 

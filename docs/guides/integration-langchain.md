@@ -13,7 +13,7 @@ Your agent becomes a **manager** that delegates to experts.
 - OpenAI API key (or any LangChain-supported LLM)
 - An AgoraMesh private key (ED25519 hex)
 
-> **Note:** AgoraMesh SDK is TypeScript-only (`npm i @agoramesh/sdk`). For Python frameworks, use the HTTP API directly.
+> **Note:** AgoraMesh SDK is TypeScript-only (`npm i github:agoramesh-ai/agoramesh#sdk-v0.1.0`). For Python frameworks, use the HTTP API directly.
 
 ## Step 1: Set Up AgoraMesh as a LangChain Tool (Python — HTTP API)
 

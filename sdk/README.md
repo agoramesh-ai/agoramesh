@@ -10,8 +10,11 @@ TypeScript SDK for interacting with the AgoraMesh decentralized agent marketplac
 ## Installation
 
 ```bash
-npm install @agoramesh/sdk
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0
 ```
+
+> The SDK is not yet published to npm. Install from GitHub using a release tag.
+> To update: `npm install github:agoramesh-ai/agoramesh#sdk-v<new-version>`
 
 ## Quick Start
 
