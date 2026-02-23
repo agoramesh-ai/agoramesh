@@ -91,10 +91,15 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: GHCR_TOKEN
           script: |
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u github-actions --password-stdin
             cd /opt/agoramesh
             docker compose pull
             docker compose up -d --remove-orphans
+            docker logout ghcr.io
             echo "--- Waiting for containers to start ---"
             sleep 5
             docker compose ps
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
