@@ -73,6 +73,25 @@ export const TaskInputSchema = z.object({
 
 export type TaskInput = z.infer<typeof TaskInputSchema>;
 
+// === Free tier constants ===
+
+/** Maximum free tier requests per DID per day */
+export const FREE_TIER_DAILY_LIMIT = 10;
+
+/** Maximum free tier requests per IP per day (Sybil resistance) */
+export const FREE_TIER_IP_DAILY_LIMIT = 20;
+
+/** Maximum output length for free tier responses (chars) */
+export const FREE_TIER_OUTPUT_LIMIT = 2000;
+
+// === DID identity ===
+
+/** Identity attached to a request after DID:key authentication */
+export interface DIDIdentity {
+  did: string;
+  tier: 'free' | 'paid';
+}
+
 // === Sandbox schema ===
 
 /** Maximum prompt length for sandbox (500 chars) */
@@ -134,13 +153,36 @@ export interface RichAgentConfig extends AgentConfig {
   /** Provider / organization information */
   provider?: Provider;
   /** Agent capabilities (streaming, push notifications, etc.) */
-  capabilities?: CapabilityCard['capabilities'];
+  capabilities?: CapabilityCard['capabilities'] & {
+    a2aProtocol?: boolean;
+    sandbox?: boolean;
+    freeTier?: boolean;
+  };
   /** Authentication configuration */
   authentication?: Authentication;
   /** Rich skill definitions with full A2A metadata (alongside basic string[] skills) */
   richSkills?: Skill[];
-  /** Payment configuration */
-  payment?: PaymentConfig;
+  /** Payment configuration (extends SDK PaymentConfig with wallet provisioning) */
+  payment?: PaymentConfig & {
+    walletProvisioning?: {
+      description: string;
+      providers: Array<{
+        name: string;
+        type: 'programmatic' | 'faucet' | 'exchange';
+        url: string;
+        sdkPackage?: string;
+        chains: string[];
+        currencies: string[];
+      }>;
+    };
+  };
+  /** Free tier configuration for DID:key auth */
+  freeTier?: {
+    enabled: boolean;
+    authentication: string;
+    limits: { requestsPerDay: number; outputMaxChars: number };
+    upgradeInstructions: string;
+  };
   /** Trust metadata (score, tier, endorsements, verifications) */
   trust?: CapabilityCard['trust'];
   /** Default accepted input content types */

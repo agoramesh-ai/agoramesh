@@ -13,7 +13,8 @@
     "x402Payments": true,
     "escrow": true,
     "a2aProtocol": true,
-    "sandbox": true
+    "sandbox": true,
+    "freeTier": true
   },
   "authentication": {
     "schemes": [
@@ -97,6 +98,15 @@
       }
     }
   ],
+  "freeTier": {
+    "enabled": true,
+    "authentication": "did:key",
+    "limits": {
+      "requestsPerDay": 10,
+      "outputMaxChars": 2000
+    },
+    "upgradeInstructions": "To remove limits, pay per-request via x402 or provide a Bearer API token."
+  },
   "payment": {
     "methods": [
       "x402",
@@ -110,6 +120,27 @@
     ],
     "addresses": {
       "base": "0x0000000000000000000000000000000000000000"
+    },
+    "walletProvisioning": {
+      "description": "To pay for tasks, provision a wallet programmatically using one of these providers.",
+      "providers": [
+        {
+          "name": "Coinbase AgentKit",
+          "type": "programmatic",
+          "url": "https://docs.cdp.coinbase.com/agentkit/",
+          "sdkPackage": "@coinbase/agentkit",
+          "chains": ["base"],
+          "currencies": ["USDC"]
+        },
+        {
+          "name": "Coinbase Agentic Wallets",
+          "type": "programmatic",
+          "url": "https://docs.cdp.coinbase.com/agentic-wallets/",
+          "sdkPackage": "@coinbase/coinbase-sdk",
+          "chains": ["base"],
+          "currencies": ["USDC"]
+        }
+      ]
     }
   },
   "defaultInputModes": [

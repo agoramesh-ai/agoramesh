@@ -373,3 +373,88 @@ describe('Agent Card endpoint (rich config)', () => {
     expect(res.body.privacyPolicyUrl).toBe('https://privacy.example.com');
   });
 });
+
+// ===========================================================================
+// Tests with freeTier + walletProvisioning config
+// ===========================================================================
+
+describe('Agent Card endpoint (free tier + wallet provisioning)', () => {
+  let server: BridgeServer;
+  let app: any;
+
+  const freeTierConfig: RichAgentConfig = {
+    name: 'free-tier-agent',
+    description: 'Agent with free tier enabled',
+    skills: ['coding'],
+    pricePerTask: 5,
+    privateKey: '0xdeadbeef',
+    workspaceDir: '/tmp/free-tier-workspace',
+    allowedCommands: ['claude'],
+    taskTimeout: 120,
+    capabilities: {
+      x402Payments: true,
+      freeTier: true,
+    },
+    freeTier: {
+      enabled: true,
+      authentication: 'did:key',
+      limits: { requestsPerDay: 10, outputMaxChars: 2000 },
+      upgradeInstructions: 'Pay via x402 for unlimited access.',
+    },
+    payment: {
+      methods: ['x402'],
+      currencies: ['USDC'],
+      chains: ['base'],
+      addresses: { base: '0x0000000000000000000000000000000000000000' },
+      walletProvisioning: {
+        description: 'Provision a wallet to pay for tasks.',
+        providers: [
+          {
+            name: 'Coinbase AgentKit',
+            type: 'programmatic',
+            url: 'https://docs.cdp.coinbase.com/agentkit/',
+            sdkPackage: '@coinbase/agentkit',
+            chains: ['base'],
+            currencies: ['USDC'],
+          },
+        ],
+      },
+    },
+  };
+
+  beforeAll(() => {
+    server = new BridgeServer(freeTierConfig);
+    app = (server as any).app;
+  });
+
+  afterAll(async () => {
+    await server.stop();
+  });
+
+  it('includes freeTier in agent card', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    expect(res.body.freeTier).toBeDefined();
+    expect(res.body.freeTier.enabled).toBe(true);
+    expect(res.body.freeTier.authentication).toBe('did:key');
+    expect(res.body.freeTier.limits.requestsPerDay).toBe(10);
+    expect(res.body.freeTier.limits.outputMaxChars).toBe(2000);
+    expect(res.body.freeTier.upgradeInstructions).toMatch(/x402/);
+  });
+
+  it('includes walletProvisioning in payment section', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    expect(res.body.payment.walletProvisioning).toBeDefined();
+    expect(res.body.payment.walletProvisioning.providers).toHaveLength(1);
+    expect(res.body.payment.walletProvisioning.providers[0].name).toBe('Coinbase AgentKit');
+    expect(res.body.payment.walletProvisioning.providers[0].type).toBe('programmatic');
+    expect(res.body.payment.walletProvisioning.providers[0].sdkPackage).toBe('@coinbase/agentkit');
+  });
+
+  it('includes freeTier in capabilities', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    expect(res.body.capabilities.freeTier).toBe(true);
+  });
+});

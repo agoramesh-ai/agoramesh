@@ -8,10 +8,18 @@ import type { AddressInfo } from 'net';
 import { timingSafeEqual } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
-import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR } from './types.js';
+import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
 import { handleA2ARequest, type A2ABridge } from './a2a.js';
+import { isDIDAuthHeader, parseDIDAuthHeader, verifyDIDSignature } from './did-auth.js';
+import { FreeTierLimiter } from './free-tier-limiter.js';
+import { TrustStore } from './trust-store.js';
+
+/** Express request with optional DID identity attached by auth middleware */
+interface DIDRequest extends Request {
+  didIdentity?: DIDIdentity;
+}
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {
@@ -192,11 +200,17 @@ export class BridgeServer {
   private requireAuth: boolean;
   private apiToken?: string;
   private x402Config?: X402Config;
+  private freeTierLimiter: FreeTierLimiter = new FreeTierLimiter();
+  private trustStore: TrustStore;
 
   constructor(config: BridgeServerConfig) {
     this.config = config;
     this.apiToken = config.apiToken?.trim() || undefined;
     this.x402Config = config.x402;
+
+    // Initialize trust store for progressive trust (persists to ~/.agoramesh/)
+    const homedir = process.env.HOME || process.env.USERPROFILE || '/tmp';
+    this.trustStore = new TrustStore(`${homedir}/.agoramesh/trust-store.json`);
     this.requireAuth = config.requireAuth ?? process.env.NODE_ENV === 'production';
 
     if (this.requireAuth && !this.apiToken && !this.x402Config) {
@@ -284,10 +298,27 @@ export class BridgeServer {
     const x402Middleware = this.x402Config ? createX402Middleware(this.x402Config) : null;
 
     return (req: Request, res: Response, next: NextFunction) => {
+      // Path 1: Static API token (Bearer or x-api-key)
       if (this.apiToken && this.isApiTokenValid(req)) {
         return next();
       }
 
+      // Path 2: x402 payment
+      if (x402Middleware) {
+        // Only fall through to DID if no x-payment header
+        if (req.headers['x-payment']) {
+          return x402Middleware(req, res, next);
+        }
+      }
+
+      // Path 3: DID:key free tier authentication
+      const authHeader = req.headers.authorization;
+      if (authHeader && isDIDAuthHeader(authHeader)) {
+        return this.handleDIDAuth(req, res, next);
+      }
+
+      // Path 4 (fallback for x402): if x402 middleware exists and we didn't have a DID header,
+      // let x402 middleware handle (will return 402 with payment requirements)
       if (x402Middleware) {
         return x402Middleware(req, res, next);
       }
@@ -296,13 +327,74 @@ export class BridgeServer {
         'Unauthorized',
         ErrorCode.UNAUTHORIZED,
         {
-          message: 'Authenticate via Bearer token or x402 payment. See agent card for supported methods.',
+          message: 'Authenticate via Bearer token, x402 payment, or DID:key signature. See agent card for supported methods.',
           agentCard: '/.well-known/agent.json',
           documentation: this.config.documentationUrl,
-          authMethods: ['bearer', 'x402'],
+          authMethods: ['bearer', 'x402', 'did:key'],
         }
       ));
     };
+  }
+
+  private handleDIDAuth(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization!;
+
+    let parsed: { did: string; timestamp: string; signature: string };
+    try {
+      parsed = parseDIDAuthHeader(authHeader);
+    } catch {
+      return res.status(401).json(buildRichError(
+        'Invalid DID auth header',
+        ErrorCode.UNAUTHORIZED,
+        {
+          message: 'DID auth header format: "DID <did>:<unix-timestamp>:<base64url-signature>"',
+          agentCard: '/.well-known/agent.json',
+          authMethods: ['did:key'],
+        }
+      ));
+    }
+
+    const valid = verifyDIDSignature(
+      parsed.did,
+      parsed.timestamp,
+      req.method,
+      req.path,
+      parsed.signature,
+    );
+
+    if (!valid) {
+      return res.status(401).json(buildRichError(
+        'DID signature verification failed',
+        ErrorCode.UNAUTHORIZED,
+        {
+          message: 'Ensure the signature covers "<timestamp>:<METHOD>:<path>" and the timestamp is within 5 minutes.',
+          agentCard: '/.well-known/agent.json',
+          authMethods: ['did:key'],
+        }
+      ));
+    }
+
+    // Check free tier limits (use trust-based limits)
+    const trustLimits = this.trustStore.getLimitsForDID(parsed.did);
+    const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+    const check = this.freeTierLimiter.canProceed(parsed.did, clientIP, trustLimits.dailyLimit);
+    if (!check.allowed) {
+      return res.status(429).json(buildRichError(
+        'Free tier limit exceeded',
+        ErrorCode.RATE_LIMITED,
+        {
+          message: check.reason || 'Daily limit reached. Upgrade to paid tier for unlimited access.',
+          agentCard: '/.well-known/agent.json',
+          authMethods: ['x402', 'bearer'],
+        }
+      ));
+    }
+
+    // Record usage and attach DID identity
+    this.freeTierLimiter.recordUsage(parsed.did, clientIP);
+    (req as DIDRequest).didIdentity = { did: parsed.did, tier: 'free' } satisfies DIDIdentity;
+
+    return next();
   }
 
   /**
@@ -497,9 +589,17 @@ export class BridgeServer {
 
     // A2A JSON-RPC 2.0 endpoint (POST /)
     this.app.post('/', taskAuthMiddleware, async (req: Request, res: Response) => {
+      const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
       const bridge: A2ABridge = {
         getPendingTask: (taskId) => this.getPendingTask(taskId),
-        submitTask: (task) => this.submitTask(task),
+        submitTask: async (task) => {
+          const result = await this.submitTask(task);
+          // Record trust for DID:key authenticated requests
+          if (didIdentity) {
+            this.recordTrust(didIdentity.did, result);
+          }
+          return result;
+        },
         cancelTask: (taskId) => this.cancelTaskById(taskId),
       };
       const response = await handleA2ARequest(req.body, bridge);
@@ -530,8 +630,14 @@ export class BridgeServer {
         this.pendingTasks.set(task.taskId, task);
 
         // Execute async, return acknowledgement
+        const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
         this.executeTask(task).then(async (result) => {
           this.pendingTasks.delete(task.taskId);
+
+          // Record trust for DID:key authenticated requests
+          if (didIdentity) {
+            this.recordTrust(didIdentity.did, result);
+          }
 
           // Confirm delivery on-chain if escrow was used
           if (task.escrowId && this.escrowClient && result.status === 'completed') {
@@ -553,11 +659,25 @@ export class BridgeServer {
           this.pendingTasks.delete(task.taskId);
         });
 
-        res.json({
+        const response: Record<string, unknown> = {
           accepted: true,
           taskId: task.taskId,
           estimatedTime: this.config.taskTimeout,
-        });
+        };
+
+        // Include free tier info when authenticated via DID:key
+        const didIdForResponse = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
+        if (didIdForResponse) {
+          const tLimits = this.trustStore.getLimitsForDID(didIdForResponse.did);
+          const tProfile = this.trustStore.getProfile(didIdForResponse.did);
+          response.freeTier = {
+            tier: tProfile.tier,
+            remaining: this.freeTierLimiter.getRemainingQuota(didIdForResponse.did, tLimits.dailyLimit),
+            dailyLimit: tLimits.dailyLimit,
+          };
+        }
+
+        res.json(response);
       } catch (error) {
         // Use safe error response to prevent information leakage
         const safeError = createSafeErrorResponse(error, 'POST /task');
@@ -747,6 +867,19 @@ export class BridgeServer {
     return cancelled;
   }
 
+  /**
+   * Record task outcome in the trust store for progressive trust.
+   */
+  private recordTrust(did: string, result: TaskResult): void {
+    if (result.status === 'completed') {
+      this.trustStore.recordCompletion(did);
+    } else {
+      this.trustStore.recordFailure(did);
+    }
+    // Periodically save trust data
+    this.trustStore.save();
+  }
+
   private broadcastResult(result: TaskResult) {
     const message = JSON.stringify({ type: 'result', payload: result });
     const ws = this.taskWebSockets.get(result.taskId);
@@ -810,6 +943,9 @@ export class BridgeServer {
     }
     if (cfg.authentication) {
       card.authentication = cfg.authentication;
+    }
+    if (cfg.freeTier) {
+      card.freeTier = cfg.freeTier;
     }
     if (cfg.trust) {
       card.trust = { ...cfg.trust, selfAsserted: true };

@@ -215,6 +215,87 @@ describe('loadAgentCardConfig', () => {
     expect(() => loadAgentCardConfig(filePath)).toThrowError(/too large/);
   });
 
+  it('accepts capabilities with a2aProtocol, sandbox, and freeTier fields', () => {
+    const filePath = join(tempDir, 'caps.json');
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        capabilities: {
+          a2aProtocol: true,
+          sandbox: true,
+          freeTier: true,
+          x402Payments: true,
+          escrow: true,
+        },
+      }),
+    );
+
+    const result = loadAgentCardConfig(filePath);
+    const caps = result.capabilities as Record<string, unknown>;
+
+    expect(caps.a2aProtocol).toBe(true);
+    expect(caps.sandbox).toBe(true);
+    expect(caps.freeTier).toBe(true);
+  });
+
+  it('accepts freeTier configuration', () => {
+    const filePath = join(tempDir, 'free-tier.json');
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        freeTier: {
+          enabled: true,
+          authentication: 'did:key',
+          limits: { requestsPerDay: 10, outputMaxChars: 2000 },
+          upgradeInstructions: 'Pay via x402.',
+        },
+      }),
+    );
+
+    const result = loadAgentCardConfig(filePath);
+
+    expect(result.freeTier).toEqual({
+      enabled: true,
+      authentication: 'did:key',
+      limits: { requestsPerDay: 10, outputMaxChars: 2000 },
+      upgradeInstructions: 'Pay via x402.',
+    });
+  });
+
+  it('accepts payment config with walletProvisioning', () => {
+    const filePath = join(tempDir, 'wallet-prov.json');
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        payment: {
+          methods: ['x402'],
+          currencies: ['USDC'],
+          chains: ['base'],
+          addresses: { base: '0x0000000000000000000000000000000000000000' },
+          walletProvisioning: {
+            description: 'Provision a wallet.',
+            providers: [
+              {
+                name: 'Coinbase AgentKit',
+                type: 'programmatic',
+                url: 'https://docs.cdp.coinbase.com/agentkit/',
+                sdkPackage: '@coinbase/agentkit',
+                chains: ['base'],
+                currencies: ['USDC'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    const result = loadAgentCardConfig(filePath);
+
+    expect(result.payment!.walletProvisioning).toBeDefined();
+    expect((result.payment as any).walletProvisioning.providers).toHaveLength(1);
+    expect((result.payment as any).walletProvisioning.providers[0].name).toBe('Coinbase AgentKit');
+  });
+
   it('loads config from a custom file path', () => {
     const customPath = join(tempDir, 'custom', 'my-agent.json');
     // Create subdirectory

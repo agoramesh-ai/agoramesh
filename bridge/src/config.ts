@@ -66,12 +66,37 @@ const AuthenticationSchema = z.object({
   instructions: z.string().optional(),
 });
 
+const WalletProviderSchema = z.object({
+  name: z.string(),
+  type: z.enum(['programmatic', 'faucet', 'exchange']),
+  url: z.string().url(),
+  sdkPackage: z.string().optional(),
+  chains: z.array(z.string()),
+  currencies: z.array(z.string()),
+});
+
+const WalletProvisioningSchema = z.object({
+  description: z.string(),
+  providers: z.array(WalletProviderSchema),
+});
+
+const FreeTierConfigSchema = z.object({
+  enabled: z.boolean(),
+  authentication: z.string(),
+  limits: z.object({
+    requestsPerDay: z.number(),
+    outputMaxChars: z.number(),
+  }),
+  upgradeInstructions: z.string(),
+});
+
 const PaymentConfigSchema = z.object({
   methods: z.array(z.enum(['x402', 'escrow', 'streaming'])),
   currencies: z.array(z.string()),
   chains: z.array(z.string()),
   addresses: z.record(z.string()),
   escrowContract: z.string().optional(),
+  walletProvisioning: WalletProvisioningSchema.optional(),
 });
 
 const CapabilitiesSchema = z.object({
@@ -80,6 +105,9 @@ const CapabilitiesSchema = z.object({
   stateTransitionHistory: z.boolean().optional(),
   x402Payments: z.boolean().optional(),
   escrow: z.boolean().optional(),
+  a2aProtocol: z.boolean().optional(),
+  sandbox: z.boolean().optional(),
+  freeTier: z.boolean().optional(),
 });
 
 const TrustEndorsementSchema = z.object({
@@ -146,6 +174,7 @@ export const AgentCardConfigSchema = z.object({
   authentication: AuthenticationSchema.optional(),
   richSkills: z.array(SkillSchema).optional(),
   payment: PaymentConfigSchema.optional(),
+  freeTier: FreeTierConfigSchema.optional(),
   trust: TrustInfoSchema.optional(),
   defaultInputModes: z.array(z.string()).optional(),
   defaultOutputModes: z.array(z.string()).optional(),
