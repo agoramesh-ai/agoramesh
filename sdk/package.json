@@ -14,6 +14,7 @@
   },
   "files": [
     "dist",
+    "deployments",
     "README.md",
     "LICENSE"
   ],

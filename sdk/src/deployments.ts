@@ -5,7 +5,7 @@
  * so all components (SDK, bridge, node) use the same source of truth.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -39,9 +39,14 @@ export function loadDeployment(
   network: 'sepolia' | 'mainnet' | 'local',
   deploymentsDir?: string
 ): DeploymentAddresses {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
   const dir =
     deploymentsDir ??
-    resolve(dirname(fileURLToPath(import.meta.url)), '../../deployments');
+    // npm package: deployments/ is sibling to dist/
+    // monorepo: deployments/ is at repo root (two levels up from sdk/dist/)
+    (existsSync(resolve(__dirname, '../deployments'))
+      ? resolve(__dirname, '../deployments')
+      : resolve(__dirname, '../../deployments'));
   const filePath = resolve(dir, `${network}.json`);
 
   const raw = readFileSync(filePath, 'utf-8');

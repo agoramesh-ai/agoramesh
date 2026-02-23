@@ -58,6 +58,7 @@ trap 'rm -rf "$TMPDIR"' EXIT
 echo "==> Preparing release tree..."
 cp "$SDK_DIR/package.json" "$TMPDIR/"
 cp -r "$SDK_DIR/dist" "$TMPDIR/dist"
+[ -d "$REPO_ROOT/deployments" ] && cp -r "$REPO_ROOT/deployments" "$TMPDIR/deployments"
 [ -f "$SDK_DIR/README.md" ] && cp "$SDK_DIR/README.md" "$TMPDIR/"
 [ -f "$REPO_ROOT/LICENSE" ] && cp "$REPO_ROOT/LICENSE" "$TMPDIR/"
 
