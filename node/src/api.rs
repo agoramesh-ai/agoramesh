@@ -522,7 +522,9 @@ async fn get_trust_handler(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::discovery::{AgoraMeshExtension, Capability, PricingInfo, PricingModel, ProviderInfo};
+    use crate::discovery::{
+        AgoraMeshExtension, Capability, PricingInfo, PricingModel, ProviderInfo,
+    };
     use axum_test::TestServer;
 
     fn test_state() -> AppState {
