@@ -1,6 +1,6 @@
 services:
   node:
-    image: ghcr.io/timutti/agoramesh-node:latest
+    image: ghcr.io/agoramesh-ai/agoramesh-node:latest
     command:
       - ./agoramesh
       - start
@@ -34,7 +34,7 @@ services:
     mem_limit: 2g
 
   bridge:
-    image: ghcr.io/timutti/agoramesh-bridge:latest
+    image: ghcr.io/agoramesh-ai/agoramesh-bridge:latest
     ports:
       - "127.0.0.1:3402:3402"
     environment:
