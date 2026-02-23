@@ -1,0 +1,70 @@
+/**
+ * AgoraMesh SDK
+ *
+ * TypeScript SDK for interacting with the AgoraMesh decentralized agent marketplace.
+ *
+ * @packageDocumentation
+ *
+ * @example
+ * ```typescript
+ * import {
+ *   AgoraMeshClient,
+ *   DiscoveryClient,
+ *   TrustClient,
+ *   PaymentClient,
+ *   BASE_SEPOLIA_CHAIN_ID,
+ * } from '@agoramesh/sdk';
+ *
+ * // Create and connect client
+ * const client = new AgoraMeshClient({
+ *   rpcUrl: 'https://sepolia.base.org',
+ *   chainId: BASE_SEPOLIA_CHAIN_ID,
+ *   privateKey: '0x...',
+ *   trustRegistryAddress: '0x...',
+ *   escrowAddress: '0x...',
+ * });
+ *
+ * await client.connect();
+ *
+ * // Use discovery to find agents
+ * const discovery = new DiscoveryClient(client, 'http://localhost:8080');
+ * const results = await discovery.search('translate legal documents', {
+ *   minTrust: 0.8,
+ *   maxPrice: '0.10',
+ * });
+ *
+ * // Check trust scores
+ * const trust = new TrustClient(client);
+ * const score = await trust.getTrustScore('did:agoramesh:base:0x...');
+ *
+ * // Create escrow for payment
+ * const payment = new PaymentClient(client, 'did:agoramesh:base:0x...');
+ * const escrowId = await payment.createAndFundEscrow({
+ *   providerDid: 'did:agoramesh:base:0x...',
+ *   providerAddress: '0x...',
+ *   amount: '100',
+ *   taskHash: '0x...',
+ *   deadline: Date.now() + 24 * 60 * 60 * 1000,
+ * });
+ * ```
+ */
+export type { AgoraMeshConfig, ContractAddresses, CapabilityCard, Skill, SkillExample, ServiceLevelAgreement, Pricing, Provider, Authentication, PaymentConfig, TrustTier, TrustScore, TrustInfo, TrustDetails, ReputationData, StakeInfo, Endorsement, AgentInfo, Agent, Escrow, CreateEscrowOptions, SearchOptions, DiscoveryResult, } from './types.js';
+export { EscrowState, EscrowStateNames, BASE_MAINNET_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID, BASE_MAINNET_USDC, BASE_SEPOLIA_USDC, BASE_MAINNET_RPC, BASE_SEPOLIA_RPC, BASIS_POINTS, USDC_DECIMALS, } from './types.js';
+export { AgoraMeshClient, createClient, didToHash } from './client.js';
+export { parseUSDC, formatUSDC, toUnixTimestamp, calculateElapsedTime, } from './utils.js';
+export { DiscoveryClient } from './discovery.js';
+export { TrustClient } from './trust.js';
+export { PaymentClient } from './payment.js';
+export { X402Client, createX402Client, wrapFetchWithX402, isPaymentRequired, } from './x402.js';
+export type { X402Config, PaymentRequirement, PaymentPayload, PaymentSettleResponse, X402FetchOptions, } from './x402.js';
+export { SemanticSearchClient, createOpenAIEmbedder, createCohereEmbedder, createSimpleEmbedder, } from './semantic.js';
+export type { Embedding, EmbeddingFunction, SemanticSearchConfig, SemanticSearchResult, OpenAIEmbedderOptions, CohereEmbedderOptions, } from './semantic.js';
+export { StreamingPaymentsClient, StreamStatus, StreamStatusNames, } from './streaming.js';
+export type { Stream, CreateStreamOptions, CreateStreamWithTimestampsOptions, FormattedStream, CancellationPreview, StreamHealth, StreamHealthStatus, RecoveryResult, } from './streaming.js';
+export { CrossChainTrustClient } from './crosschain.js';
+export type { CrossChainConfig, CachedTrustScore, ChainInfo, RequestTrustSyncOptions, SyncTrustScoreOptions, QuoteSyncFeeOptions, SyncResult, } from './crosschain.js';
+export { loadDeployment, isDeployed } from './deployments.js';
+export type { DeploymentAddresses } from './deployments.js';
+export { AgoraMesh, createAgoraMesh } from './easy.js';
+export type { AgoraMeshOptions, FindOptions, HireOptions, HireResult, AgentInfo as EasyAgentInfo, } from './easy.js';
+//# sourceMappingURL=index.d.ts.map
