@@ -196,7 +196,11 @@ contract ERC8004Bridge is Ownable {
     /// @param agentTokenId The AgoraMesh token ID
     /// @param metadataKey The metadata key to query
     /// @return The raw metadata value as bytes
-    function getAgoraMeshtadata(uint256 agentTokenId, string calldata metadataKey) external view returns (bytes memory) {
+    function getAgoraMeshtadata(uint256 agentTokenId, string calldata metadataKey)
+        external
+        view
+        returns (bytes memory)
+    {
         uint256 erc8004AgentId = agoraMeshToERC8004[agentTokenId];
         if (erc8004AgentId == 0) revert AgentNotRegistered(agentTokenId);
 
