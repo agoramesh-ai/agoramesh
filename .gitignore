@@ -41,3 +41,4 @@ docs/security/SECURITY_AUDIT_*.md
 # Test coverage
 coverage/
 .nyc_output/
+.worktrees/
