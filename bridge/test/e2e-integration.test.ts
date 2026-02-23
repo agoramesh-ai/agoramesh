@@ -54,7 +54,7 @@ function createValidTask(overrides?: Record<string, unknown>) {
     taskId: `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: 'prompt',
     prompt: 'Write hello world in TypeScript',
-    clientDid: 'did:agentme:base:0xabc123',
+    clientDid: 'did:agoramesh:base:0xabc123',
     ...overrides,
   };
 }
@@ -111,7 +111,7 @@ describe('E2E: REST API task lifecycle', () => {
 
     const res = await request(app)
       .get(`/task/${task.taskId}`)
-      .set('x-client-did', 'did:agentme:base:0xwrongclient');
+      .set('x-client-did', 'did:agoramesh:base:0xwrongclient');
 
     // Should return 403 (forbidden) if the task is still pending, or 404 if already completed
     expect([403, 404]).toContain(res.status);
@@ -129,7 +129,7 @@ describe('E2E: REST API task lifecycle', () => {
   it('returns 404 for unknown task', async () => {
     const res = await request(app)
       .get('/task/nonexistent-task-id')
-      .set('x-client-did', 'did:agentme:base:0xabc');
+      .set('x-client-did', 'did:agoramesh:base:0xabc');
 
     expect(res.status).toBe(404);
     expect(res.body.error).toBe('Task not found or completed');
@@ -924,7 +924,7 @@ describe('E2E: Task cancellation', () => {
   it('returns 404 for cancellation of unknown task', async () => {
     const res = await request(app)
       .delete('/task/unknown-task-id')
-      .set('x-client-did', 'did:agentme:base:0xabc');
+      .set('x-client-did', 'did:agoramesh:base:0xabc');
 
     expect(res.status).toBe(404);
     expect(res.body.error).toBe('Task not found');
@@ -946,7 +946,7 @@ describe('E2E: Task cancellation', () => {
 
     const res = await request(app)
       .delete(`/task/${task.taskId}`)
-      .set('x-client-did', 'did:agentme:base:0xwrongclient');
+      .set('x-client-did', 'did:agoramesh:base:0xwrongclient');
 
     // Should return 403 (forbidden) or 404 (task already completed)
     expect([403, 404]).toContain(res.status);
@@ -980,7 +980,7 @@ describe('E2E: Body size limits', () => {
         taskId: 'large-body-test',
         type: 'prompt',
         prompt: 'x'.repeat(2000),
-        clientDid: 'did:agentme:base:0xabc',
+        clientDid: 'did:agoramesh:base:0xabc',
       });
 
     // Should be rejected by express body parser (413) or validation (400)

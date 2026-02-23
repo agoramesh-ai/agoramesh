@@ -1,4 +1,4 @@
-//! Multi-chain support for AgentMe Node.
+//! Multi-chain support for AgoraMesh Node.
 //!
 //! This module provides infrastructure for interacting with multiple EVM-compatible
 //! chains simultaneously. It supports:

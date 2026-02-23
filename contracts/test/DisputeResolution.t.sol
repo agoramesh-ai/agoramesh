@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/TieredDisputeResolution.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TrustRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -24,7 +24,7 @@ contract MockUSDC is ERC20 {
 
 contract DisputeResolutionTest is Test {
     TieredDisputeResolution public disputeResolution;
-    AgentMeshEscrow public escrow;
+    AgoraMeshEscrow public escrow;
     TrustRegistry public trustRegistry;
     MockUSDC public usdc;
 
@@ -36,11 +36,11 @@ contract DisputeResolutionTest is Test {
     address public arbiter2 = makeAddr("arbiter2");
     address public arbiter3 = makeAddr("arbiter3");
 
-    bytes32 public clientDid = keccak256("did:agentme:base:client");
-    bytes32 public providerDid = keccak256("did:agentme:base:provider");
-    bytes32 public arbiter1Did = keccak256("did:agentme:base:arbiter1");
-    bytes32 public arbiter2Did = keccak256("did:agentme:base:arbiter2");
-    bytes32 public arbiter3Did = keccak256("did:agentme:base:arbiter3");
+    bytes32 public clientDid = keccak256("did:agoramesh:base:client");
+    bytes32 public providerDid = keccak256("did:agoramesh:base:provider");
+    bytes32 public arbiter1Did = keccak256("did:agoramesh:base:arbiter1");
+    bytes32 public arbiter2Did = keccak256("did:agoramesh:base:arbiter2");
+    bytes32 public arbiter3Did = keccak256("did:agoramesh:base:arbiter3");
 
     // Constants matching the spec
     uint256 constant TIER1_MAX = 10 * 1e6; // $10
@@ -55,7 +55,7 @@ contract DisputeResolutionTest is Test {
         // Deploy contracts
         usdc = new MockUSDC();
         trustRegistry = new TrustRegistry(address(usdc), admin);
-        escrow = new AgentMeshEscrow(address(trustRegistry), admin);
+        escrow = new AgoraMeshEscrow(address(trustRegistry), admin);
         disputeResolution = new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), admin);
 
         // Grant roles

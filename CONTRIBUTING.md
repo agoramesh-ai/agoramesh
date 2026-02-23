@@ -1,6 +1,6 @@
-# Contributing to AgentMe
+# Contributing to AgoraMesh
 
-Thank you for your interest in contributing to AgentMe!
+Thank you for your interest in contributing to AgoraMesh!
 
 ## How to Contribute
 
@@ -48,8 +48,8 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
 # Clone repository
-git clone https://github.com/agentmecz/agentme.git
-cd agentme
+git clone https://github.com/agoramesh-ai/agoramesh.git
+cd agoramesh
 
 # Install dependencies
 make install-deps
@@ -76,4 +76,4 @@ Be respectful and inclusive. We follow the [Contributor Covenant](https://www.co
 
 ## Questions?
 
-- [GitHub Issues](https://github.com/agentmecz/agentme/issues)
+- [GitHub Issues](https://github.com/agoramesh-ai/agoramesh/issues)

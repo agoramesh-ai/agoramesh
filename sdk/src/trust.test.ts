@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { TrustClient } from './trust.js';
-import type { AgentMeClient } from './client.js';
+import type { AgoraMeshClient } from './client.js';
 
 // Mock fetch globally for node API tests
 global.fetch = vi.fn();
@@ -30,9 +30,9 @@ function createMockWalletClient() {
 }
 
 /**
- * Mock AgentMeClient
+ * Mock AgoraMeshClient
  */
-function createMockClient(options: { connected?: boolean } = {}): AgentMeClient {
+function createMockClient(options: { connected?: boolean } = {}): AgoraMeshClient {
   const publicClient = options.connected !== false ? createMockPublicClient() : null;
   const walletClient = createMockWalletClient();
 
@@ -46,11 +46,11 @@ function createMockClient(options: { connected?: boolean } = {}): AgentMeClient 
     getAccount: vi.fn(() => ({
       address: '0xUserAddress1234567890123456789012345678',
     })),
-  } as unknown as AgentMeClient;
+  } as unknown as AgoraMeshClient;
 }
 
 describe('TrustClient', () => {
-  let client: AgentMeClient;
+  let client: AgoraMeshClient;
   let trust: TrustClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
 
@@ -73,7 +73,7 @@ describe('TrustClient', () => {
       const disconnectedTrust = new TrustClient(disconnectedClient);
 
       await expect(
-        disconnectedTrust.getTrustScore('did:agentme:base:agent1')
+        disconnectedTrust.getTrustScore('did:agoramesh:base:agent1')
       ).rejects.toThrow('Client is not connected');
     });
 
@@ -86,7 +86,7 @@ describe('TrustClient', () => {
         BigInt(8500), // compositeScore (0.85)
       ]);
 
-      const score = await trust.getTrustScore('did:agentme:base:agent1');
+      const score = await trust.getTrustScore('did:agoramesh:base:agent1');
 
       expect(score.overall).toBeCloseTo(0.85);
       expect(score.reputation).toBeCloseTo(0.9);
@@ -102,7 +102,7 @@ describe('TrustClient', () => {
         BigInt(5000),
       ]);
 
-      await trust.getTrustScore('did:agentme:base:agent1');
+      await trust.getTrustScore('did:agoramesh:base:agent1');
 
       expect(mockPublicClient.readContract).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -148,7 +148,7 @@ describe('TrustClient', () => {
           },
         ]);
 
-      const details = await trust.getTrustDetails('did:agentme:base:agent1');
+      const details = await trust.getTrustDetails('did:agoramesh:base:agent1');
 
       expect(details.scores.overall).toBeCloseTo(0.85);
       expect(details.reputation.totalTransactions).toBe(BigInt(100));
@@ -173,7 +173,7 @@ describe('TrustClient', () => {
         })
         .mockResolvedValueOnce([]);
 
-      const details = await trust.getTrustDetails('did:agentme:base:newagent');
+      const details = await trust.getTrustDetails('did:agoramesh:base:newagent');
 
       // No transactions should result in 0 success rate
       expect(details.reputation.successRate).toBe(0);
@@ -196,7 +196,7 @@ describe('TrustClient', () => {
         stakeUnlockTime: BigInt(0),
       });
 
-      const reputation = await trust.getReputation('did:agentme:base:agent1');
+      const reputation = await trust.getReputation('did:agoramesh:base:agent1');
 
       expect(reputation.totalTransactions).toBe(BigInt(200));
       expect(reputation.successfulTransactions).toBe(BigInt(190));
@@ -228,7 +228,7 @@ describe('TrustClient', () => {
         },
       ]);
 
-      const endorsements = await trust.getEndorsements('did:agentme:base:agent1');
+      const endorsements = await trust.getEndorsements('did:agoramesh:base:agent1');
 
       expect(endorsements).toHaveLength(2);
       expect(endorsements[0]!.isActive).toBe(true);
@@ -238,7 +238,7 @@ describe('TrustClient', () => {
     it('should return empty array for agent with no endorsements', async () => {
       mockPublicClient.readContract.mockResolvedValueOnce([]);
 
-      const endorsements = await trust.getEndorsements('did:agentme:base:newagent');
+      const endorsements = await trust.getEndorsements('did:agoramesh:base:newagent');
 
       expect(endorsements).toHaveLength(0);
     });
@@ -257,7 +257,7 @@ describe('TrustClient', () => {
         BigInt(0),
       ]);
 
-      const score = await trust.getTrustScore('did:agentme:base:newagent');
+      const score = await trust.getTrustScore('did:agoramesh:base:newagent');
 
       expect(score.overall).toBe(0);
       expect(score.reputation).toBe(0);
@@ -273,7 +273,7 @@ describe('TrustClient', () => {
         BigInt(10000),
       ]);
 
-      const score = await trust.getTrustScore('did:agentme:base:perfectagent');
+      const score = await trust.getTrustScore('did:agoramesh:base:perfectagent');
 
       expect(score.overall).toBe(1);
       expect(score.reputation).toBe(1);
@@ -291,7 +291,7 @@ describe('TrustClient', () => {
       (global.fetch as Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          did: 'did:agentme:base:agent1',
+          did: 'did:agoramesh:base:agent1',
           score: 0.85,
           reputation: 0.9,
           stake_score: 0.8,
@@ -300,8 +300,8 @@ describe('TrustClient', () => {
       });
 
       const score = await trust.getTrustFromNode(
-        'did:agentme:base:agent1',
-        'https://api.agentme.cz'
+        'did:agoramesh:base:agent1',
+        'https://api.agoramesh.ai'
       );
 
       expect(score.overall).toBe(0.85);
@@ -322,7 +322,7 @@ describe('TrustClient', () => {
       });
 
       await expect(
-        trust.getTrustFromNode('did:agentme:base:unknown', 'https://api.agentme.cz')
+        trust.getTrustFromNode('did:agoramesh:base:unknown', 'https://api.agoramesh.ai')
       ).rejects.toThrow('Failed to get trust from node');
     });
   });
@@ -335,7 +335,7 @@ describe('TrustClient', () => {
     it('should throw when trustRegistry not configured', async () => {
       (client.getContractAddresses as Mock).mockReturnValueOnce({});
 
-      await expect(trust.getTrustScore('did:agentme:base:agent1')).rejects.toThrow(
+      await expect(trust.getTrustScore('did:agoramesh:base:agent1')).rejects.toThrow(
         'TrustRegistry address not configured'
       );
     });
@@ -345,7 +345,7 @@ describe('TrustClient', () => {
         new Error('Contract call reverted')
       );
 
-      await expect(trust.getTrustScore('did:agentme:base:agent1')).rejects.toThrow(
+      await expect(trust.getTrustScore('did:agoramesh:base:agent1')).rejects.toThrow(
         'Contract call reverted'
       );
     });
@@ -383,7 +383,7 @@ describe('TrustClient', () => {
 
       mockPublicClient.readContract.mockResolvedValueOnce(endorsements);
 
-      const result = await trust.getEndorsements('did:agentme:base:agent1');
+      const result = await trust.getEndorsements('did:agoramesh:base:agent1');
 
       expect(result).toHaveLength(3);
       // All endorsements point to the same agent
@@ -410,7 +410,7 @@ describe('TrustClient', () => {
 
       mockPublicClient.readContract.mockResolvedValueOnce(endorsements);
 
-      const result = await trust.getEndorsements('did:agentme:base:agent1');
+      const result = await trust.getEndorsements('did:agoramesh:base:agent1');
 
       const activeEndorsements = result.filter((e) => e.isActive);
       expect(activeEndorsements).toHaveLength(1);
@@ -431,8 +431,8 @@ describe('TrustClient', () => {
         BigInt(5000),
       ]);
 
-      await trust.getTrustScore('did:agentme:base:agent1');
-      await trust.getTrustScore('did:agentme:base:agent1');
+      await trust.getTrustScore('did:agoramesh:base:agent1');
+      await trust.getTrustScore('did:agoramesh:base:agent1');
 
       // Should call contract twice (no caching in TrustClient)
       expect(mockPublicClient.readContract).toHaveBeenCalledTimes(2);

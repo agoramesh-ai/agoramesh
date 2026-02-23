@@ -1,13 +1,13 @@
 /**
- * AgentMe ERC-8004 Bridge Client
+ * AgoraMesh ERC-8004 Bridge Client
  *
  * Client for interacting with the ERC8004Bridge contract, which registers
- * AgentMe agents on the official ERC-8004 registries on Base Sepolia.
+ * AgoraMesh agents on the official ERC-8004 registries on Base Sepolia.
  *
  * @packageDocumentation
  */
 
-import type { AgentMeClient } from './client.js';
+import type { AgoraMeshClient } from './client.js';
 
 // =============================================================================
 // Constants
@@ -78,7 +78,7 @@ const ERC8004_BRIDGE_ABI = [
     outputs: [{ name: '', type: 'uint256' }],
   },
   {
-    name: 'getAgentMeTokenId',
+    name: 'getAgoraMeshTokenId',
     type: 'function',
     stateMutability: 'view',
     inputs: [{ name: 'erc8004AgentId', type: 'uint256' }],
@@ -92,7 +92,7 @@ const ERC8004_BRIDGE_ABI = [
     outputs: [{ name: '', type: 'bool' }],
   },
   {
-    name: 'getAgentMetadata',
+    name: 'getAgoraMeshtadata',
     type: 'function',
     stateMutability: 'view',
     inputs: [
@@ -148,14 +148,14 @@ export interface ERC8004ReputationSummary {
 // =============================================================================
 
 /**
- * Client for interacting with the AgentMe ERC-8004 Bridge.
+ * Client for interacting with the AgoraMesh ERC-8004 Bridge.
  *
- * The bridge registers AgentMe agents on the official ERC-8004 registries
+ * The bridge registers AgoraMesh agents on the official ERC-8004 registries
  * and allows submitting feedback and validations.
  *
  * @example
  * ```typescript
- * const client = new AgentMeClient({ ... });
+ * const client = new AgoraMeshClient({ ... });
  * await client.connect();
  *
  * const bridge = new ERC8004BridgeClient(client, '0xBridgeAddress...');
@@ -169,16 +169,16 @@ export interface ERC8004ReputationSummary {
  * ```
  */
 export class ERC8004BridgeClient {
-  private readonly client: AgentMeClient;
+  private readonly client: AgoraMeshClient;
   private readonly bridgeAddress: `0x${string}`;
 
   /**
    * Create a new ERC8004BridgeClient.
    *
-   * @param client - The AgentMe client instance
+   * @param client - The AgoraMesh client instance
    * @param bridgeAddress - Address of the deployed ERC8004Bridge contract
    */
-  constructor(client: AgentMeClient, bridgeAddress: `0x${string}`) {
+  constructor(client: AgoraMeshClient, bridgeAddress: `0x${string}`) {
     this.client = client;
     this.bridgeAddress = bridgeAddress;
   }
@@ -188,9 +188,9 @@ export class ERC8004BridgeClient {
   // ===========================================================================
 
   /**
-   * Register an AgentMe agent on the official ERC-8004 IdentityRegistry.
+   * Register an AgoraMesh agent on the official ERC-8004 IdentityRegistry.
    *
-   * @param agentTokenId - The AgentMe token ID to register
+   * @param agentTokenId - The AgoraMesh token ID to register
    * @param agentURI - The agent metadata URI (e.g., IPFS CID)
    * @returns Transaction hash and the assigned ERC-8004 agent ID
    */
@@ -233,7 +233,7 @@ export class ERC8004BridgeClient {
   /**
    * Update an agent's URI on the official ERC-8004 IdentityRegistry.
    *
-   * @param agentTokenId - The AgentMe token ID
+   * @param agentTokenId - The AgoraMesh token ID
    * @param newURI - The new metadata URI
    * @returns Transaction hash
    */
@@ -326,9 +326,9 @@ export class ERC8004BridgeClient {
   // ===========================================================================
 
   /**
-   * Get the ERC-8004 agent ID for an AgentMe token ID.
+   * Get the ERC-8004 agent ID for an AgoraMesh token ID.
    *
-   * @param agentTokenId - The AgentMe token ID
+   * @param agentTokenId - The AgoraMesh token ID
    * @returns The ERC-8004 agent ID (0n if not registered)
    */
   async getERC8004AgentId(agentTokenId: bigint): Promise<bigint> {
@@ -347,12 +347,12 @@ export class ERC8004BridgeClient {
   }
 
   /**
-   * Get the AgentMe token ID for an ERC-8004 agent ID.
+   * Get the AgoraMesh token ID for an ERC-8004 agent ID.
    *
    * @param erc8004AgentId - The ERC-8004 agent ID
-   * @returns The AgentMe token ID (0n if not mapped)
+   * @returns The AgoraMesh token ID (0n if not mapped)
    */
-  async getAgentMeTokenId(erc8004AgentId: bigint): Promise<bigint> {
+  async getAgoraMeshTokenId(erc8004AgentId: bigint): Promise<bigint> {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
@@ -362,15 +362,15 @@ export class ERC8004BridgeClient {
     return publicClient.readContract({
       address: this.bridgeAddress,
       abi: ERC8004_BRIDGE_ABI,
-      functionName: 'getAgentMeTokenId',
+      functionName: 'getAgoraMeshTokenId',
       args: [erc8004AgentId],
     });
   }
 
   /**
-   * Check if an AgentMe agent is registered on ERC-8004.
+   * Check if an AgoraMesh agent is registered on ERC-8004.
    *
-   * @param agentTokenId - The AgentMe token ID
+   * @param agentTokenId - The AgoraMesh token ID
    * @returns True if registered
    */
   async isRegistered(agentTokenId: bigint): Promise<boolean> {
@@ -391,11 +391,11 @@ export class ERC8004BridgeClient {
   /**
    * Get agent metadata from the official ERC-8004 IdentityRegistry.
    *
-   * @param agentTokenId - The AgentMe token ID
+   * @param agentTokenId - The AgoraMesh token ID
    * @param metadataKey - The metadata key to query
    * @returns Raw metadata value as hex bytes
    */
-  async getAgentMetadata(
+  async getAgoraMeshtadata(
     agentTokenId: bigint,
     metadataKey: string
   ): Promise<`0x${string}`> {
@@ -408,7 +408,7 @@ export class ERC8004BridgeClient {
     return publicClient.readContract({
       address: this.bridgeAddress,
       abi: ERC8004_BRIDGE_ABI,
-      functionName: 'getAgentMetadata',
+      functionName: 'getAgoraMeshtadata',
       args: [agentTokenId, metadataKey],
     });
   }

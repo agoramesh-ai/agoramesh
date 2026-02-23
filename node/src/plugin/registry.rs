@@ -37,7 +37,7 @@ pub struct RegisteredPlugin {
 /// # Example
 ///
 /// ```rust,ignore
-/// use agentme_node::plugin::{PluginRegistry, PluginBuilder, ActionContext};
+/// use agoramesh_node::plugin::{PluginRegistry, PluginBuilder, ActionContext};
 ///
 /// let mut registry = PluginRegistry::new();
 ///
@@ -50,7 +50,7 @@ pub struct RegisteredPlugin {
 /// // Execute an action
 /// let result = registry.execute_action(
 ///     "my_action",
-///     &ActionContext::new("did:agentme:base:0x..."),
+///     &ActionContext::new("did:agoramesh:base:0x..."),
 ///     serde_json::json!({"param": "value"})
 /// ).await?;
 /// ```

@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeEach, vi, type MockInstance } from 'vitest';
 import { keccak256, toHex } from 'viem';
-import { AgentMeClient, didToHash } from '../../src/client.js';
+import { AgoraMeshClient, didToHash } from '../../src/client.js';
 import {
   TEST_CHAIN_ID,
   TEST_RPC_URL,
@@ -23,7 +23,7 @@ import {
 } from './setup.js';
 
 describe('Agent Registration E2E', () => {
-  let client: AgentMeClient;
+  let client: AgoraMeshClient;
   let mockPublicClient: ReturnType<typeof createMockPublicClient>;
   let mockWalletClient: ReturnType<typeof createMockWalletClient>;
 
@@ -33,7 +33,7 @@ describe('Agent Registration E2E', () => {
     mockWalletClient = createMockWalletClient(mockPublicClient);
 
     // Create client with test config
-    client = new AgentMeClient({
+    client = new AgoraMeshClient({
       rpcUrl: TEST_RPC_URL,
       chainId: TEST_CHAIN_ID,
       privateKey: TEST_PRIVATE_KEYS.client,
@@ -85,7 +85,7 @@ describe('Agent Registration E2E', () => {
     });
 
     it('should generate correct DID hash', () => {
-      const did = 'did:agentme:base:0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+      const did = 'did:agoramesh:base:0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
       const hash = didToHash(did);
 
       // Hash should be deterministic
@@ -108,7 +108,7 @@ describe('Agent Registration E2E', () => {
 
     it('should throw when TrustRegistry not configured', async () => {
       // Create client without TrustRegistry
-      const clientWithoutRegistry = new AgentMeClient({
+      const clientWithoutRegistry = new AgoraMeshClient({
         rpcUrl: TEST_RPC_URL,
         chainId: TEST_CHAIN_ID,
         privateKey: TEST_PRIVATE_KEYS.client,
@@ -304,7 +304,7 @@ describe('Agent Registration E2E', () => {
   describe('Client lifecycle', () => {
     it('should track connection state', () => {
       // Fresh client should not be connected
-      const freshClient = new AgentMeClient({
+      const freshClient = new AgoraMeshClient({
         rpcUrl: TEST_RPC_URL,
         chainId: TEST_CHAIN_ID,
       });

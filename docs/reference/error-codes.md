@@ -1,20 +1,20 @@
-# AgentMe Error Codes
+# AgoraMesh Error Codes
 
 ## Error Format
 
-All AgentMe errors follow this structure:
+All AgoraMesh errors follow this structure:
 
 ```json
 {
   "error": {
     "code": "AGENT_NOT_FOUND",
-    "message": "Agent with DID did:agentme:base:0x... not found in registry",
+    "message": "Agent with DID did:agoramesh:base:0x... not found in registry",
     "details": {
-      "did": "did:agentme:base:0x...",
+      "did": "did:agoramesh:base:0x...",
       "searchedAt": "2026-02-01T12:00:00Z"
     },
     "retryable": false,
-    "documentation": "https://github.com/agentmecz/agentme/blob/master/docs/reference/error-codes.md"
+    "documentation": "https://github.com/agoramesh-ai/agoramesh/blob/master/docs/reference/error-codes.md"
   }
 }
 ```

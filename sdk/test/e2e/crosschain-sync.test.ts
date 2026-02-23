@@ -382,7 +382,7 @@ describe('Cross-Chain Trust Sync: Secondary Requests from Primary', () => {
   });
 
   it('should handle request for unknown DID gracefully', async () => {
-    const unknownDid = 'did:agentme:base:0x0000000000000000000000000000000000000000';
+    const unknownDid = 'did:agoramesh:base:0x0000000000000000000000000000000000000000';
 
     // Request sync for unknown DID (primary has no score)
     const result = await secondaryClient.requestTrustSync({
@@ -411,10 +411,10 @@ describe('Cross-Chain Trust Sync: Multi-Agent Batch Sync', () => {
   let secondaryState: MockChainState;
 
   const agents = [
-    { did: 'did:agentme:base:0x1111111111111111111111111111111111111111', score: 9500 },
-    { did: 'did:agentme:base:0x2222222222222222222222222222222222222222', score: 8000 },
-    { did: 'did:agentme:base:0x3333333333333333333333333333333333333333', score: 7500 },
-    { did: 'did:agentme:base:0x4444444444444444444444444444444444444444', score: 6000 },
+    { did: 'did:agoramesh:base:0x1111111111111111111111111111111111111111', score: 9500 },
+    { did: 'did:agoramesh:base:0x2222222222222222222222222222222222222222', score: 8000 },
+    { did: 'did:agoramesh:base:0x3333333333333333333333333333333333333333', score: 7500 },
+    { did: 'did:agoramesh:base:0x4444444444444444444444444444444444444444', score: 6000 },
   ];
 
   beforeEach(() => {

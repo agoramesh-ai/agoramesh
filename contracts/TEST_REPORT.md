@@ -1,4 +1,4 @@
-# AgentMe Solidity Contracts Test Report
+# AgoraMesh Solidity Contracts Test Report
 
 **Date:** 2026-02-03
 **Network:** Base Sepolia Testnet
@@ -8,14 +8,14 @@
 
 ## Executive Summary
 
-All 314 unit tests pass across 10 test suites. The deployed contracts on Base Sepolia testnet are functioning correctly. The contracts implement the AgentMe specification with high fidelity.
+All 314 unit tests pass across 10 test suites. The deployed contracts on Base Sepolia testnet are functioning correctly. The contracts implement the AgoraMesh specification with high fidelity.
 
 ### Test Results Overview
 
 | Test Suite | Tests | Passed | Failed | Status |
 |------------|-------|--------|--------|--------|
 | TrustRegistry.t.sol | 49 | 49 | 0 | PASS |
-| AgentMeshEscrow.t.sol | 44 | 44 | 0 | PASS |
+| AgoraMeshEscrow.t.sol | 44 | 44 | 0 | PASS |
 | DisputeResolution.t.sol | 34 | 34 | 0 | PASS |
 | StreamingPayments.t.sol | 39 | 39 | 0 | PASS |
 | CrossChainTrustSync.t.sol | 29 | 29 | 0 | PASS |
@@ -33,7 +33,7 @@ All 314 unit tests pass across 10 test suites. The deployed contracts on Base Se
 | Contract | Address | Verified |
 |----------|---------|----------|
 | TrustRegistry | `0x9f84Bda10F11ff6F423154f591F387dAa866c8D6` | Yes |
-| AgentMeshEscrow | `0xBb2f0Eb0f064b62E2116fd79C12dA1dcEb58B695` | Yes |
+| AgoraMeshEscrow | `0xBb2f0Eb0f064b62E2116fd79C12dA1dcEb58B695` | Yes |
 | TieredDisputeResolution | `0xaABd39930324526D282348223efc4Dfcd142Bf3d` | Yes |
 | StreamingPayments | `0x3A335160b3782fd21FF0fe2c6c6323A67bfa7285` | Yes |
 | USDC (Testnet) | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | N/A |
@@ -88,7 +88,7 @@ Weights: 50% reputation, 30% stake, 20% endorsement
 
 ---
 
-## 2. AgentMeshEscrow Contract
+## 2. AgoraMeshEscrow Contract
 
 ### Specification Compliance
 
@@ -290,7 +290,7 @@ Stream cancellation: PASSED
 
 ```bash
 # Run all tests
-cd /Users/vladimir.beran/Documents/Cursor/agentme/contracts
+cd /Users/vladimir.beran/Documents/Cursor/agoramesh/contracts
 forge test -vvv
 
 # Run specific test file
@@ -310,7 +310,7 @@ forge script script/TestnetScenarios.s.sol:TestTrustRegistryOnly --rpc-url base_
 
 ## 8. Conclusion
 
-The AgentMe Solidity contracts are well-tested and specification-compliant. All 314 unit tests pass, and testnet verification confirms correct deployment and functionality.
+The AgoraMesh Solidity contracts are well-tested and specification-compliant. All 314 unit tests pass, and testnet verification confirms correct deployment and functionality.
 
 ### Key Achievements
 

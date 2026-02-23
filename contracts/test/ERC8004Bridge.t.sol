@@ -136,8 +136,8 @@ contract ERC8004BridgeTest is Test {
         uint256 erc8004Id = bridge.registerAgent(agentTokenId1, agentURI1);
 
         assertEq(erc8004Id, 1); // First registration in mock
-        assertEq(bridge.agentMeToERC8004(agentTokenId1), 1);
-        assertEq(bridge.erc8004ToAgentMe(1), agentTokenId1);
+        assertEq(bridge.agoraMeshToERC8004(agentTokenId1), 1);
+        assertEq(bridge.erc8004ToAgoraMesh(1), agentTokenId1);
         assertEq(bridge.totalRegistered(), 1);
         assertTrue(bridge.isRegistered(agentTokenId1));
     }
@@ -159,8 +159,8 @@ contract ERC8004BridgeTest is Test {
         assertEq(id1, 1);
         assertEq(id2, 2);
         assertEq(bridge.totalRegistered(), 2);
-        assertEq(bridge.agentMeToERC8004(agentTokenId1), 1);
-        assertEq(bridge.agentMeToERC8004(agentTokenId2), 2);
+        assertEq(bridge.agoraMeshToERC8004(agentTokenId1), 1);
+        assertEq(bridge.agoraMeshToERC8004(agentTokenId2), 2);
     }
 
     function test_RegisterAgent_AlreadyRegistered_Reverts() public {
@@ -230,7 +230,7 @@ contract ERC8004BridgeTest is Test {
     function test_SubmitFeedback_EmitsEvent() public {
         vm.startPrank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
-        uint256 erc8004Id = bridge.agentMeToERC8004(agentTokenId1);
+        uint256 erc8004Id = bridge.agoraMeshToERC8004(agentTokenId1);
 
         vm.expectEmit(true, true, false, true);
         emit ERC8004Bridge.FeedbackSubmitted(erc8004Id, owner, 85, "quality", "speed");
@@ -241,7 +241,7 @@ contract ERC8004BridgeTest is Test {
     function test_SubmitFeedback_NegativeValue() public {
         vm.startPrank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
-        uint256 erc8004Id = bridge.agentMeToERC8004(agentTokenId1);
+        uint256 erc8004Id = bridge.agoraMeshToERC8004(agentTokenId1);
 
         vm.expectEmit(true, true, false, true);
         emit ERC8004Bridge.FeedbackSubmitted(erc8004Id, owner, -50, "reliability", "");
@@ -262,7 +262,7 @@ contract ERC8004BridgeTest is Test {
 
         vm.startPrank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
-        uint256 erc8004Id = bridge.agentMeToERC8004(agentTokenId1);
+        uint256 erc8004Id = bridge.agoraMeshToERC8004(agentTokenId1);
 
         vm.expectEmit(true, true, false, true);
         emit ERC8004Bridge.ValidationSubmitted(erc8004Id, requestHash, 1, "capability-check");
@@ -273,7 +273,7 @@ contract ERC8004BridgeTest is Test {
     function test_SubmitValidation_AllResponseCodes() public {
         vm.startPrank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
-        uint256 erc8004Id = bridge.agentMeToERC8004(agentTokenId1);
+        uint256 erc8004Id = bridge.agoraMeshToERC8004(agentTokenId1);
 
         // 0 = pending
         bridge.submitValidation(erc8004Id, keccak256("req-0"), 0, "pending");
@@ -305,11 +305,11 @@ contract ERC8004BridgeTest is Test {
         assertEq(bridge.getERC8004AgentId(agentTokenId1), 0);
     }
 
-    function test_GetAgentMeTokenId() public {
+    function test_GetAgoraMeshTokenId() public {
         vm.prank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
 
-        assertEq(bridge.getAgentMeTokenId(1), agentTokenId1);
+        assertEq(bridge.getAgoraMeshTokenId(1), agentTokenId1);
     }
 
     function test_IsRegistered() public {
@@ -321,22 +321,22 @@ contract ERC8004BridgeTest is Test {
         assertTrue(bridge.isRegistered(agentTokenId1));
     }
 
-    function test_GetAgentMetadata() public {
+    function test_GetAgoraMeshtadata() public {
         vm.prank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
 
         // Set metadata on the mock registry directly
-        uint256 erc8004Id = bridge.agentMeToERC8004(agentTokenId1);
+        uint256 erc8004Id = bridge.agoraMeshToERC8004(agentTokenId1);
         identityRegistry.setMetadata(erc8004Id, "category", abi.encode("AI Assistant"));
 
-        bytes memory result = bridge.getAgentMetadata(agentTokenId1, "category");
+        bytes memory result = bridge.getAgoraMeshtadata(agentTokenId1, "category");
         string memory decoded = abi.decode(result, (string));
         assertEq(decoded, "AI Assistant");
     }
 
-    function test_GetAgentMetadata_NotRegistered_Reverts() public {
+    function test_GetAgoraMeshtadata_NotRegistered_Reverts() public {
         vm.expectRevert(abi.encodeWithSelector(ERC8004Bridge.AgentNotRegistered.selector, agentTokenId1));
-        bridge.getAgentMetadata(agentTokenId1, "category");
+        bridge.getAgoraMeshtadata(agentTokenId1, "category");
     }
 
     function test_GetReputationSummary() public {
@@ -405,12 +405,12 @@ contract ERC8004BridgeTest is Test {
         vm.stopPrank();
 
         // Forward mapping
-        assertEq(bridge.agentMeToERC8004(agentTokenId1), erc8004Id1);
-        assertEq(bridge.agentMeToERC8004(agentTokenId2), erc8004Id2);
+        assertEq(bridge.agoraMeshToERC8004(agentTokenId1), erc8004Id1);
+        assertEq(bridge.agoraMeshToERC8004(agentTokenId2), erc8004Id2);
 
         // Reverse mapping
-        assertEq(bridge.erc8004ToAgentMe(erc8004Id1), agentTokenId1);
-        assertEq(bridge.erc8004ToAgentMe(erc8004Id2), agentTokenId2);
+        assertEq(bridge.erc8004ToAgoraMesh(erc8004Id1), agentTokenId1);
+        assertEq(bridge.erc8004ToAgoraMesh(erc8004Id2), agentTokenId2);
 
         // No cross-contamination
         assertTrue(erc8004Id1 != erc8004Id2);
@@ -426,7 +426,7 @@ contract ERC8004BridgeTest is Test {
         uint256 erc8004Id = bridge.registerAgent(tokenId, uri);
 
         assertTrue(erc8004Id > 0);
-        assertEq(bridge.agentMeToERC8004(tokenId), erc8004Id);
-        assertEq(bridge.erc8004ToAgentMe(erc8004Id), tokenId);
+        assertEq(bridge.agoraMeshToERC8004(tokenId), erc8004Id);
+        assertEq(bridge.erc8004ToAgoraMesh(erc8004Id), tokenId);
     }
 }

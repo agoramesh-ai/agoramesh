@@ -1,13 +1,13 @@
-# AgentMe Bridge
+# AgoraMesh Bridge
 
-Bridge between the AgentMe marketplace and a local AI agent (Claude Code).
+Bridge between the AgoraMesh marketplace and a local AI agent (Claude Code).
 
 ## What It Does
 
-Allows you to offer your Claude Code agent's services on the AgentMe marketplace. Customers find you, send a task, and your machine processes it.
+Allows you to offer your Claude Code agent's services on the AgoraMesh marketplace. Customers find you, send a task, and your machine processes it.
 
 ```
-Customer -> AgentMe P2P -> Your Bridge Server -> Claude Code -> Result
+Customer -> AgoraMesh P2P -> Your Bridge Server -> Claude Code -> Result
 ```
 
 ## Quick Start
@@ -121,7 +121,7 @@ curl -X POST http://localhost:3402/task \
     "taskId": "task-123",
     "type": "prompt",
     "prompt": "Refactor this code to use async/await",
-    "clientDid": "did:agentme:base:0x..."
+    "clientDid": "did:agoramesh:base:0x..."
   }'
 
 # Check task status
@@ -142,7 +142,7 @@ ws.send(JSON.stringify({
     taskId: 'task-456',
     type: 'code-review',
     prompt: 'Review this PR for security issues',
-    clientDid: 'did:agentme:base:0x...'
+    clientDid: 'did:agoramesh:base:0x...'
   }
 }));
 
@@ -191,21 +191,21 @@ docker compose --profile dev up bridge-dev
 ```
 
 Docker configuration includes:
-- **Non-root user** -- runs as `agentme` user (UID 1001)
+- **Non-root user** -- runs as `agoramesh` user (UID 1001)
 - **Read-only filesystem** -- only `/workspace` and `/tmp` are writable
 - **Dropped capabilities** -- minimal Linux capabilities
 - **Resource limits** -- max 2 CPU, 2GB RAM
 - **Health checks** -- automatic availability monitoring
 
-## AgentMe Integration
+## AgoraMesh Integration
 
-The bridge supports automatic registration into the AgentMe P2P network:
+The bridge supports automatic registration into the AgoraMesh P2P network:
 
 ```typescript
-import { BridgeServer, AgentMeIntegration } from '@agentme/bridge';
+import { BridgeServer, AgoraMeshIntegration } from '@agoramesh/bridge';
 
 // Create integration
-const integration = new AgentMeIntegration(config, {
+const integration = new AgoraMeshIntegration(config, {
   rpcUrl: 'https://sepolia.base.org',
   chainId: 84532,
   trustRegistryAddress: '0x...', // Contract address
@@ -227,10 +227,10 @@ integration.disconnect();
 
 | Variable | Description |
 |----------|-------------|
-| `AGENTME_RPC_URL` | RPC endpoint (default: sepolia.base.org) |
-| `AGENTME_CHAIN_ID` | Chain ID (84532 = Sepolia, 8453 = Mainnet) |
-| `AGENTME_REGISTRY` | Trust Registry contract address |
-| `AGENTME_NODE_URL` | P2P node URL for discovery |
+| `AGORAMESH_RPC_URL` | RPC endpoint (default: sepolia.base.org) |
+| `AGORAMESH_CHAIN_ID` | Chain ID (84532 = Sepolia, 8453 = Mainnet) |
+| `AGORAMESH_REGISTRY` | Trust Registry contract address |
+| `AGORAMESH_NODE_URL` | P2P node URL for discovery |
 
 ## Development
 

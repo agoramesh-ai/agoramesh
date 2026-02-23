@@ -1,12 +1,12 @@
 /**
  * Escrow Integration Module
  *
- * Integrates the Bridge with AgentMeEscrow contract for:
+ * Integrates the Bridge with AgoraMeshEscrow contract for:
  * - Validating escrow status before task execution
  * - Confirming delivery after task completion
  * - Generating output hashes for verification
  *
- * @see contracts/src/AgentMeEscrow.sol
+ * @see contracts/src/AgoraMeshEscrow.sol
  */
 
 import { createPublicClient, createWalletClient, http, keccak256, toHex } from 'viem';
@@ -49,7 +49,7 @@ export interface Escrow {
  * Configuration for escrow client
  */
 export interface EscrowConfig {
-  /** Address of the AgentMeEscrow contract */
+  /** Address of the AgoraMeshEscrow contract */
   escrowAddress: `0x${string}`;
   /** RPC URL for the chain */
   rpcUrl: string;
@@ -110,7 +110,7 @@ const ESCROW_ABI = [
 ] as const;
 
 /**
- * Escrow Client for interacting with AgentMeEscrow contract
+ * Escrow Client for interacting with AgoraMeshEscrow contract
  *
  * @example
  * ```typescript

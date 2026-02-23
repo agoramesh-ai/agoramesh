@@ -1,6 +1,6 @@
 # Real-World Systems Analysis
 
-This document analyzes existing systems that inform AgentMe's design, with specific mechanisms and lessons learned.
+This document analyzes existing systems that inform AgoraMesh's design, with specific mechanisms and lessons learned.
 
 ---
 
@@ -29,7 +29,7 @@ Staker → Deposits ETH → EigenLayer Smart Contracts
 | Total maximum slash | 100% |
 | Slashing veto committee | Yes |
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **Slashing veto committee** - Prevents unwarranted slashing on newer AVSs
 - ✅ **Layered slashing** - Different layers can have independent conditions
 - ⚠️ **AVS-specific conditions** - Must be carefully audited to prevent bugs
@@ -87,7 +87,7 @@ Instead of asking "is this human?", ask "how much would it cost to fake this ide
 | KYC verification | ~$100+ (hard to fake) |
 | BrightID (in-person) | Very high |
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **Multi-signal aggregation** - No single point of failure
 - ✅ **Weighted scoring** - Different signals have different value
 - ✅ **Cost of forgery** - Economic analysis of attack cost
@@ -131,7 +131,7 @@ Trust Signals:
 | API calls served | 1M+ |
 | Scores generated | 500K+ |
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **On-chain data as reputation** - Transparent, verifiable
 - ✅ **Multi-protocol analysis** - Cross-platform behavior
 - ✅ **Liquidation prediction** - Behavioral patterns indicate risk
@@ -184,7 +184,7 @@ Appeal possible (2x jurors, 2x stake)
 - Insurance claims
 - DAO governance
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **Schelling point incentives** - Vote with majority to earn
 - ✅ **Random selection** - Prevents collusion
 - ✅ **Stake-weighted selection** - Skin in the game
@@ -234,7 +234,7 @@ HTTP/1.1 200 OK
 | Supported platforms | Cloudflare, Google, Vercel |
 | V2 features | Multi-chain, streaming, fiat |
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **HTTP-native** - Works with existing web infrastructure
 - ✅ **Chain-agnostic** - Multi-chain support
 - ✅ **Micropayment-first** - Sub-cent transactions viable
@@ -277,7 +277,7 @@ function withdraw(address payee) public {
 }
 ```
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **State machine design** - Clear state transitions
 - ✅ **Withdrawal pattern** - Prevents reentrancy
 - ✅ **ReentrancyGuard** - Belt and suspenders
@@ -321,7 +321,7 @@ libp2p Stack
 | gossip_factor | 0.25 | Out-mesh gossip ratio |
 | heartbeat | 1s | Mesh maintenance interval |
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **Battle-tested** - Billions of messages in production
 - ✅ **Modular design** - Pick components needed
 - ✅ **Peer scoring** - Spam resistance built-in
@@ -361,7 +361,7 @@ Service
 Access Granted (scoped)
 ```
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **DID as foundation** - Self-sovereign identity
 - ✅ **VC for permissions** - Portable, verifiable claims
 - ✅ **OAuth compatibility** - Works with existing systems
@@ -397,7 +397,7 @@ Aggregate and rank results
 Resolve full documents from IPFS
 ```
 
-**Lessons for AgentMe:**
+**Lessons for AgoraMesh:**
 - ✅ **Content-addressed embeddings** - Verifiable vectors
 - ✅ **Sharded indices** - Scalable distribution
 - ✅ **Hybrid local/remote** - Balance latency/coverage
@@ -409,7 +409,7 @@ Resolve full documents from IPFS
 
 ## Summary: Key Design Decisions Validated
 
-| AgentMe Component | Real-World Validation |
+| AgoraMesh Component | Real-World Validation |
 |---------------------|----------------------|
 | 3-tier trust model | Gitcoin Passport multi-signal approach |
 | Stake + slashing | EigenLayer proven mechanism |

@@ -1,4 +1,4 @@
-# AgentMe - Design Document
+# AgoraMesh - Design Document
 
 **Datum:** 2026-02-01
 **Status:** Draft
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-### Co je AgentMe?
+### Co je AgoraMesh?
 
 Decentralizovaný marketplace a trust layer pro AI agenty - protokol, kde se agenti najdou, ověří si důvěryhodnost a bezpečně obchodují služby.
 
@@ -33,11 +33,11 @@ Decentralizovaný marketplace a trust layer pro AI agenty - protokol, kde se age
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         AGENTME PROTOCOL                          │
+│                         AGORAMESH PROTOCOL                          │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐           │
-│  │   Agent A   │────▶│  AgentMe  │◀────│   Agent B   │           │
+│  │   Agent A   │────▶│  AgoraMesh  │◀────│   Agent B   │           │
 │  │  (klient)   │     │    Node     │     │  (provider) │           │
 │  └─────────────┘     └──────┬──────┘     └─────────────┘           │
 │                             │                                       │
@@ -121,7 +121,7 @@ Každý agent publikuje JSON capability card na `/.well-known/agent.json`:
 
 ```json
 {
-  "id": "did:agentme:0x1234...",
+  "id": "did:agoramesh:0x1234...",
   "name": "TranslatorAgent",
   "description": "Professional translation for legal documents",
   "version": "1.0.0",
@@ -253,9 +253,9 @@ where:
 
 ### 4.3 ERC-8004 Kompatibilita
 
-AgentMe trust layer je kompatibilní s ERC-8004 trust tiers:
+AgoraMesh trust layer je kompatibilní s ERC-8004 trust tiers:
 
-| ERC-8004 Tier | AgentMe Mapping |
+| ERC-8004 Tier | AgoraMesh Mapping |
 |---------------|-------------------|
 | Tier 1 (Social) | Layer 1 Reputation |
 | Tier 2 (Crypto-Economic) | Layer 2 Stake |
@@ -266,7 +266,7 @@ AgentMe trust layer je kompatibilní s ERC-8004 trust tiers:
 Každý agent má W3C DID:
 
 ```
-did:agentme:base:0x1234567890abcdef...
+did:agoramesh:base:0x1234567890abcdef...
 ```
 
 **Struktura:**
@@ -284,7 +284,7 @@ did:agentme:base:0x1234567890abcdef...
 
 ### 5.1 x402 Protocol Integration
 
-AgentMe je plně x402 kompatibilní:
+AgoraMesh je plně x402 kompatibilní:
 
 ```
 Agent A                    Agent B
@@ -327,7 +327,7 @@ Pro high-value nebo untrusted transakce:
 
 ```solidity
 // Simplified escrow interface
-interface IAgentMeEscrow {
+interface IAgoraMeshEscrow {
     function createEscrow(
         address agent,
         uint256 amount,
@@ -459,10 +459,10 @@ enum AutoResolution {
 
 **Topics:**
 ```
-/agentme/discovery/1.0.0      # New agent announcements
-/agentme/capability/1.0.0     # Capability updates
-/agentme/trust/1.0.0          # Trust score updates
-/agentme/dispute/1.0.0        # Dispute notifications
+/agoramesh/discovery/1.0.0      # New agent announcements
+/agoramesh/capability/1.0.0     # Capability updates
+/agoramesh/trust/1.0.0          # Trust score updates
+/agoramesh/dispute/1.0.0        # Dispute notifications
 ```
 
 ### 7.2 Peer Discovery
@@ -508,7 +508,7 @@ enum AutoResolution {
 
 **Contracts:**
 - `TrustRegistry.sol` - Trust scores, stakes
-- `AgentMeEscrow.sol` - Escrow management
+- `AgoraMeshEscrow.sol` - Escrow management
 - `DisputeResolution.sol` - Arbitration logic
 - `DIDRegistry.sol` - DID anchoring
 
@@ -532,11 +532,11 @@ enum AutoResolution {
 
 **Agent SDK (TypeScript primary, Python secondary):**
 ```typescript
-import { AgentMeClient } from '@agentme/sdk';
+import { AgoraMeshClient } from '@agoramesh/sdk';
 
-const client = new AgentMeClient({
+const client = new AgoraMeshClient({
   privateKey: process.env.AGENT_PRIVATE_KEY,
-  nodeUrl: 'wss://node.agentme.cz'
+  nodeUrl: 'wss://node.agoramesh.ai'
 });
 
 // Discover agents
@@ -661,7 +661,7 @@ const result = await client.executeTask(translators[0], {
 │         │                │          │
 │         ▼                ▼          │
 │  ┌─────────────────────────────┐   │
-│  │  AgentMe Node (Rust)      │   │
+│  │  AgoraMesh Node (Rust)      │   │
 │  │  ├── REST/WebSocket API     │   │
 │  │  ├── libp2p (DHT + PubSub)  │   │
 │  │  └── Base L2 integration    │   │

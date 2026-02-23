@@ -1,11 +1,11 @@
 {
-  "name": "AgentMe Bridge (Claude Code)",
-  "description": "AI coding agent on the AgentMe network. Executes software engineering tasks: code review, bug fixes, refactoring, and feature implementation. Powered by Claude Code.",
+  "name": "AgoraMesh Bridge (Claude Code)",
+  "description": "AI coding agent on the AgoraMesh network. Executes software engineering tasks: code review, bug fixes, refactoring, and feature implementation. Powered by Claude Code.",
   "agentVersion": "1.0.0",
   "protocolVersion": "1.0",
   "provider": {
-    "name": "AgentMe",
-    "url": "https://agentme.cz"
+    "name": "AgoraMesh",
+    "url": "https://agoramesh.ai"
   },
   "capabilities": {
     "streaming": false,
@@ -19,7 +19,7 @@
       "bearer"
     ],
     "didMethods": [
-      "did:agentme",
+      "did:agoramesh",
       "did:key"
     ]
   },

@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  AgentMeError,
+  AgoraMeshError,
   EscrowNotFoundError,
   EscrowOperationError,
   PaymentValidationError,
@@ -23,18 +23,18 @@ import {
 // Error Type Tests
 // =============================================================================
 
-describe('AgentMeError', () => {
+describe('AgoraMeshError', () => {
   it('should set message, code, and name', () => {
-    const err = new AgentMeError('test error', 'TEST_CODE');
+    const err = new AgoraMeshError('test error', 'TEST_CODE');
     expect(err.message).toBe('test error');
     expect(err.code).toBe('TEST_CODE');
-    expect(err.name).toBe('AgentMeError');
+    expect(err.name).toBe('AgoraMeshError');
     expect(err instanceof Error).toBe(true);
   });
 
   it('should store cause', () => {
     const cause = new Error('root cause');
-    const err = new AgentMeError('wrapper', 'WRAP', cause);
+    const err = new AgoraMeshError('wrapper', 'WRAP', cause);
     expect(err.cause).toBe(cause);
   });
 });
@@ -48,9 +48,9 @@ describe('EscrowNotFoundError', () => {
     expect(err.name).toBe('EscrowNotFoundError');
   });
 
-  it('should be an instance of AgentMeError', () => {
+  it('should be an instance of AgoraMeshError', () => {
     const err = new EscrowNotFoundError('1');
-    expect(err instanceof AgentMeError).toBe(true);
+    expect(err instanceof AgoraMeshError).toBe(true);
     expect(err instanceof Error).toBe(true);
   });
 });
@@ -91,8 +91,8 @@ describe('PaymentParseError', () => {
 
 describe('RegistrationError', () => {
   it('should store DID', () => {
-    const err = new RegistrationError('already registered', 'did:agentme:base:agent1');
-    expect(err.did).toBe('did:agentme:base:agent1');
+    const err = new RegistrationError('already registered', 'did:agoramesh:base:agent1');
+    expect(err.did).toBe('did:agoramesh:base:agent1');
     expect(err.code).toBe('REGISTRATION_FAILED');
     expect(err.name).toBe('RegistrationError');
   });
@@ -140,14 +140,14 @@ describe('Result pattern', () => {
     });
 
     it('should return false for failure result', () => {
-      const result: Result<number> = failure(new AgentMeError('err', 'ERR'));
+      const result: Result<number> = failure(new AgoraMeshError('err', 'ERR'));
       expect(isSuccess(result)).toBe(false);
     });
   });
 
   describe('isFailure()', () => {
     it('should return true for failure result', () => {
-      const result: Result<number> = failure(new AgentMeError('err', 'ERR'));
+      const result: Result<number> = failure(new AgoraMeshError('err', 'ERR'));
       expect(isFailure(result)).toBe(true);
     });
 
@@ -159,7 +159,7 @@ describe('Result pattern', () => {
 
   describe('type narrowing', () => {
     it('should narrow to value on isSuccess', () => {
-      const result: Result<string, AgentMeError> = success('hello');
+      const result: Result<string, AgoraMeshError> = success('hello');
       if (isSuccess(result)) {
         // TypeScript should narrow result to { success: true, value: string }
         expect(result.value).toBe('hello');

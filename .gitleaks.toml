@@ -1,7 +1,7 @@
 # Gitleaks configuration
 # https://github.com/gitleaks/gitleaks#configuration
 
-title = "AgentMe gitleaks config"
+title = "AgoraMesh gitleaks config"
 
 [allowlist]
   description = "Global allowlist"

@@ -6,7 +6,7 @@ use std::path::Path;
 use crate::error::{Error, Result};
 use crate::persistence::PersistenceConfig;
 
-/// Main configuration for an AgentMe node.
+/// Main configuration for an AgoraMesh node.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeConfig {
     /// Node identity configuration.
@@ -210,7 +210,7 @@ mod tests {
         };
 
         // Act
-        let node_info = config.to_node_info("did:agentme:base:test");
+        let node_info = config.to_node_info("did:agoramesh:base:test");
 
         // Assert
         assert!(node_info.is_some());
@@ -218,7 +218,7 @@ mod tests {
         assert_eq!(info.name, "TestNode");
         assert_eq!(info.description, "A test node");
         assert_eq!(info.url, "https://example.com");
-        assert_eq!(info.did, "did:agentme:base:test");
+        assert_eq!(info.did, "did:agoramesh:base:test");
     }
 
     #[test]
@@ -231,7 +231,7 @@ mod tests {
         };
 
         // Act
-        let node_info = config.to_node_info("did:agentme:base:test");
+        let node_info = config.to_node_info("did:agoramesh:base:test");
 
         // Assert
         assert!(node_info.is_none(), "Should return None without name");
@@ -241,7 +241,7 @@ mod tests {
     fn test_node_config_get_node_info_returns_some_with_complete_config() {
         // Arrange
         let mut config = NodeConfig::default();
-        config.identity.did = Some("did:agentme:base:mynode".to_string());
+        config.identity.did = Some("did:agoramesh:base:mynode".to_string());
         config.node_info = NodeInfoConfig {
             name: Some("MyNode".to_string()),
             description: Some("My awesome node".to_string()),
@@ -255,7 +255,7 @@ mod tests {
         assert!(node_info.is_some());
         let info = node_info.unwrap();
         assert_eq!(info.name, "MyNode");
-        assert_eq!(info.did, "did:agentme:base:mynode");
+        assert_eq!(info.did, "did:agoramesh:base:mynode");
     }
 
     #[test]
@@ -283,7 +283,7 @@ mod tests {
         let toml_content = r#"
 [identity]
 key_file = "node.key"
-did = "did:agentme:base:loaded"
+did = "did:agoramesh:base:loaded"
 
 [network]
 listen_addresses = ["/ip4/0.0.0.0/tcp/9000"]
@@ -323,7 +323,7 @@ url = "https://loaded.example.com"
         assert_eq!(info.name, "LoadedNode");
         assert_eq!(info.description, "Node loaded from config");
         assert_eq!(info.url, "https://loaded.example.com");
-        assert_eq!(info.did, "did:agentme:base:loaded");
+        assert_eq!(info.did, "did:agoramesh:base:loaded");
     }
 
     #[test]

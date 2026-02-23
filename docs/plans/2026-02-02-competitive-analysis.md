@@ -1,4 +1,4 @@
-# AgentMe - Competitive Analysis & Feature Roadmap
+# AgoraMesh - Competitive Analysis & Feature Roadmap
 
 **Datum:** 2026-02-02
 **Status:** Draft
@@ -8,7 +8,7 @@
 
 ## 1. Executive Summary
 
-Tento dokument analyzuje konkurenční projekty v oblasti decentralizovaných AI agent marketplaces a identifikuje klíčové features, které by AgentMe měl implementovat pro získání konkurenční výhody.
+Tento dokument analyzuje konkurenční projekty v oblasti decentralizovaných AI agent marketplaces a identifikuje klíčové features, které by AgoraMesh měl implementovat pro získání konkurenční výhody.
 
 ### Klíčoví konkurenti
 
@@ -19,9 +19,9 @@ Tento dokument analyzuje konkurenční projekty v oblasti decentralizovaných AI
 | **[Fetch.ai / ASI Alliance](https://fetch.ai)** | ~$1.5B | Enterprise AI, Visa integrace | ✅ Apache 2.0 | 🟡 Střední |
 | **[Bittensor](https://bittensor.com)** | ~$3B | Decentralizovaný compute | ✅ MIT License | 🟢 Nízký |
 
-### Strategická pozice AgentMe
+### Strategická pozice AgoraMesh
 
-AgentMe má unikátní příležitost v:
+AgoraMesh má unikátní příležitost v:
 1. **Enterprise compliance** (HIPAA, SOC2, GDPR)
 2. **Dispute resolution** (tiered system - jediný na trhu)
 3. **Claude Code native bridge** (Anthropic ekosystém)
@@ -116,7 +116,7 @@ Download: https://olas.network/pearl#download
 | On-chain audit trail | Request/response on-chain | 🟡 Medium |
 | Multi-chain | 9 chains support | 🔴 High |
 
-**Slabiny (příležitosti pro AgentMe):**
+**Slabiny (příležitosti pro AgoraMesh):**
 - ❌ Žádný dispute resolution systém
 - ❌ Žádná enterprise compliance
 - ❌ Crypto-only (žádný fiat off-ramp)
@@ -422,7 +422,7 @@ npm create onchain-agent@latest
 | **ElizaOS** | Open | [elizaOS/eliza](https://github.com/elizaOS/eliza) | Kompletní framework |
 | **AgentKit** | Open | [coinbase/agentkit](https://github.com/coinbase/agentkit) | Kompletní SDK |
 
-**Závěr:** Většina konkurence je open source. AgentMe může:
+**Závěr:** Většina konkurence je open source. AgoraMesh může:
 1. Studovat jejich implementace
 2. Forkovat užitečné části (s respektem k licencím)
 3. Být kompatibilní (ne konkurovat na úrovni protokolu)
@@ -433,7 +433,7 @@ npm create onchain-agent@latest
 
 ### 4.1 Core Features (ověřeno)
 
-| Feature | AgentMe | Olas | Virtuals | Fetch.ai |
+| Feature | AgoraMesh | Olas | Virtuals | Fetch.ai |
 |---------|-----------|------|----------|----------|
 | Agent Discovery | ✅ DHT + semantic | ✅ Marketplace | ❌ Manual | ✅ Agentverse |
 | Trust/Reputation | ✅ On-chain | ❌ None | ❌ None | ⚠️ Basic |
@@ -446,9 +446,9 @@ npm create onchain-agent@latest
 | Enterprise Compliance | ⚠️ Planned | ❌ None | ❌ None | ✅ Partial |
 | Fiat Payments | ❌ None | ❌ None | ❌ None | ✅ Visa |
 
-### 4.2 Dispute Resolution (AgentMe unique)
+### 4.2 Dispute Resolution (AgoraMesh unique)
 
-AgentMe má jediný tiered dispute resolution systém na trhu:
+AgoraMesh má jediný tiered dispute resolution systém na trhu:
 
 | Tier | Částka | Mechanismus | Inspirace |
 |------|--------|-------------|-----------|
@@ -566,7 +566,7 @@ contract NamespaceRegistry {
         bytes32[] agentDIDs;   // Agents under this namespace
     }
 
-    // @anthropic/claude-code → did:agentme:base:0x...
+    // @anthropic/claude-code → did:agoramesh:base:0x...
     function resolveAgent(string memory fullName)
         external view returns (bytes32 agentDID);
 }
@@ -576,7 +576,7 @@ contract NamespaceRegistry {
 
 ## 8. Competitive Advantages Summary
 
-### Co AgentMe má, co ostatní nemají:
+### Co AgoraMesh má, co ostatní nemají:
 
 | Advantage | Popis | Konkurence |
 |-----------|-------|------------|
@@ -593,7 +593,7 @@ contract NamespaceRegistry {
       ┌──────────────────┼──────────────────┐
       │                  │                  │
       │    ┌─────────────┴───┐              │
-      │    │   AgentMe     │              │
+      │    │   AgoraMesh     │              │
       │    │   (Enterprise)  │              │
       │    └─────────────────┘              │
       │              ┌───────┐              │
@@ -649,7 +649,7 @@ contract NamespaceRegistry {
 2. [ ] Deep dive do Olas open-source kódu
 3. [ ] PoC multi-chain s Wormhole
 4. [ ] Design marketplace UI mockups
-5. [ ] Evaluate Virtuals tokenization model pro AgentMe
+5. [ ] Evaluate Virtuals tokenization model pro AgoraMesh
 
 ---
 

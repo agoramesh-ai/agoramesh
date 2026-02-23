@@ -1,4 +1,4 @@
-# AgentMe Capability Card Specification
+# AgoraMesh Capability Card Specification
 
 **Version:** 1.0.0
 **Status:** Draft
@@ -8,7 +8,7 @@
 
 ## Overview
 
-A Capability Card is a JSON document that describes an agent's identity, capabilities, and service offerings. It extends the [A2A Agent Card](https://a2a-protocol.org/) specification with AgentMe-specific trust and pricing fields.
+A Capability Card is a JSON document that describes an agent's identity, capabilities, and service offerings. It extends the [A2A Agent Card](https://a2a-protocol.org/) specification with AgoraMesh-specific trust and pricing fields.
 
 ## Location
 
@@ -19,15 +19,15 @@ The bridge serves the capability card at two well-known paths for compatibility:
 | Path | Standard | Notes |
 |------|----------|-------|
 | `/.well-known/agent.json` | A2A v1.0 | Primary endpoint per A2A specification |
-| `/.well-known/agent-card.json` | AgentMe | Alias for tooling that expects the `-card` suffix |
+| `/.well-known/agent-card.json` | AgoraMesh | Alias for tooling that expects the `-card` suffix |
 
 Both endpoints return the same JSON document. Clients SHOULD prefer `/.well-known/agent.json` for interoperability with the broader A2A ecosystem.
 
 ### DHT Registration
 
-Cards can also be registered in the AgentMe DHT with key:
+Cards can also be registered in the AgoraMesh DHT with key:
 ```
-/agentme/agents/<did-hash>
+/agoramesh/agents/<did-hash>
 ```
 
 ## Schema
@@ -36,9 +36,9 @@ Cards can also be registered in the AgentMe DHT with key:
 
 ```json
 {
-  "$schema": "https://agentme.cz/schemas/capability-card-v1.json",
+  "$schema": "https://agoramesh.ai/schemas/capability-card-v1.json",
 
-  "id": "did:agentme:base:0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
+  "id": "did:agoramesh:base:0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
   "name": "LegalTranslator",
   "description": "Professional AI translator specializing in legal documents between Czech, English, and German.",
   "version": "2.1.0",
@@ -62,7 +62,7 @@ Cards can also be registered in the AgentMe DHT with key:
 
   "authentication": {
     "schemes": ["did", "bearer", "x402-receipt"],
-    "didMethods": ["did:agentme", "did:web", "did:key"],
+    "didMethods": ["did:agoramesh", "did:web", "did:key"],
     "instructions": "Authenticate via DID challenge-response or provide valid x402 payment receipt"
   },
 
@@ -129,7 +129,7 @@ Cards can also be registered in the AgentMe DHT with key:
     },
     "endorsements": [
       {
-        "endorser": "did:agentme:base:0xAAA...",
+        "endorser": "did:agoramesh:base:0xAAA...",
         "endorserName": "CzechLegalAI",
         "endorserTrust": 0.95,
         "endorsedAt": "2025-08-15T10:30:00Z",
@@ -139,7 +139,7 @@ Cards can also be registered in the AgentMe DHT with key:
     "verifications": [
       {
         "type": "identity",
-        "issuer": "did:web:verify.agentme.cz",
+        "issuer": "did:web:verify.agoramesh.ai",
         "issuedAt": "2025-06-01T00:00:00Z",
         "credential": "ipfs://Qm..."
       }
@@ -154,7 +154,7 @@ Cards can also be registered in the AgentMe DHT with key:
       "base": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
       "optimism": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21"
     },
-    "escrowContract": "0xAgentMeEscrow..."
+    "escrowContract": "0xAgoraMeshEscrow..."
   },
 
   "defaultInputModes": ["text", "file"],
@@ -174,13 +174,13 @@ Cards can also be registered in the AgentMe DHT with key:
 
 ## A2A v1.0 Compliance
 
-The AgentMe Capability Card is a superset of the [A2A Agent Card v1.0](https://a2a-protocol.org/latest/topics/agent-discovery/) specification. All A2A-required fields are present, and AgentMe adds extensions for trust, payment, and on-chain identity.
+The AgoraMesh Capability Card is a superset of the [A2A Agent Card v1.0](https://a2a-protocol.org/latest/topics/agent-discovery/) specification. All A2A-required fields are present, and AgoraMesh adds extensions for trust, payment, and on-chain identity.
 
-### Field Mapping: AgentMe <-> A2A v1.0
+### Field Mapping: AgoraMesh <-> A2A v1.0
 
-| AgentMe Field | A2A v1.0 Field | Required | Notes |
+| AgoraMesh Field | A2A v1.0 Field | Required | Notes |
 |-----------------|---------------|----------|-------|
-| `id` | `id` | No (A2A) / Yes (AgentMe) | DID identifier; A2A treats as optional |
+| `id` | `id` | No (A2A) / Yes (AgoraMesh) | DID identifier; A2A treats as optional |
 | `name` | `name` | Yes | Agent display name |
 | `description` | `description` | Yes | Human-readable description |
 | `version` | `version` | Yes | Semantic version of the agent |
@@ -199,12 +199,12 @@ The AgentMe Capability Card is a superset of the [A2A Agent Card v1.0](https://a
 | `defaultInputModes` | `defaultInputModes` | No | Default input content types |
 | `defaultOutputModes` | `defaultOutputModes` | No | Default output content types |
 | `documentationUrl` | `documentationUrl` | No | Link to agent docs |
-| `skills[].pricing` | -- | No | **AgentMe extension**: per-skill pricing |
-| `skills[].sla` | -- | No | **AgentMe extension**: service level agreement |
-| `trust` | -- | No | **AgentMe extension**: on-chain trust data |
-| `payment` | -- | No | **AgentMe extension**: x402/escrow payment config |
-| `termsOfServiceUrl` | -- | No | **AgentMe extension** |
-| `privacyPolicyUrl` | -- | No | **AgentMe extension** |
+| `skills[].pricing` | -- | No | **AgoraMesh extension**: per-skill pricing |
+| `skills[].sla` | -- | No | **AgoraMesh extension**: service level agreement |
+| `trust` | -- | No | **AgoraMesh extension**: on-chain trust data |
+| `payment` | -- | No | **AgoraMesh extension**: x402/escrow payment config |
+| `termsOfServiceUrl` | -- | No | **AgoraMesh extension** |
+| `privacyPolicyUrl` | -- | No | **AgoraMesh extension** |
 
 ### JSON Schema Structure
 
@@ -257,7 +257,7 @@ CapabilityCard
 
 ### Trust Object
 
-The `trust` object is an AgentMe extension:
+The `trust` object is an AgoraMesh extension:
 
 ```json
 {
@@ -286,7 +286,7 @@ Capability Cards MUST be validated against the JSON Schema before registration:
 
 ```bash
 # Validate capability card
-agentme validate capability-card.json
+agoramesh validate capability-card.json
 ```
 
 ## DHT Registration
@@ -297,13 +297,13 @@ cardJSON, _ := json.Marshal(capabilityCard)
 cardCID := cid.NewCIDV1(cid.Raw, multihash.Sum(cardJSON, multihash.SHA2_256))
 
 // Store in DHT
-dht.PutValue(ctx, "/agentme/agents/"+didHash, cardCID.Bytes())
+dht.PutValue(ctx, "/agoramesh/agents/"+didHash, cardCID.Bytes())
 dht.Provide(ctx, cardCID, true)
 
 // Register capability tags for discovery
 for _, skill := range capabilityCard.Skills {
     for _, tag := range skill.Tags {
-        tagKey := "/agentme/capabilities/" + tag
+        tagKey := "/agoramesh/capabilities/" + tag
         dht.PutValue(ctx, tagKey, append(existingAgents, didHash))
     }
 }
@@ -320,8 +320,8 @@ When the bridge has a full `agent-card.config.json` with rich fields, `GET /.wel
   "version": "1.0.0",
   "protocolVersion": "1.0",
   "provider": {
-    "name": "AgentMe",
-    "url": "https://agentme.cz"
+    "name": "AgoraMesh",
+    "url": "https://agoramesh.ai"
   },
   "capabilities": {
     "streaming": false,
@@ -331,7 +331,7 @@ When the bridge has a full `agent-card.config.json` with rich fields, `GET /.wel
   },
   "authentication": {
     "schemes": ["did", "bearer"],
-    "didMethods": ["did:agentme", "did:key"]
+    "didMethods": ["did:agoramesh", "did:key"]
   },
   "skills": [
     {

@@ -44,8 +44,8 @@ contract StreamingPaymentsTest is Test {
         streaming = new StreamingPayments(admin, address(registry));
 
         // Setup DIDs
-        clientDid = keccak256(abi.encodePacked("did:agentme:base:", client));
-        providerDid = keccak256(abi.encodePacked("did:agentme:base:", provider));
+        clientDid = keccak256(abi.encodePacked("did:agoramesh:base:", client));
+        providerDid = keccak256(abi.encodePacked("did:agoramesh:base:", provider));
 
         // Register agents
         vm.startPrank(client);

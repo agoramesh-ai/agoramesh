@@ -1,12 +1,12 @@
-# AgentMe Node Ingress
+# AgoraMesh Node Ingress
 # HTTP API exposed via Ingress controller
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: agentme-node
-  namespace: agentme
+  name: agoramesh-node
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: ingress
   annotations:
     # NGINX Ingress annotations
@@ -21,7 +21,7 @@ metadata:
 
     # CORS configuration
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://agentme.io"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://agoramesh.io"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
 
@@ -31,17 +31,17 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - node.agentme.io
-      secretName: agentme-node-tls
+        - node.agoramesh.io
+      secretName: agoramesh-node-tls
   rules:
-    - host: node.agentme.io
+    - host: node.agoramesh.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: agentme-node
+                name: agoramesh-node
                 port:
                   name: http
 ---
@@ -49,10 +49,10 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: agentme-node-testnet
-  namespace: agentme
+  name: agoramesh-node-testnet
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: ingress
     environment: testnet
   annotations:
@@ -67,7 +67,7 @@ metadata:
 
     # CORS configuration
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://agentme.io"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://agoramesh.io"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
 
@@ -76,16 +76,16 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - testnet.node.agentme.io
-      secretName: agentme-node-testnet-tls
+        - testnet.node.agoramesh.io
+      secretName: agoramesh-node-testnet-tls
   rules:
-    - host: testnet.node.agentme.io
+    - host: testnet.node.agoramesh.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: agentme-node
+                name: agoramesh-node
                 port:
                   name: http

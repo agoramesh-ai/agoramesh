@@ -1,6 +1,6 @@
-//! AgentMe Node Library
+//! AgoraMesh Node Library
 //!
-//! This crate provides the core functionality for running an AgentMe node,
+//! This crate provides the core functionality for running an AgoraMesh node,
 //! including P2P networking, agent discovery, trust management, and HTTP API.
 
 pub mod api;

@@ -1,4 +1,4 @@
-# AgentMesh Security Audit Preparation
+# AgoraMesh Security Audit Preparation
 
 **Date:** 2026-02-17  
 **Prepared by:** Automated audit prep  
@@ -35,7 +35,7 @@
 
 | Contract | Stmts | Branch | Funcs | Lines |
 |----------|-------|--------|-------|-------|
-| AgentMeshEscrow.sol | 98.1% | 95.7% | 84.6% | 100% |
+| AgoraMeshEscrow.sol | 98.1% | 95.7% | 84.6% | 100% |
 | AgentToken.sol | 96.5% | 90.2% | 57.9% | 95.2% |
 | ChainRegistry.sol | 100% | 95.1% | 73.7% | 100% |
 | CrossChainTrustSync.sol | **84.0%** | **82.4%** | 68.8% | 87.5% |
@@ -97,7 +97,7 @@
 ### 2.5 Reentrancy Protection (Solidity)
 
 All financial contracts use OpenZeppelin `ReentrancyGuard` with `nonReentrant` modifier:
-- ✅ `AgentMeshEscrow.sol` — uses `nonReentrant` on state-changing functions
+- ✅ `AgoraMeshEscrow.sol` — uses `nonReentrant` on state-changing functions
 - ✅ `TrustRegistry.sol` — staking operations protected
 - ✅ `NFTBoundReputation.sol` — staking/slashing protected
 - ✅ `StreamingPayments.sol` — all payment operations protected
@@ -105,10 +105,10 @@ All financial contracts use OpenZeppelin `ReentrancyGuard` with `nonReentrant` m
 
 ### 2.6 Input Validation (Solidity)
 
-`AgentMeshEscrow.sol` has thorough validation:
+`AgoraMeshEscrow.sol` has thorough validation:
 - Zero-address checks, amount > 0, deadline bounds, token allowlist, agent activity checks
 
-**⚠️ Contracts using custom errors instead of `require()`** — `AgentMeshEscrow.sol` has 0 `require()` calls (uses `revert` with custom errors). `StreamingPayments.sol` has 21 `require()` calls. This inconsistency should be reviewed for completeness.
+**⚠️ Contracts using custom errors instead of `require()`** — `AgoraMeshEscrow.sol` has 0 `require()` calls (uses `revert` with custom errors). `StreamingPayments.sol` has 21 `require()` calls. This inconsistency should be reviewed for completeness.
 
 ### 2.7 Access Control
 

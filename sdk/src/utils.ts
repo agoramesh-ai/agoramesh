@@ -1,7 +1,7 @@
 /**
- * AgentMe SDK Utilities
+ * AgoraMesh SDK Utilities
  *
- * Shared utility functions for the AgentMe SDK.
+ * Shared utility functions for the AgoraMesh SDK.
  *
  * @packageDocumentation
  */

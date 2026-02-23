@@ -139,7 +139,7 @@ export interface BridgeServerConfig extends RichAgentConfig {
 }
 
 /**
- * HTTP + WebSocket server pro příjem tasků z AgentMe
+ * HTTP + WebSocket server pro příjem tasků z AgoraMesh
  */
 export class BridgeServer {
   private app: Express;

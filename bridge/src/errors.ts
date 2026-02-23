@@ -1,27 +1,27 @@
 /**
- * AgentMe Bridge Error Types
+ * AgoraMesh Bridge Error Types
  *
  * Provides typed errors for better debugging and error recovery.
  */
 
 /**
- * Base class for all AgentMe bridge errors.
+ * Base class for all AgoraMesh bridge errors.
  */
-export class AgentMeError extends Error {
+export class AgoraMeshError extends Error {
   constructor(
     message: string,
     public readonly code: string,
     public readonly cause?: Error
   ) {
     super(message);
-    this.name = 'AgentMeError';
+    this.name = 'AgoraMeshError';
   }
 }
 
 /**
  * Error thrown when an escrow is not found.
  */
-export class EscrowNotFoundError extends AgentMeError {
+export class EscrowNotFoundError extends AgoraMeshError {
   constructor(
     public readonly escrowId: string,
     cause?: Error
@@ -34,7 +34,7 @@ export class EscrowNotFoundError extends AgentMeError {
 /**
  * Error thrown when an escrow operation fails.
  */
-export class EscrowOperationError extends AgentMeError {
+export class EscrowOperationError extends AgoraMeshError {
   constructor(
     message: string,
     public readonly operation: string,
@@ -48,7 +48,7 @@ export class EscrowOperationError extends AgentMeError {
 /**
  * Error thrown when payment validation fails.
  */
-export class PaymentValidationError extends AgentMeError {
+export class PaymentValidationError extends AgoraMeshError {
   constructor(
     message: string,
     public readonly details?: Record<string, unknown>,
@@ -62,7 +62,7 @@ export class PaymentValidationError extends AgentMeError {
 /**
  * Error thrown when payment parsing fails.
  */
-export class PaymentParseError extends AgentMeError {
+export class PaymentParseError extends AgoraMeshError {
   constructor(
     message: string,
     public readonly rawPayload?: string,
@@ -76,7 +76,7 @@ export class PaymentParseError extends AgentMeError {
 /**
  * Error thrown when agent registration fails.
  */
-export class RegistrationError extends AgentMeError {
+export class RegistrationError extends AgoraMeshError {
   constructor(
     message: string,
     public readonly did: string,
@@ -90,7 +90,7 @@ export class RegistrationError extends AgentMeError {
 /**
  * Result type for operations that can fail or indicate special conditions.
  */
-export type Result<T, E = AgentMeError> =
+export type Result<T, E = AgoraMeshError> =
   | { success: true; value: T }
   | { success: false; error: E };
 

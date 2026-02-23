@@ -1,5 +1,5 @@
 /**
- * AgentMesh E2E Integration Test Suite
+ * AgoraMesh E2E Integration Test Suite
  * 
  * Tests full agent lifecycle against local Docker stack:
  *   - Anvil on localhost:8545
@@ -334,7 +334,7 @@ function sleep(ms: number): Promise<void> {
 // Test Suite
 // =============================================================================
 
-describe('AgentMesh E2E Integration', () => {
+describe('AgoraMesh E2E Integration', () => {
   let deployment: DeploymentAddresses;
   let publicClient: ReturnType<typeof createPublicClient>;
   let clientWalletClient: ReturnType<typeof createWalletClient>;
@@ -389,8 +389,8 @@ describe('AgentMesh E2E Integration', () => {
 
     // Generate DIDs for fresh accounts
     const timestamp = Date.now();
-    clientDid = `did:agentme:local:client-${timestamp}`;
-    providerDid = `did:agentme:local:provider-${timestamp}`;
+    clientDid = `did:agoramesh:local:client-${timestamp}`;
+    providerDid = `did:agoramesh:local:provider-${timestamp}`;
     clientDidHash = didToHash(clientDid);
     providerDidHash = didToHash(providerDid);
 
@@ -434,7 +434,7 @@ describe('AgentMesh E2E Integration', () => {
       console.log(`Current block: ${blockNumber}`);
     });
 
-    it('should connect to AgentMesh Node API', async () => {
+    it('should connect to AgoraMesh Node API', async () => {
       const response = await fetch(`${NODE_URL}/health`);
       expect(response.ok).toBe(true);
       
@@ -445,7 +445,7 @@ describe('AgentMesh E2E Integration', () => {
       console.log(`Node health:`, health);
     });
 
-    it('should connect to AgentMesh Bridge', async () => {
+    it('should connect to AgoraMesh Bridge', async () => {
       const response = await fetch(`${BRIDGE_URL}/.well-known/agent.json`);
       expect(response.ok).toBe(true);
       
@@ -586,7 +586,7 @@ describe('AgentMesh E2E Integration', () => {
           { id: 'code-review', name: 'Code Review', description: 'Review code for bugs and improvements' },
           { id: 'debugging', name: 'Debugging', description: 'Debug and fix code issues' },
         ],
-        'x-agentme': {
+        'x-agoramesh': {
           did: providerDid,
           trust_score: 0.5,
           payment_methods: ['escrow', 'x402'],

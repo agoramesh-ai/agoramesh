@@ -42,7 +42,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: longPrompt,
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
       });
 
       expect(result.success).toBe(false);
@@ -59,7 +59,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: maxPrompt,
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
       });
 
       expect(result.success).toBe(true);
@@ -70,7 +70,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: '',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
       });
 
       expect(result.success).toBe(false);
@@ -97,7 +97,7 @@ describe('TaskInputSchema Validation', () => {
           taskId: invalidId,
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
         });
 
         expect(result.success, `Should reject taskId: ${invalidId}`).toBe(false);
@@ -120,7 +120,7 @@ describe('TaskInputSchema Validation', () => {
           taskId: validId,
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
         });
 
         expect(result.success, `Should accept taskId: ${validId}`).toBe(true);
@@ -134,7 +134,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: longId,
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
       });
 
       expect(result.success).toBe(false);
@@ -145,7 +145,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: '',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
       });
 
       expect(result.success).toBe(false);
@@ -160,7 +160,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         context: {
           files: tooManyFiles,
         },
@@ -182,7 +182,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         context: {
           files: maxFiles,
         },
@@ -196,7 +196,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         context: {
           files: [],
         },
@@ -212,7 +212,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         timeout: 0,
       });
 
@@ -227,7 +227,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         timeout: -10,
       });
 
@@ -239,7 +239,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         timeout: 3601,
       });
 
@@ -254,7 +254,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         timeout: 3600,
       });
 
@@ -266,7 +266,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
         timeout: 1,
       });
 
@@ -278,7 +278,7 @@ describe('TaskInputSchema Validation', () => {
         taskId: 'task-1',
         type: 'prompt',
         prompt: 'test prompt',
-        clientDid: 'did:agentme:base:test123',
+        clientDid: 'did:agoramesh:base:test123',
       });
 
       expect(result.success).toBe(true);
@@ -319,7 +319,7 @@ describe('BridgeServer Input Validation', () => {
           taskId: 'task-1',
           type: 'prompt',
           prompt: longPrompt,
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
         });
 
       expect(res.status).toBe(400);
@@ -335,7 +335,7 @@ describe('BridgeServer Input Validation', () => {
           taskId: 'task-1; DROP TABLE--',
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
         });
 
       expect(res.status).toBe(400);
@@ -349,7 +349,7 @@ describe('BridgeServer Input Validation', () => {
           taskId: '../../../etc/passwd',
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
         });
 
       expect(res.status).toBe(400);
@@ -367,7 +367,7 @@ describe('BridgeServer Input Validation', () => {
           taskId: 'task-1',
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
           context: {
             files: tooManyFiles,
           },
@@ -386,7 +386,7 @@ describe('BridgeServer Input Validation', () => {
           taskId: 'task-1',
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
           timeout: 0,
         });
 
@@ -401,7 +401,7 @@ describe('BridgeServer Input Validation', () => {
           taskId: 'task-1',
           type: 'prompt',
           prompt: 'test prompt',
-          clientDid: 'did:agentme:base:test123',
+          clientDid: 'did:agoramesh:base:test123',
           timeout: 3601,
         });
 

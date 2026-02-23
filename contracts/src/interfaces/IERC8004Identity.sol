@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 /// @title IERC8004IdentityRegistry - ERC-8004 Identity Registry Interface
 /// @notice Manages agent identity registration with ERC-721 + URIStorage semantics
 /// @dev Part of the ERC-8004 Trustless Agents standard (launched January 2026).
-///      AgentMe implements this via a read-only adapter that maps our TrustRegistry
+///      AgoraMesh implements this via a read-only adapter that maps our TrustRegistry
 ///      and AgentToken data into the ERC-8004 shape.
 interface IERC8004IdentityRegistry {
     // ============ Events ============

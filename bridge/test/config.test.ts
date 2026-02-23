@@ -8,7 +8,7 @@ describe('loadAgentCardConfig', () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'agentme-config-test-'));
+    tempDir = mkdtempSync(join(tmpdir(), 'agoramesh-config-test-'));
   });
 
   afterEach(() => {
@@ -21,7 +21,7 @@ describe('loadAgentCardConfig', () => {
       description: 'A test agent',
       skills: ['coding', 'debugging'],
       pricePerTask: 5,
-      agentId: 'did:agentme:test-agent',
+      agentId: 'did:agoramesh:test-agent',
       agentVersion: '2.0.0',
       url: 'https://agent.example.com',
       protocolVersion: '1.0',
@@ -79,7 +79,7 @@ describe('loadAgentCardConfig', () => {
     expect(result.description).toBe('A test agent');
     expect(result.skills).toEqual(['coding', 'debugging']);
     expect(result.pricePerTask).toBe(5);
-    expect(result.agentId).toBe('did:agentme:test-agent');
+    expect(result.agentId).toBe('did:agoramesh:test-agent');
     expect(result.agentVersion).toBe('2.0.0');
     expect(result.url).toBe('https://agent.example.com');
     expect(result.protocolVersion).toBe('1.0');

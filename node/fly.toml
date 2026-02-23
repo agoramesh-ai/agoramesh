@@ -1,7 +1,7 @@
-# AgentMe Node - Fly.io Configuration
+# AgoraMesh Node - Fly.io Configuration
 # Deploy: fly launch (first time) or fly deploy (updates)
 
-app = "agentme-node"
+app = "agoramesh-node"
 primary_region = "fra"  # Frankfurt - good for EU
 
 [build]
@@ -9,8 +9,8 @@ primary_region = "fra"  # Frankfurt - good for EU
 
 [env]
   RUST_LOG = "info"
-  AGENTME_NETWORK = "testnet"
-  AGENTME_CHAIN_RPC = "https://sepolia.base.org"
+  AGORAMESH_NETWORK = "testnet"
+  AGORAMESH_CHAIN_RPC = "https://sepolia.base.org"
 
 [http_service]
   internal_port = 8080
@@ -41,7 +41,7 @@ primary_region = "fra"  # Frankfurt - good for EU
   timeout = "5s"
 
 [mounts]
-  source = "agentme_data"
+  source = "agoramesh_data"
   destination = "/app/data"
 
 [[vm]]

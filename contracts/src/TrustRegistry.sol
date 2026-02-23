@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ITrustRegistry.sol";
 
-/// @title TrustRegistry - AgentMe Trust Layer
+/// @title TrustRegistry - AgoraMesh Trust Layer
 /// @notice Manages agent registration, reputation, staking, and endorsements
 /// @dev Implements ITrustRegistry with AccessControl for role-based permissions
 contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGuard {

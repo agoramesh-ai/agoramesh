@@ -1,13 +1,13 @@
-# Kustomization for AgentMe Node deployment
+# Kustomization for AgoraMesh Node deployment
 # Usage: kubectl apply -k deploy/k8s/
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: agentme
+namespace: agoramesh
 
 # Common labels for all resources
 commonLabels:
-  app.kubernetes.io/part-of: agentme
+  app.kubernetes.io/part-of: agoramesh
   app.kubernetes.io/managed-by: kustomize
 
 resources:
@@ -21,13 +21,13 @@ resources:
 
 # Image configuration (override with kustomize set image)
 images:
-  - name: ghcr.io/agentme/node
+  - name: ghcr.io/agoramesh/node
     # Always use a specific version tag; never use 'latest'
     newTag: "0.1.0"
 
 # ConfigMap generator (alternative to static configmap.yaml)
 # configMapGenerator:
-#   - name: agentme-node-config
+#   - name: agoramesh-node-config
 #     literals:
 #       - RUST_LOG=info
 

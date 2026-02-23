@@ -1,5 +1,5 @@
 /**
- * AgentMe x402 Payment Client
+ * AgoraMesh x402 Payment Client
  *
  * Implements the x402 micropayment protocol for pay-per-request agent services.
  * x402 is ideal for small, trusted transactions where escrow overhead isn't needed.

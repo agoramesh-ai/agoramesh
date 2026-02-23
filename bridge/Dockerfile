@@ -1,4 +1,4 @@
-# AgentMe Bridge Dockerfile
+# AgoraMesh Bridge Dockerfile
 # Multi-stage build for security and smaller image size
 
 # ==============================================================================
@@ -32,8 +32,8 @@ RUN npm run build
 FROM node:22-alpine3.21 AS production
 
 # Security: Create non-root user
-RUN addgroup -g 1001 -S agentme && \
-    adduser -u 1001 -S agentme -G agentme
+RUN addgroup -g 1001 -S agoramesh && \
+    adduser -u 1001 -S agoramesh -G agoramesh
 
 # Install Claude CLI (optional - can be mounted from host)
 # RUN npm install -g @anthropic-ai/claude-code
@@ -53,10 +53,10 @@ COPY bridge/agent-card.config.json ./
 RUN npm prune --omit=dev
 
 # Create workspace directory with correct permissions
-RUN mkdir -p /workspace && chown -R agentme:agentme /workspace
+RUN mkdir -p /workspace && chown -R agoramesh:agoramesh /workspace
 
 # Security: Switch to non-root user
-USER agentme
+USER agoramesh
 
 # Environment defaults
 ENV NODE_ENV=production \

@@ -1,11 +1,11 @@
-//! Error types for AgentMe node.
+//! Error types for AgoraMesh node.
 
 use thiserror::Error;
 
-/// Result type alias using AgentMe Error.
+/// Result type alias using AgoraMesh Error.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// AgentMe node error types.
+/// AgoraMesh node error types.
 #[derive(Error, Debug)]
 pub enum Error {
     /// Configuration error.

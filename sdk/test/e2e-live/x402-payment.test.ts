@@ -129,7 +129,7 @@ describe('x402 Payment Flow E2E Integration', () => {
         maxAmountRequired: '10000', // 0.01 USDC = 10,000 micro-USDC
         resource: TEST_X402_CONFIG.usdcAddress,
         payTo: TEST_X402_CONFIG.payTo,
-        description: 'AgentMe task execution',
+        description: 'AgoraMesh task execution',
         validUntil: expect.any(Number),
       }),
     });

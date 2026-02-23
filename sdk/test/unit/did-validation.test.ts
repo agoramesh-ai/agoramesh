@@ -7,7 +7,7 @@
  * - Inconsistent DID handling across the system
  *
  * Valid DID patterns:
- * - did:agentme:[method]:[identifier]
+ * - did:agoramesh:[method]:[identifier]
  * - did:web:[method]:[identifier]
  *
  * TDD Phase: RED - These tests should FAIL initially
@@ -25,12 +25,12 @@ import { didToHash, validateDID } from '../../src/client.js';
 describe('DID Validation', () => {
   describe('validateDID', () => {
     describe('valid DIDs', () => {
-      it('accepts valid agentme DID', () => {
+      it('accepts valid agoramesh DID', () => {
         const validDIDs = [
-          'did:agentme:base:abc123',
-          'did:agentme:ethereum:ABC123',
-          'did:agentme:polygon:testAgent42',
-          'did:agentme:arbitrum:myAgent',
+          'did:agoramesh:base:abc123',
+          'did:agoramesh:ethereum:ABC123',
+          'did:agoramesh:polygon:testAgent42',
+          'did:agoramesh:arbitrum:myAgent',
         ];
 
         for (const did of validDIDs) {
@@ -82,8 +82,8 @@ describe('DID Validation', () => {
     describe('invalid DIDs', () => {
       it('rejects DID without did: prefix', () => {
         const invalidDIDs = [
-          'agentme:base:abc123',
-          ':agentme:base:abc123',
+          'agoramesh:base:abc123',
+          ':agoramesh:base:abc123',
           'web:base:abc123',
         ];
 
@@ -98,7 +98,7 @@ describe('DID Validation', () => {
         const invalidDIDs = [
           'did:invalid:base:abc123',
           'did:other:base:abc123',
-          'did:AGENTME:base:abc123', // uppercase not allowed
+          'did:AGORAMESH:base:abc123', // uppercase not allowed
           'did:WEB:base:abc123', // uppercase not allowed
           'did:KEY:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK', // uppercase KEY
           'did:ETHR:0xb9c5714089478a327f09197987f16f9e5d936e8a', // uppercase ETHR
@@ -143,8 +143,8 @@ describe('DID Validation', () => {
 
       it('rejects DID with missing parts', () => {
         const invalidDIDs = [
-          'did:agentme:base',
-          'did:agentme',
+          'did:agoramesh:base',
+          'did:agoramesh',
           'did:',
           'did',
         ];
@@ -158,11 +158,11 @@ describe('DID Validation', () => {
 
       it('rejects DID with special characters in identifier', () => {
         const invalidDIDs = [
-          'did:agentme:base:abc-123', // dash not allowed in identifier
-          'did:agentme:base:abc_123', // underscore not allowed
-          'did:agentme:base:abc@123', // @ not allowed
-          'did:agentme:base:abc 123', // space not allowed
-          'did:agentme:base:abc\n123', // newline not allowed
+          'did:agoramesh:base:abc-123', // dash not allowed in identifier
+          'did:agoramesh:base:abc_123', // underscore not allowed
+          'did:agoramesh:base:abc@123', // @ not allowed
+          'did:agoramesh:base:abc 123', // space not allowed
+          'did:agoramesh:base:abc\n123', // newline not allowed
         ];
 
         for (const did of invalidDIDs) {
@@ -174,9 +174,9 @@ describe('DID Validation', () => {
 
       it('rejects DID with uppercase method name', () => {
         const invalidDIDs = [
-          'did:agentme:BASE:abc123', // uppercase in method name not allowed
-          'did:agentme:Base:abc123',
-          'did:agentme:ETHEREUM:abc123',
+          'did:agoramesh:BASE:abc123', // uppercase in method name not allowed
+          'did:agoramesh:Base:abc123',
+          'did:agoramesh:ETHEREUM:abc123',
         ];
 
         for (const did of invalidDIDs) {
@@ -192,10 +192,10 @@ describe('DID Validation', () => {
 
       it('rejects DID with injection attempt', () => {
         const injectionAttempts = [
-          'did:agentme:base:abc123; DROP TABLE agents;--',
-          "did:agentme:base:abc123' OR '1'='1",
-          'did:agentme:base:<script>alert(1)</script>',
-          'did:agentme:base:../../../etc/passwd',
+          'did:agoramesh:base:abc123; DROP TABLE agents;--',
+          "did:agoramesh:base:abc123' OR '1'='1",
+          'did:agoramesh:base:<script>alert(1)</script>',
+          'did:agoramesh:base:../../../etc/passwd',
         ];
 
         for (const did of injectionAttempts) {
@@ -215,7 +215,7 @@ describe('DID Validation', () => {
     });
 
     it('returns valid hash for valid DID', () => {
-      const validDID = 'did:agentme:base:abc123';
+      const validDID = 'did:agoramesh:base:abc123';
 
       const hash = didToHash(validDID);
 
@@ -223,7 +223,7 @@ describe('DID Validation', () => {
     });
 
     it('returns consistent hash for same DID', () => {
-      const did = 'did:agentme:base:testAgent';
+      const did = 'did:agoramesh:base:testAgent';
 
       const hash1 = didToHash(did);
       const hash2 = didToHash(did);
@@ -232,8 +232,8 @@ describe('DID Validation', () => {
     });
 
     it('returns different hashes for different DIDs', () => {
-      const did1 = 'did:agentme:base:agent1';
-      const did2 = 'did:agentme:base:agent2';
+      const did1 = 'did:agoramesh:base:agent1';
+      const did2 = 'did:agoramesh:base:agent2';
 
       const hash1 = didToHash(did1);
       const hash2 = didToHash(did2);
@@ -244,10 +244,10 @@ describe('DID Validation', () => {
 });
 
 // =============================================================================
-// Integration with AgentMeClient
+// Integration with AgoraMeshClient
 // =============================================================================
 
-describe('AgentMeClient DID Validation Integration', () => {
+describe('AgoraMeshClient DID Validation Integration', () => {
   // Note: These tests will need a mock or stub for blockchain interactions
   // They verify that DID validation is called in client methods
 
@@ -284,7 +284,7 @@ describe('AgentMeClient DID Validation Integration', () => {
   });
 
   it('validates DID in isAgentActive', async () => {
-    const invalidDID = 'did:agentme:base:'; // missing identifier
+    const invalidDID = 'did:agoramesh:base:'; // missing identifier
 
     expect(() => validateDID(invalidDID)).toThrow(/Invalid DID format/);
   });

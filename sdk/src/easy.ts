@@ -1,14 +1,14 @@
 /**
- * AgentMe Easy API
+ * AgoraMesh Easy API
  *
  * Zero-config, high-level interface for AI agents.
  * One import, one setup, done.
  *
  * @example
  * ```typescript
- * import { AgentMe } from '@agentme/sdk'
+ * import { AgoraMesh } from '@agoramesh/sdk'
  *
- * const me = new AgentMe({ privateKey: '0x...' })
+ * const me = new AgoraMesh({ privateKey: '0x...' })
  *
  * // Find agents
  * const agents = await me.find('translate legal documents')
@@ -26,7 +26,7 @@
  * @packageDocumentation
  */
 
-import { AgentMeClient, createClient } from './client.js';
+import { AgoraMeshClient, createClient } from './client.js';
 import { DiscoveryClient } from './discovery.js';
 import { TrustClient } from './trust.js';
 import { PaymentClient } from './payment.js';
@@ -39,12 +39,12 @@ import { BASE_SEPOLIA_RPC } from './types.js';
 // Types
 // =============================================================================
 
-export interface AgentMeOptions {
+export interface AgoraMeshOptions {
   /** Agent's private key (hex string with 0x prefix) */
   privateKey: string;
   /** Network: 'sepolia' (default) or 'mainnet' */
   network?: 'sepolia' | 'mainnet';
-  /** Discovery node URL (default: https://api.agentme.cz) */
+  /** Discovery node URL (default: https://api.agoramesh.ai) */
   nodeUrl?: string;
   /** Agent DID (auto-generated from address if omitted) */
   did?: string;
@@ -99,11 +99,11 @@ export interface AgentInfo {
 }
 
 // =============================================================================
-// AgentMe — Easy API
+// AgoraMesh — Easy API
 // =============================================================================
 
-export class AgentMe {
-  private client!: AgentMeClient;
+export class AgoraMesh {
+  private client!: AgoraMeshClient;
   private discovery!: DiscoveryClient;
   private trustClient!: TrustClient;
   private payment!: PaymentClient;
@@ -112,9 +112,9 @@ export class AgentMe {
   private myDid: string;
   private initialized = false;
 
-  constructor(private options: AgentMeOptions) {
+  constructor(private options: AgoraMeshOptions) {
     this.network = options.network ?? 'sepolia';
-    this.nodeUrl = options.nodeUrl ?? 'https://api.agentme.cz';
+    this.nodeUrl = options.nodeUrl ?? 'https://api.agoramesh.ai';
     this.myDid = options.did ?? '';
   }
 
@@ -135,7 +135,7 @@ export class AgentMe {
 
     const addr = this.client.getAddress();
     if (!this.myDid && addr) {
-      this.myDid = `did:agentme:base-${this.network}:${addr}`;
+      this.myDid = `did:agoramesh:base-${this.network}:${addr}`;
     }
 
     this.discovery = new DiscoveryClient(this.client, this.nodeUrl);
@@ -283,8 +283,8 @@ export class AgentMe {
 }
 
 /**
- * Create an AgentMe instance with minimal config.
+ * Create an AgoraMesh instance with minimal config.
  */
-export function createAgentMe(options: AgentMeOptions): AgentMe {
-  return new AgentMe(options);
+export function createAgoraMesh(options: AgoraMeshOptions): AgoraMesh {
+  return new AgoraMesh(options);
 }

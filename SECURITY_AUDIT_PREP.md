@@ -1,14 +1,14 @@
-# AgentMesh — Security Audit Preparation
+# AgoraMesh — Security Audit Preparation
 
 ## Overview
 
-AgentMesh is a decentralized agent-to-agent commerce protocol built on Base L2 (Ethereum). This document prepares auditors with project context, known risks, and test coverage data.
+AgoraMesh is a decentralized agent-to-agent commerce protocol built on Base L2 (Ethereum). This document prepares auditors with project context, known risks, and test coverage data.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    AgentMesh Protocol                    │
+│                    AgoraMesh Protocol                    │
 ├──────────────┬──────────────┬──────────────┬────────────┤
 │  Discovery   │    Trust     │   Payment    │  Dispute   │
 │  (libp2p     │  (ERC-8004   │  (x402 +     │  (Auto →   │
@@ -25,7 +25,7 @@ AgentMesh is a decentralized agent-to-agent commerce protocol built on Base L2 (
 | Contract | Description | LOC |
 |----------|-------------|-----|
 | `TrustRegistry.sol` | Agent registration, trust scores, staking | ~400 |
-| `AgentMeshEscrow.sol` | Task escrow with tiered disputes | ~350 |
+| `AgoraMeshEscrow.sol` | Task escrow with tiered disputes | ~350 |
 | `StreamingPayments.sol` | Continuous payment streams | ~300 |
 | `AgentToken.sol` | ERC-20 governance token | ~150 |
 | `CrossChainSync.sol` | Cross-chain trust synchronization | ~200 |
@@ -114,5 +114,5 @@ cd node && cargo test
 
 ## Contact
 
-- GitHub: https://github.com/agentmecz/agentme
-- Email: prdko@agentme.cz
+- GitHub: https://github.com/agoramesh-ai/agoramesh
+- Email: prdko@agoramesh.ai

@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
 import "../src/TrustRegistry.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/StreamingPayments.sol";
 import "../src/ChainRegistry.sol";
@@ -82,7 +82,7 @@ contract VerifyDeployment is Script {
         console.log("Loaded addresses:");
         console.log("  TrustRegistry:           ", a.trustRegistry);
         console.log("  ChainRegistry:           ", a.chainRegistry);
-        console.log("  AgentMeshEscrow:         ", a.escrow);
+        console.log("  AgoraMeshEscrow:         ", a.escrow);
         console.log("  TieredDisputeResolution: ", a.disputes);
         console.log("  StreamingPayments:       ", a.streaming);
         console.log("  CrossChainTrustSync:     ", a.crossChain);
@@ -100,7 +100,7 @@ contract VerifyDeployment is Script {
         console.log("--- 1. Contract Code Checks ---");
         _checkHasCode("TrustRegistry", a.trustRegistry);
         _checkHasCode("ChainRegistry", a.chainRegistry);
-        _checkHasCode("AgentMeshEscrow", a.escrow);
+        _checkHasCode("AgoraMeshEscrow", a.escrow);
         _checkHasCode("TieredDisputeResolution", a.disputes);
         _checkHasCode("StreamingPayments", a.streaming);
         _checkHasCode("CrossChainTrustSync", a.crossChain);
@@ -121,11 +121,11 @@ contract VerifyDeployment is Script {
         _check("Disputes has ARBITER_ROLE", reg.hasRole(reg.ARBITER_ROLE(), a.disputes));
     }
 
-    // ====== AgentMeshEscrow ======
+    // ====== AgoraMeshEscrow ======
 
     function _verifyEscrow(Addrs memory a) internal view {
-        console.log("\n--- 3. AgentMeshEscrow Configuration ---");
-        AgentMeshEscrow esc = AgentMeshEscrow(a.escrow);
+        console.log("\n--- 3. AgoraMeshEscrow Configuration ---");
+        AgoraMeshEscrow esc = AgoraMeshEscrow(a.escrow);
 
         _check("TrustRegistry reference correct", address(esc.trustRegistry()) == a.trustRegistry);
         _check("Admin role granted", esc.hasRole(esc.DEFAULT_ADMIN_ROLE(), a.admin));

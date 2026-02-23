@@ -1,9 +1,9 @@
-# AgentMe Namespace
-# Isolates all AgentMe resources
+# AgoraMesh Namespace
+# Isolates all AgoraMesh resources
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agentme
+  name: agoramesh
   labels:
-    app.kubernetes.io/name: agentme
-    app.kubernetes.io/part-of: agentme
+    app.kubernetes.io/name: agoramesh
+    app.kubernetes.io/part-of: agoramesh

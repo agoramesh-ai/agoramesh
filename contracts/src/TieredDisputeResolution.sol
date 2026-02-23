@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IDisputeResolution.sol";
-import "./interfaces/IAgentMeshEscrow.sol";
+import "./interfaces/IAgoraMeshEscrow.sol";
 import "./interfaces/ITrustRegistry.sol";
 
-/// @title TieredDisputeResolution - AgentMe Dispute Resolution
+/// @title TieredDisputeResolution - AgoraMesh Dispute Resolution
 /// @notice Implements tiered dispute resolution: Auto, AI-Assisted, and Community
 /// @dev Follows spec: Tier 1 (<$10), Tier 2 ($10-$1000), Tier 3 (>$1000)
 contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable, ReentrancyGuard {
@@ -43,7 +43,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     // ============ State Variables ============
 
     /// @notice Reference to the Escrow contract
-    IAgentMeshEscrow public immutable escrow;
+    IAgoraMeshEscrow public immutable escrow;
 
     /// @notice Reference to the Trust Registry
     ITrustRegistry public immutable trustRegistry;
@@ -112,7 +112,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         if (_paymentToken == address(0)) revert InvalidPaymentToken();
         if (_admin == address(0)) revert InvalidAdmin();
 
-        escrow = IAgentMeshEscrow(_escrow);
+        escrow = IAgoraMeshEscrow(_escrow);
         trustRegistry = ITrustRegistry(_trustRegistry);
         paymentToken = IERC20(_paymentToken);
 
@@ -124,13 +124,13 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     /// @inheritdoc IDisputeResolution
     function createDispute(uint256 escrowId, bytes32 evidenceCID) external override returns (uint256 disputeId) {
         // Get escrow details
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
 
         // Verify no dispute already exists for this escrow
         if (_escrowToDispute[escrowId] != 0) revert DisputeAlreadyExists();
 
         // Verify escrow is in DISPUTED state
-        if (e.state != IAgentMeshEscrow.State.DISPUTED) {
+        if (e.state != IAgoraMeshEscrow.State.DISPUTED) {
             revert EscrowNotDisputed();
         }
 
@@ -193,7 +193,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         }
 
         // Get escrow to verify party
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
 
         if (msg.sender == e.clientAddress) {
             d.clientEvidenceCID = evidenceCID;
@@ -256,7 +256,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
 
         // Verify caller is an arbiter for this dispute
         // First check they are not a party to the dispute (conflict of interest)
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
         if (msg.sender == e.clientAddress || msg.sender == e.providerAddress) {
             revert NotArbiter();
         }
@@ -369,7 +369,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         }
 
         // Verify caller is a party
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
         if (msg.sender != e.clientAddress && msg.sender != e.providerAddress) {
             revert NotParty();
         }
@@ -409,8 +409,8 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         }
 
         // Get escrow details and verify it is still in DISPUTED state
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
-        if (e.state != IAgentMeshEscrow.State.DISPUTED) revert EscrowNotInDisputedState();
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
+        if (e.state != IAgoraMeshEscrow.State.DISPUTED) revert EscrowNotInDisputedState();
 
         d.state = DisputeState.SETTLED;
 
@@ -467,7 +467,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         Dispute storage d = _getDispute(disputeId);
 
         // Verify caller is a party to the dispute
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
         if (msg.sender != e.clientAddress && msg.sender != e.providerAddress) revert NotDisputeParty();
 
         // Must be Tier 1
@@ -580,7 +580,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         delete _arbiters[disputeId];
 
         // Get escrow to exclude parties from arbiter selection
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
 
         // Select arbiters from the eligible pool
         // In production: weighted random selection from TrustRegistry with Chainlink VRF

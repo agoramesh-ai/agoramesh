@@ -13,7 +13,7 @@ use std::collections::{HashMap, HashSet};
 use tokio::sync::{mpsc, oneshot};
 use tracing::{debug, error, info, warn};
 
-use super::behaviour::{topics, AgentMeBehaviour, AgentMeEvent};
+use super::behaviour::{topics, AgoraMeshBehaviour, AgoraMeshEvent};
 use super::transport::build_transport;
 use crate::config::NetworkConfig;
 use crate::error::{Error, Result};
@@ -92,7 +92,7 @@ pub enum NetworkEvent {
 /// - mDNS local discovery
 pub struct SwarmManager {
     /// The libp2p swarm.
-    swarm: Swarm<AgentMeBehaviour>,
+    swarm: Swarm<AgoraMeshBehaviour>,
 
     /// Local peer ID.
     local_peer_id: PeerId,
@@ -153,7 +153,7 @@ impl SwarmManager {
 
         let transport = build_transport(&keypair)?;
 
-        let behaviour = AgentMeBehaviour::new(local_peer_id, &keypair)
+        let behaviour = AgoraMeshBehaviour::new(local_peer_id, &keypair)
             .map_err(|e| Error::Network(format!("Failed to create behaviour: {}", e)))?;
 
         let swarm = Swarm::new(
@@ -280,7 +280,7 @@ impl SwarmManager {
     }
 
     /// Handle a swarm event.
-    async fn handle_swarm_event(&mut self, event: SwarmEvent<AgentMeEvent>) {
+    async fn handle_swarm_event(&mut self, event: SwarmEvent<AgoraMeshEvent>) {
         match event {
             SwarmEvent::Behaviour(behaviour_event) => {
                 self.handle_behaviour_event(behaviour_event).await;
@@ -363,9 +363,9 @@ impl SwarmManager {
     }
 
     /// Handle behaviour-specific events.
-    async fn handle_behaviour_event(&mut self, event: AgentMeEvent) {
+    async fn handle_behaviour_event(&mut self, event: AgoraMeshEvent) {
         match event {
-            AgentMeEvent::Gossipsub(gossipsub::Event::Message {
+            AgoraMeshEvent::Gossipsub(gossipsub::Event::Message {
                 propagation_source,
                 message_id,
                 message,
@@ -388,17 +388,17 @@ impl SwarmManager {
                     })
                     .await;
             }
-            AgentMeEvent::Gossipsub(gossipsub::Event::Subscribed { peer_id, topic }) => {
+            AgoraMeshEvent::Gossipsub(gossipsub::Event::Subscribed { peer_id, topic }) => {
                 debug!("Peer {} subscribed to topic {}", peer_id, topic);
             }
-            AgentMeEvent::Gossipsub(gossipsub::Event::Unsubscribed { peer_id, topic }) => {
+            AgoraMeshEvent::Gossipsub(gossipsub::Event::Unsubscribed { peer_id, topic }) => {
                 debug!("Peer {} unsubscribed from topic {}", peer_id, topic);
             }
-            AgentMeEvent::Gossipsub(_) => {
+            AgoraMeshEvent::Gossipsub(_) => {
                 // Other GossipSub events (GraftReceived, PruneReceived, etc.)
             }
 
-            AgentMeEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, .. }) => {
+            AgoraMeshEvent::Kademlia(kad::Event::OutboundQueryProgressed { id, result, .. }) => {
                 match result {
                     kad::QueryResult::Bootstrap(Ok(_)) => {
                         info!("Kademlia bootstrap completed");
@@ -457,7 +457,7 @@ impl SwarmManager {
                     _ => {}
                 }
             }
-            AgentMeEvent::Kademlia(kad::Event::RoutingUpdated {
+            AgoraMeshEvent::Kademlia(kad::Event::RoutingUpdated {
                 peer, addresses, ..
             }) => {
                 debug!(
@@ -465,11 +465,11 @@ impl SwarmManager {
                     peer, addresses
                 );
             }
-            AgentMeEvent::Kademlia(_) => {
+            AgoraMeshEvent::Kademlia(_) => {
                 // Other Kademlia events
             }
 
-            AgentMeEvent::Identify(event) => match *event {
+            AgoraMeshEvent::Identify(event) => match *event {
                 identify::Event::Received { peer_id, info, .. } => {
                     debug!(
                         "Identified peer {}: {} ({} addrs)",
@@ -494,7 +494,7 @@ impl SwarmManager {
                 }
             },
 
-            AgentMeEvent::Mdns(mdns::Event::Discovered(peers)) => {
+            AgoraMeshEvent::Mdns(mdns::Event::Discovered(peers)) => {
                 for (peer_id, addr) in peers {
                     debug!("mDNS discovered peer {} at {}", peer_id, addr);
                     self.swarm
@@ -515,7 +515,7 @@ impl SwarmManager {
                         .await;
                 }
             }
-            AgentMeEvent::Mdns(mdns::Event::Expired(peers)) => {
+            AgoraMeshEvent::Mdns(mdns::Event::Expired(peers)) => {
                 for (peer_id, addr) in peers {
                     debug!("mDNS peer {} at {} expired", peer_id, addr);
                 }

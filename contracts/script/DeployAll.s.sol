@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
 import "../src/TrustRegistry.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/StreamingPayments.sol";
 import "../src/ChainRegistry.sol";
@@ -12,7 +12,7 @@ import "../src/VerifiedNamespaces.sol";
 import "../src/AgentToken.sol";
 import "../src/NFTBoundReputation.sol";
 
-/// @title DeployAll - Full AgentMe Deployment with Configuration
+/// @title DeployAll - Full AgoraMesh Deployment with Configuration
 /// @notice Deploys ALL contracts, configures cross-contract permissions, whitelists USDC,
 ///         and saves deployment addresses to JSON. This is the canonical testnet deployment script.
 /// @dev Run with: forge script script/DeployAll.s.sol --rpc-url base_sepolia --broadcast --verify
@@ -50,7 +50,7 @@ contract DeployAll is Script {
         address lzEndpoint = isMainnet ? LZ_ENDPOINT_MAINNET : LZ_ENDPOINT_SEPOLIA;
 
         console.log("========================================");
-        console.log("  AGENTME FULL DEPLOYMENT");
+        console.log("  AGORAMESH FULL DEPLOYMENT");
         console.log("========================================");
         console.log("Chain ID:", block.chainid);
         console.log("Network:", isMainnet ? "Base Mainnet" : "Base Sepolia");
@@ -104,9 +104,9 @@ contract DeployAll is Script {
         c.chainRegistry = address(new ChainRegistry(admin));
         console.log("  2. ChainRegistry:", c.chainRegistry);
 
-        // 3. AgentMeshEscrow (payment escrow)
-        c.escrow = address(new AgentMeshEscrow(c.trustRegistry, admin));
-        console.log("  3. AgentMeshEscrow:", c.escrow);
+        // 3. AgoraMeshEscrow (payment escrow)
+        c.escrow = address(new AgoraMeshEscrow(c.trustRegistry, admin));
+        console.log("  3. AgoraMeshEscrow:", c.escrow);
 
         // 4. TieredDisputeResolution (dispute handling)
         c.disputes = address(new TieredDisputeResolution(c.escrow, c.trustRegistry, usdc, admin));
@@ -125,7 +125,7 @@ contract DeployAll is Script {
         console.log("  7. VerifiedNamespaces:", c.namespaces);
 
         // 8. AgentToken (ERC-721 agent ownership)
-        c.agentToken = address(new AgentToken("AgentMe Agents", "AGENT", usdc, admin, admin));
+        c.agentToken = address(new AgentToken("AgoraMesh Agents", "AGENT", usdc, admin, admin));
         console.log("  8. AgentToken:", c.agentToken);
 
         // 9. NFTBoundReputation (reputation tied to agent NFTs)
@@ -155,7 +155,7 @@ contract DeployAll is Script {
     }
 
     function _configureTokenWhitelist(address escrowAddr, address usdc) internal {
-        AgentMeshEscrow escrowContract = AgentMeshEscrow(escrowAddr);
+        AgoraMeshEscrow escrowContract = AgoraMeshEscrow(escrowAddr);
 
         // Add USDC to the escrow token whitelist
         escrowContract.addAllowedToken(usdc);
@@ -163,7 +163,7 @@ contract DeployAll is Script {
     }
 
     function _configureDisputeResolution(address escrowAddr, address disputesAddr) internal {
-        AgentMeshEscrow escrowContract = AgentMeshEscrow(escrowAddr);
+        AgoraMeshEscrow escrowContract = AgoraMeshEscrow(escrowAddr);
 
         // Grant TieredDisputeResolution the ARBITER_ROLE on escrow (to resolve disputes)
         escrowContract.grantRole(escrowContract.ARBITER_ROLE(), disputesAddr);
@@ -228,7 +228,7 @@ contract DeployAll is Script {
         console.log("Contracts:");
         console.log("  TrustRegistry:           ", c.trustRegistry);
         console.log("  ChainRegistry:           ", c.chainRegistry);
-        console.log("  AgentMeshEscrow:         ", c.escrow);
+        console.log("  AgoraMeshEscrow:         ", c.escrow);
         console.log("  TieredDisputeResolution: ", c.disputes);
         console.log("  StreamingPayments:       ", c.streaming);
         console.log("  CrossChainTrustSync:     ", c.crossChain);

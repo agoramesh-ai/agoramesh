@@ -1,5 +1,5 @@
 /**
- * AgentMe Semantic Search
+ * AgoraMesh Semantic Search
  *
  * Provides client-side semantic search capabilities using vector embeddings.
  * Supports multiple embedding providers for flexible integration.
@@ -105,7 +105,7 @@ interface IndexEntry {
  *
  * @example
  * ```typescript
- * import { SemanticSearchClient, createOpenAIEmbedder } from '@agentme/sdk';
+ * import { SemanticSearchClient, createOpenAIEmbedder } from '@agoramesh/sdk';
  *
  * // Create client with OpenAI embeddings
  * const semantic = new SemanticSearchClient({

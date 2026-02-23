@@ -46,8 +46,8 @@ function createTestSkill(overrides: Partial<Skill> = {}): Skill {
  */
 function createTestCard(overrides: Partial<CapabilityCard> = {}): CapabilityCard {
   return {
-    $schema: 'https://agentme.cz/schemas/capability-card-v1.json',
-    id: `did:agentme:base:0x${Math.random().toString(16).slice(2)}`,
+    $schema: 'https://agoramesh.ai/schemas/capability-card-v1.json',
+    id: `did:agoramesh:base:0x${Math.random().toString(16).slice(2)}`,
     name: 'Test Agent',
     description: 'A test agent',
     version: '1.0.0',
@@ -65,7 +65,7 @@ function createTestCard(overrides: Partial<CapabilityCard> = {}): CapabilityCard
     },
     authentication: {
       schemes: ['did-auth'],
-      didMethods: ['agentme'],
+      didMethods: ['agoramesh'],
     },
     skills: [createTestSkill()],
     payment: {
@@ -85,7 +85,7 @@ function createTestCard(overrides: Partial<CapabilityCard> = {}): CapabilityCard
  */
 function createTestResult(overrides: Partial<DiscoveryResult> = {}): DiscoveryResult {
   return {
-    did: `did:agentme:base:0x${Math.random().toString(16).slice(2)}`,
+    did: `did:agoramesh:base:0x${Math.random().toString(16).slice(2)}`,
     name: 'Test Agent',
     description: 'A test agent',
     url: 'https://test.example.com',

@@ -1,72 +1,72 @@
-# AgentMe Node Configuration
+# AgoraMesh Node Configuration
 # Environment-specific settings
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agentme-node-config
-  namespace: agentme
+  name: agoramesh-node-config
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: config
 data:
   # Logging configuration
-  RUST_LOG: "info,agentme_node=debug"
+  RUST_LOG: "info,agoramesh_node=debug"
 
   # Network configuration
-  AGENTME_NETWORK: "mainnet"
+  AGORAMESH_NETWORK: "mainnet"
 
   # API configuration
-  AGENTME_API_LISTEN: "0.0.0.0:8080"
-  AGENTME_CORS_ENABLED: "true"
-  AGENTME_CORS_ORIGINS: "https://agentme.io"  # TODO: Set to actual production domain
+  AGORAMESH_API_LISTEN: "0.0.0.0:8080"
+  AGORAMESH_CORS_ENABLED: "true"
+  AGORAMESH_CORS_ORIGINS: "https://agoramesh.io"  # TODO: Set to actual production domain
 
   # P2P configuration
-  AGENTME_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
-  AGENTME_P2P_BOOTSTRAP: ""  # Comma-separated bootstrap peer addresses
+  AGORAMESH_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
+  AGORAMESH_P2P_BOOTSTRAP: ""  # Comma-separated bootstrap peer addresses
 
   # Rate limiting
-  AGENTME_RATE_LIMIT_ENABLED: "true"
-  AGENTME_RATE_LIMIT_RPS: "100"
-  AGENTME_RATE_LIMIT_BURST: "200"
+  AGORAMESH_RATE_LIMIT_ENABLED: "true"
+  AGORAMESH_RATE_LIMIT_RPS: "100"
+  AGORAMESH_RATE_LIMIT_BURST: "200"
 
   # Trust cache
-  AGENTME_TRUST_CACHE_ENABLED: "true"
-  AGENTME_TRUST_CACHE_TTL_SECS: "300"
-  AGENTME_TRUST_CACHE_MAX_ENTRIES: "10000"
+  AGORAMESH_TRUST_CACHE_ENABLED: "true"
+  AGORAMESH_TRUST_CACHE_TTL_SECS: "300"
+  AGORAMESH_TRUST_CACHE_MAX_ENTRIES: "10000"
 
   # Metrics
-  AGENTME_METRICS_ENABLED: "true"
+  AGORAMESH_METRICS_ENABLED: "true"
 
   # Chain configuration (Base Mainnet)
-  AGENTME_CHAIN_RPC: "https://mainnet.base.org"
-  AGENTME_CHAIN_ID: "8453"
+  AGORAMESH_CHAIN_RPC: "https://mainnet.base.org"
+  AGORAMESH_CHAIN_ID: "8453"
 
   # Contract addresses (to be filled after deployment)
-  # AGENTME_TRUST_REGISTRY_ADDRESS: ""
-  # AGENTME_ESCROW_ADDRESS: ""
+  # AGORAMESH_TRUST_REGISTRY_ADDRESS: ""
+  # AGORAMESH_ESCROW_ADDRESS: ""
 ---
 # Testnet configuration variant
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agentme-node-config-testnet
-  namespace: agentme
+  name: agoramesh-node-config-testnet
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: config
     environment: testnet
 data:
-  RUST_LOG: "debug,agentme_node=trace"
-  AGENTME_NETWORK: "testnet"
-  AGENTME_API_LISTEN: "0.0.0.0:8080"
-  AGENTME_CORS_ENABLED: "true"
-  AGENTME_CORS_ORIGINS: "https://agentme.io"  # TODO: Set to actual production domain
-  AGENTME_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
-  AGENTME_RATE_LIMIT_ENABLED: "true"
-  AGENTME_RATE_LIMIT_RPS: "50"
-  AGENTME_RATE_LIMIT_BURST: "100"
-  AGENTME_TRUST_CACHE_ENABLED: "true"
-  AGENTME_TRUST_CACHE_TTL_SECS: "60"
-  AGENTME_METRICS_ENABLED: "true"
-  AGENTME_CHAIN_RPC: "https://sepolia.base.org"
-  AGENTME_CHAIN_ID: "84532"
+  RUST_LOG: "debug,agoramesh_node=trace"
+  AGORAMESH_NETWORK: "testnet"
+  AGORAMESH_API_LISTEN: "0.0.0.0:8080"
+  AGORAMESH_CORS_ENABLED: "true"
+  AGORAMESH_CORS_ORIGINS: "https://agoramesh.io"  # TODO: Set to actual production domain
+  AGORAMESH_P2P_LISTEN: "/ip4/0.0.0.0/tcp/4001"
+  AGORAMESH_RATE_LIMIT_ENABLED: "true"
+  AGORAMESH_RATE_LIMIT_RPS: "50"
+  AGORAMESH_RATE_LIMIT_BURST: "100"
+  AGORAMESH_TRUST_CACHE_ENABLED: "true"
+  AGORAMESH_TRUST_CACHE_TTL_SECS: "60"
+  AGORAMESH_METRICS_ENABLED: "true"
+  AGORAMESH_CHAIN_RPC: "https://sepolia.base.org"
+  AGORAMESH_CHAIN_ID: "84532"

@@ -1,15 +1,15 @@
-# AgentMe Node - Docker Compose for Local Development
+# AgoraMesh Node - Docker Compose for Local Development
 # Usage: docker-compose up -d
 services:
   # ==========================================================================
-  # AgentMe Node
+  # AgoraMesh Node
   # ==========================================================================
   node:
     build:
       context: .
       dockerfile: Dockerfile
-    image: agentme-node:local
-    container_name: agentme-node
+    image: agoramesh-node:local
+    container_name: agoramesh-node
     restart: unless-stopped
 
     # Ports
@@ -19,17 +19,17 @@ services:
 
     # Environment variables
     environment:
-      RUST_LOG: debug,agentme_node=trace
-      AGENTME_NETWORK: testnet
-      AGENTME_API_LISTEN: 0.0.0.0:8080
-      AGENTME_P2P_LISTEN: /ip4/0.0.0.0/tcp/4001
-      AGENTME_DATA_DIR: /app/data
-      AGENTME_CHAIN_RPC: https://sepolia.base.org
-      AGENTME_CHAIN_ID: "84532"
-      AGENTME_RATE_LIMIT_ENABLED: "true"
-      AGENTME_RATE_LIMIT_RPS: "100"
-      AGENTME_TRUST_CACHE_ENABLED: "true"
-      AGENTME_METRICS_ENABLED: "true"
+      RUST_LOG: debug,agoramesh_node=trace
+      AGORAMESH_NETWORK: testnet
+      AGORAMESH_API_LISTEN: 0.0.0.0:8080
+      AGORAMESH_P2P_LISTEN: /ip4/0.0.0.0/tcp/4001
+      AGORAMESH_DATA_DIR: /app/data
+      AGORAMESH_CHAIN_RPC: https://sepolia.base.org
+      AGORAMESH_CHAIN_ID: "84532"
+      AGORAMESH_RATE_LIMIT_ENABLED: "true"
+      AGORAMESH_RATE_LIMIT_RPS: "100"
+      AGORAMESH_TRUST_CACHE_ENABLED: "true"
+      AGORAMESH_METRICS_ENABLED: "true"
 
     # Persistent data volume
     volumes:
@@ -55,14 +55,14 @@ services:
 
     # Networking
     networks:
-      - agentme
+      - agoramesh
 
   # ==========================================================================
   # Prometheus (Optional - for metrics)
   # ==========================================================================
   prometheus:
     image: prom/prometheus:v2.54.1
-    container_name: agentme-prometheus
+    container_name: agoramesh-prometheus
     restart: unless-stopped
     profiles:
       - monitoring
@@ -80,14 +80,14 @@ services:
       - '--web.enable-lifecycle'
 
     networks:
-      - agentme
+      - agoramesh
 
   # ==========================================================================
   # Grafana (Optional - for dashboards)
   # ==========================================================================
   grafana:
     image: grafana/grafana:11.4.0
-    container_name: agentme-grafana
+    container_name: agoramesh-grafana
     restart: unless-stopped
     profiles:
       - monitoring
@@ -103,13 +103,13 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
 
     networks:
-      - agentme
+      - agoramesh
 
 # ==========================================================================
 # Networks
 # ==========================================================================
 networks:
-  agentme:
+  agoramesh:
     driver: bridge
 
 # ==========================================================================

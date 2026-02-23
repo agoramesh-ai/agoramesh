@@ -92,7 +92,7 @@ async function main() {
   // Escrow flow would continue here...
   console.log('\n2️⃣  Would create escrow with:');
   console.log('   Amount: 0.01 USDC');
-  console.log('   Provider DID: did:agentme:base-sepolia:test-agent-001');
+  console.log('   Provider DID: did:agoramesh:base-sepolia:test-agent-001');
   
   const escrowCount = await publicClient.readContract({
     address: ESCROW,

@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 /// @title ICrossChainTrustSync - Interface for Cross-Chain Trust Synchronization
 /// @notice Manages synchronization of trust scores across chains using LayerZero V2
-/// @dev Part of the AgentMe multi-chain infrastructure
+/// @dev Part of the AgoraMesh multi-chain infrastructure
 interface ICrossChainTrustSync {
     // ============ Structs ============
 

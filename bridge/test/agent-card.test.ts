@@ -31,7 +31,7 @@ const richConfig: RichAgentConfig = {
   workspaceDir: '/tmp/rich-workspace',
   allowedCommands: ['claude'],
   taskTimeout: 300,
-  agentId: 'did:agentme:rich-agent-001',
+  agentId: 'did:agoramesh:rich-agent-001',
   agentVersion: '2.5.0',
   url: 'https://agent.example.com',
   protocolVersion: '1.1',
@@ -47,7 +47,7 @@ const richConfig: RichAgentConfig = {
   },
   authentication: {
     schemes: ['did', 'bearer'],
-    didMethods: ['did:key', 'did:agentme'],
+    didMethods: ['did:key', 'did:agoramesh'],
   },
   richSkills: [
     {
@@ -98,7 +98,7 @@ const richConfig: RichAgentConfig = {
     },
     endorsements: [
       {
-        endorser: 'did:agentme:endorser-1',
+        endorser: 'did:agoramesh:endorser-1',
         endorserName: 'Trusted Endorser',
         endorserTrust: 0.95,
         endorsedAt: '2026-01-15T00:00:00Z',
@@ -256,7 +256,7 @@ describe('Agent Card endpoint (rich config)', () => {
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('rich-agent');
     expect(res.body.description).toBe('Fully configured A2A agent');
-    expect(res.body.id).toBe('did:agentme:rich-agent-001');
+    expect(res.body.id).toBe('did:agoramesh:rich-agent-001');
     expect(res.body.url).toBe('https://agent.example.com');
     expect(res.body.protocolVersion).toBe('1.1');
     expect(res.body.version).toBe('2.5.0');
@@ -287,7 +287,7 @@ describe('Agent Card endpoint (rich config)', () => {
 
     expect(res.body.authentication).toEqual({
       schemes: ['did', 'bearer'],
-      didMethods: ['did:key', 'did:agentme'],
+      didMethods: ['did:key', 'did:agoramesh'],
     });
   });
 
@@ -353,7 +353,7 @@ describe('Agent Card endpoint (rich config)', () => {
     });
     expect(res.body.trust.endorsements).toHaveLength(1);
     expect(res.body.trust.endorsements[0].endorser).toBe(
-      'did:agentme:endorser-1',
+      'did:agoramesh:endorser-1',
     );
     expect(res.body.trust.selfAsserted).toBe(true);
   });

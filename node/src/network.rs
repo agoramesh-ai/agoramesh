@@ -15,7 +15,7 @@ pub mod swarm;
 pub mod transport;
 
 // Re-export main types for convenience
-pub use behaviour::{topics, AgentMeBehaviour, AgentMeEvent, PROTOCOL_VERSION};
+pub use behaviour::{topics, AgoraMeshBehaviour, AgoraMeshEvent, PROTOCOL_VERSION};
 pub use message_handler::{DiscoveryMessage, MessageHandler, MessageHandlerStats, TrustMessage};
 pub use security::{
     validate_bootstrap_peers, validate_network_config, ConnectionRateLimiter, ConnectionTracker,
@@ -160,7 +160,7 @@ impl NetworkManager {
     ///
     /// # Arguments
     ///
-    /// * `topic` - The topic name (e.g., "/agentme/discovery/1.0.0")
+    /// * `topic` - The topic name (e.g., "/agoramesh/discovery/1.0.0")
     /// * `message` - The message data
     pub async fn publish(&self, topic: &str, message: &[u8]) -> Result<()> {
         debug!("Publishing {} bytes to topic {}", message.len(), topic);
@@ -301,9 +301,9 @@ mod tests {
 
     #[test]
     fn test_topic_constants() {
-        assert_eq!(topics::DISCOVERY, "/agentme/discovery/1.0.0");
-        assert_eq!(topics::CAPABILITY, "/agentme/capability/1.0.0");
-        assert_eq!(topics::TRUST, "/agentme/trust/1.0.0");
+        assert_eq!(topics::DISCOVERY, "/agoramesh/discovery/1.0.0");
+        assert_eq!(topics::CAPABILITY, "/agoramesh/capability/1.0.0");
+        assert_eq!(topics::TRUST, "/agoramesh/trust/1.0.0");
     }
 
     #[tokio::test]

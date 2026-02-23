@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/TrustRegistry.sol";
-import "../src/interfaces/IAgentMeshEscrow.sol";
+import "../src/interfaces/IAgoraMeshEscrow.sol";
 import "../src/interfaces/IDisputeResolution.sol";
 import "../src/interfaces/ITrustRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -23,10 +23,10 @@ contract IntegrationMockUSDC is ERC20 {
     }
 }
 
-/// @title Integration Tests for AgentMe Escrow Lifecycle
+/// @title Integration Tests for AgoraMesh Escrow Lifecycle
 /// @notice End-to-end tests covering Escrow, DisputeResolution, and TrustRegistry
 contract IntegrationTest is Test {
-    AgentMeshEscrow public escrow;
+    AgoraMeshEscrow public escrow;
     TieredDisputeResolution public disputeResolution;
     TrustRegistry public trustRegistry;
     IntegrationMockUSDC public usdc;
@@ -44,8 +44,8 @@ contract IntegrationTest is Test {
     // Extra arbiters needed for COMMUNITY tier appeal rounds
     address[6] public extraArbiters;
 
-    bytes32 public clientDid = keccak256("did:agentme:integration:client");
-    bytes32 public providerDid = keccak256("did:agentme:integration:provider");
+    bytes32 public clientDid = keccak256("did:agoramesh:integration:client");
+    bytes32 public providerDid = keccak256("did:agoramesh:integration:provider");
 
     bytes32 public taskHash = keccak256("integration-test-task");
     bytes32 public outputHash = keccak256("integration-test-output");
@@ -62,7 +62,7 @@ contract IntegrationTest is Test {
         // Deploy contracts
         usdc = new IntegrationMockUSDC();
         trustRegistry = new TrustRegistry(address(usdc), admin);
-        escrow = new AgentMeshEscrow(address(trustRegistry), admin);
+        escrow = new AgoraMeshEscrow(address(trustRegistry), admin);
         disputeResolution = new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), admin);
 
         // Grant cross-contract roles
@@ -139,15 +139,15 @@ contract IntegrationTest is Test {
         uint256 escrowId =
             escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline);
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.AWAITING_DEPOSIT));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.AWAITING_DEPOSIT));
 
         // 2. Client funds escrow
         vm.prank(client);
         escrow.fundEscrow(escrowId);
 
         e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.FUNDED));
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.FUNDED));
         assertEq(usdc.balanceOf(address(escrow)), amount);
 
         // 3. Provider delivers work
@@ -155,7 +155,7 @@ contract IntegrationTest is Test {
         escrow.confirmDelivery(escrowId, outputHash);
 
         e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.DELIVERED));
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.DELIVERED));
         assertEq(e.outputHash, outputHash);
         assertGt(e.deliveredAt, 0);
 
@@ -164,7 +164,7 @@ contract IntegrationTest is Test {
         escrow.releaseEscrow(escrowId);
 
         e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.RELEASED));
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.RELEASED));
         assertEq(usdc.balanceOf(address(escrow)), 0);
         assertEq(usdc.balanceOf(client), clientBalBefore - amount);
         assertEq(usdc.balanceOf(provider), providerBalBefore + amount);
@@ -195,7 +195,7 @@ contract IntegrationTest is Test {
 
         // Provider cannot release before delay
         vm.prank(provider);
-        vm.expectRevert(AgentMeshEscrow.AutoReleaseNotReady.selector);
+        vm.expectRevert(AgoraMeshEscrow.AutoReleaseNotReady.selector);
         escrow.releaseEscrow(escrowId);
 
         // Warp past auto-release delay
@@ -207,8 +207,8 @@ contract IntegrationTest is Test {
         vm.prank(provider);
         escrow.releaseEscrow(escrowId);
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.RELEASED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.RELEASED));
         assertEq(usdc.balanceOf(provider), providerBalBefore + amount);
     }
 
@@ -235,8 +235,8 @@ contract IntegrationTest is Test {
         vm.prank(client);
         escrow.claimTimeout(escrowId);
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.REFUNDED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.REFUNDED));
         assertEq(usdc.balanceOf(client), clientBalBefore + amount);
 
         // TrustRegistry recorded a failed transaction for provider
@@ -264,8 +264,8 @@ contract IntegrationTest is Test {
         vm.prank(client);
         escrow.initiateDispute(escrowId, "evidence-data");
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.DISPUTED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.DISPUTED));
 
         // Client creates dispute in dispute resolution contract
         bytes32 evidenceCID = keccak256("client-evidence");
@@ -296,7 +296,7 @@ contract IntegrationTest is Test {
 
         // Verify escrow resolved (full refund to client)
         e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.REFUNDED));
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.REFUNDED));
         assertEq(usdc.balanceOf(client), clientBalBefore + amount);
     }
 
@@ -428,8 +428,8 @@ contract IntegrationTest is Test {
         assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.SETTLED));
 
         // Verify escrow resolved: full amount to provider
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.RELEASED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.RELEASED));
         assertEq(usdc.balanceOf(provider), providerBalBefore + amount);
     }
 
@@ -575,8 +575,8 @@ contract IntegrationTest is Test {
         d = disputeResolution.getDispute(disputeId);
         assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.SETTLED));
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.RELEASED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.RELEASED));
         assertEq(usdc.balanceOf(provider), providerBalBefore + amount);
     }
 
@@ -711,8 +711,8 @@ contract IntegrationTest is Test {
         disputeResolution.executeSettlement(disputeId);
 
         // Verify funds went to client
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.REFUNDED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.REFUNDED));
         assertEq(usdc.balanceOf(client), clientBalBefore + amount);
     }
 
@@ -752,10 +752,10 @@ contract IntegrationTest is Test {
         escrow.initiateDispute(eid2, "dispute-evidence");
 
         // Verify independent states
-        IAgentMeshEscrow.Escrow memory e1 = escrow.getEscrow(eid1);
-        IAgentMeshEscrow.Escrow memory e2 = escrow.getEscrow(eid2);
-        assertEq(uint256(e1.state), uint256(IAgentMeshEscrow.State.RELEASED));
-        assertEq(uint256(e2.state), uint256(IAgentMeshEscrow.State.DISPUTED));
+        IAgoraMeshEscrow.Escrow memory e1 = escrow.getEscrow(eid1);
+        IAgoraMeshEscrow.Escrow memory e2 = escrow.getEscrow(eid2);
+        assertEq(uint256(e1.state), uint256(IAgoraMeshEscrow.State.RELEASED));
+        assertEq(uint256(e2.state), uint256(IAgoraMeshEscrow.State.DISPUTED));
     }
 
     // ================================================================
@@ -776,8 +776,8 @@ contract IntegrationTest is Test {
         vm.prank(provider);
         escrow.initiateDispute(escrowId, "unclear-task");
 
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.DISPUTED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.DISPUTED));
 
         // Create and auto-resolve dispute (provider submitted evidence, client didn't)
         vm.prank(provider);
@@ -795,8 +795,8 @@ contract IntegrationTest is Test {
         vm.prank(provider);
         disputeResolution.executeAutoResolution(disputeId);
 
-        IAgentMeshEscrow.Escrow memory eAfter = escrow.getEscrow(escrowId);
-        assertEq(uint256(eAfter.state), uint256(IAgentMeshEscrow.State.RELEASED));
+        IAgoraMeshEscrow.Escrow memory eAfter = escrow.getEscrow(escrowId);
+        assertEq(uint256(eAfter.state), uint256(IAgoraMeshEscrow.State.RELEASED));
         assertEq(usdc.balanceOf(provider), providerBalBefore + amount);
     }
 
@@ -928,8 +928,8 @@ contract IntegrationTest is Test {
         assertEq(usdc.balanceOf(provider), providerBalBeforeSettlement + providerPortion);
 
         // Verify escrow state
-        IAgentMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
-        assertEq(uint256(e.state), uint256(IAgentMeshEscrow.State.RELEASED));
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.RELEASED));
 
         // Verify dispute state
         IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);

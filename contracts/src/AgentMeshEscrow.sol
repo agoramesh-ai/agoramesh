@@ -5,13 +5,13 @@ import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IAgentMeshEscrow.sol";
+import "./interfaces/IAgoraMeshEscrow.sol";
 import "./interfaces/ITrustRegistry.sol";
 
-/// @title AgentMeshEscrow - Escrow for Agent-to-Agent Transactions
+/// @title AgoraMeshEscrow - Escrow for Agent-to-Agent Transactions
 /// @notice Manages escrow for agent tasks with dispute resolution
 /// @dev Integrates with TrustRegistry for agent validation and reputation updates
-contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, ReentrancyGuard {
+contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ============ Constants ============
@@ -66,7 +66,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
 
     // ============ Constructor ============
 
-    /// @notice Initialize the AgentMeshEscrow contract
+    /// @notice Initialize the AgoraMeshEscrow contract
     /// @param _trustRegistry Address of the TrustRegistry contract
     /// @param _admin Address of the admin
     constructor(address _trustRegistry, address _admin) {
@@ -79,7 +79,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
 
     // ============ Escrow Lifecycle Functions ============
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function createEscrow(
         bytes32 clientDid,
         bytes32 providerDid,
@@ -136,7 +136,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
         emit EscrowCreated(escrowId, clientDid, providerDid, amount, deadline);
     }
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function fundEscrow(uint256 escrowId) external override nonReentrant {
         Escrow storage e = _getEscrow(escrowId);
 
@@ -155,7 +155,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
         emit EscrowFunded(escrowId);
     }
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function confirmDelivery(uint256 escrowId, bytes32 outputHash) external override {
         Escrow storage e = _getEscrow(escrowId);
 
@@ -173,7 +173,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
         emit TaskDelivered(escrowId, outputHash);
     }
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function releaseEscrow(uint256 escrowId) external override nonReentrant {
         Escrow storage e = _getEscrow(escrowId);
 
@@ -207,7 +207,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
 
     // ============ Dispute Functions ============
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function initiateDispute(
         uint256 escrowId,
         bytes calldata /* evidence */
@@ -233,7 +233,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
         emit DisputeInitiated(escrowId, msg.sender);
     }
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function resolveDispute(uint256 escrowId, bool releaseToProvider, uint256 providerShare)
         external
         override
@@ -279,7 +279,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
 
     // ============ Timeout Functions ============
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function claimTimeout(uint256 escrowId) external override nonReentrant {
         Escrow storage e = _getEscrow(escrowId);
 
@@ -306,7 +306,7 @@ contract AgentMeshEscrow is IAgentMeshEscrow, AccessControlEnumerable, Reentranc
 
     // ============ View Functions ============
 
-    /// @inheritdoc IAgentMeshEscrow
+    /// @inheritdoc IAgoraMeshEscrow
     function getEscrow(uint256 escrowId) external view override returns (Escrow memory) {
         return _escrows[escrowId];
     }

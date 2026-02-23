@@ -1,5 +1,5 @@
 /**
- * AgentMe Cross-Chain Trust Client
+ * AgoraMesh Cross-Chain Trust Client
  *
  * Client for interacting with the CrossChainTrustSync contract
  * for multi-chain trust score synchronization via LayerZero V2.
@@ -252,13 +252,13 @@ const CHAIN_REGISTRY_ABI = [
  * });
  *
  * // Check if cache is stale
- * const isStale = await client.isCacheStale('did:agentme:base:0x...');
+ * const isStale = await client.isCacheStale('did:agoramesh:base:0x...');
  *
  * // Request sync from primary chain
  * if (isStale) {
  *   const { hash } = await client.requestTrustSync({
  *     destinationEid: 30184,
- *     did: 'did:agentme:base:0x...',
+ *     did: 'did:agoramesh:base:0x...',
  *   });
  * }
  * ```

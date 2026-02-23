@@ -1,6 +1,6 @@
 //! Circuit breaker for protecting external service calls.
 //!
-//! This module provides a circuit breaker implementation for the AgentMe node,
+//! This module provides a circuit breaker implementation for the AgoraMesh node,
 //! preventing cascading failures when external services (blockchain RPC, APIs) fail.
 //!
 //! ## States

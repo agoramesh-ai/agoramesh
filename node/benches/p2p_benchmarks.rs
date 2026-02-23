@@ -1,6 +1,6 @@
 //! P2P Network Load Testing Benchmarks
 //!
-//! Benchmarks for measuring AgentMe P2P network performance:
+//! Benchmarks for measuring AgoraMesh P2P network performance:
 //! - Message serialization/deserialization throughput
 //! - Discovery service operations
 //! - Trust cache operations
@@ -19,8 +19,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 
-use agentme_node::{
-    discovery::{AgentMeExtension, Capability, CapabilityCard},
+use agoramesh_node::{
+    discovery::{AgoraMeshExtension, Capability, CapabilityCard},
     network::message_handler::{DiscoveryMessage, TrustMessage},
     trust::TrustInfo,
     AIArbitrationConfig, AIArbitrator, Evidence, EvidenceType, Juror, JurorPool, JurorPoolConfig,
@@ -35,7 +35,7 @@ fn bench_message_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("message_serialization");
 
     // Create sample capability card
-    let card = create_sample_card("did:agentme:base:benchmark-agent");
+    let card = create_sample_card("did:agoramesh:base:benchmark-agent");
 
     // Benchmark DiscoveryMessage serialization
     let discovery_msg = DiscoveryMessage::CardAnnouncement {
@@ -62,7 +62,7 @@ fn bench_message_serialization(c: &mut Criterion) {
 
     // Benchmark TrustMessage serialization
     let trust_msg = TrustMessage::TrustUpdate {
-        did: "did:agentme:base:test".to_string(),
+        did: "did:agoramesh:base:test".to_string(),
         trust_score: 0.85,
         timestamp: 1704067200,
     };
@@ -84,7 +84,7 @@ fn bench_message_batch_serialization(c: &mut Criterion) {
     for batch_size in [10, 100, 1000].iter() {
         let messages: Vec<_> = (0..*batch_size)
             .map(|i| TrustMessage::ReputationEvent {
-                did: format!("did:agentme:base:agent-{}", i),
+                did: format!("did:agoramesh:base:agent-{}", i),
                 success: i % 2 == 0,
                 amount: (i * 1000) as u64,
                 timestamp: 1704067200 + i as u64,
@@ -119,14 +119,14 @@ fn bench_discovery_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("discovery_operations");
 
     // Create sample capability card
-    let card = create_sample_card("did:agentme:base:test");
+    let card = create_sample_card("did:agoramesh:base:test");
 
     // Benchmark capability card validation
     group.bench_function("card_validation", |b| {
         b.iter(|| {
             // Validate DID format from extension
             let valid = black_box(&card)
-                .agentme
+                .agoramesh
                 .as_ref()
                 .map(|ext| ext.did.starts_with("did:"))
                 .unwrap_or(false);
@@ -136,7 +136,7 @@ fn bench_discovery_operations(c: &mut Criterion) {
 
     // Benchmark card matching (simple keyword search simulation)
     let cards: Vec<_> = (0..1000)
-        .map(|i| create_sample_card(&format!("did:agentme:base:agent-{}", i)))
+        .map(|i| create_sample_card(&format!("did:agoramesh:base:agent-{}", i)))
         .collect();
 
     group.bench_function("keyword_search_1000_cards", |b| {
@@ -156,7 +156,7 @@ fn bench_discovery_operations(c: &mut Criterion) {
             let mut cache: HashMap<String, CapabilityCard> = HashMap::new();
             for card in &cards {
                 let did = card
-                    .agentme
+                    .agoramesh
                     .as_ref()
                     .map(|ext| ext.did.clone())
                     .unwrap_or_default();
@@ -187,7 +187,7 @@ fn bench_trust_cache(c: &mut Criterion) {
         let mut counter = 0u64;
         b.iter(|| {
             counter += 1;
-            let did = format!("did:agentme:base:agent-{}", counter);
+            let did = format!("did:agoramesh:base:agent-{}", counter);
             let info = TrustInfo {
                 did: did.clone(),
                 score: 0.85,
@@ -208,7 +208,7 @@ fn bench_trust_cache(c: &mut Criterion) {
     // Pre-populate cache for lookup tests
     runtime.block_on(async {
         for i in 0..1000 {
-            let did = format!("did:agentme:base:lookup-{}", i);
+            let did = format!("did:agoramesh:base:lookup-{}", i);
             let info = TrustInfo {
                 did: did.clone(),
                 score: 0.5 + (i as f64 * 0.0004),
@@ -228,7 +228,7 @@ fn bench_trust_cache(c: &mut Criterion) {
     group.bench_function("cache_lookup_hit", |b| {
         b.iter(|| {
             runtime.block_on(async {
-                let result = cache.get("did:agentme:base:lookup-500").await;
+                let result = cache.get("did:agoramesh:base:lookup-500").await;
                 black_box(result);
             });
         });
@@ -238,7 +238,7 @@ fn bench_trust_cache(c: &mut Criterion) {
     group.bench_function("cache_lookup_miss", |b| {
         b.iter(|| {
             runtime.block_on(async {
-                let result = cache.get("did:agentme:base:nonexistent").await;
+                let result = cache.get("did:agoramesh:base:nonexistent").await;
                 black_box(result);
             });
         });
@@ -276,7 +276,7 @@ fn bench_arbitration(c: &mut Criterion) {
     group.bench_function("create_evidence", |b| {
         b.iter(|| {
             let evidence = Evidence::new(
-                "did:agentme:base:submitter",
+                "did:agoramesh:base:submitter",
                 EvidenceType::Text,
                 "Evidence Title",
                 "This is a detailed description of the evidence that supports the claim.",
@@ -303,7 +303,7 @@ fn bench_juror_pool(c: &mut Criterion) {
     // Explicit u64 types to avoid any overflow issues
     for i in 0u64..1000 {
         let stake = 100_000_000u64 + i * 10_000_000u64; // $100-$10,000 stakes
-        pool.register_juror(format!("did:agentme:base:juror-{}", i), stake, vec![0])
+        pool.register_juror(format!("did:agoramesh:base:juror-{}", i), stake, vec![0])
             .unwrap();
     }
 
@@ -314,7 +314,7 @@ fn bench_juror_pool(c: &mut Criterion) {
         b.iter(|| {
             counter += 1;
             let _ = fresh_pool.register_juror(
-                format!("did:agentme:base:fresh-juror-{}", counter),
+                format!("did:agoramesh:base:fresh-juror-{}", counter),
                 500_000_000,
                 vec![0],
             );
@@ -334,7 +334,7 @@ fn bench_juror_pool(c: &mut Criterion) {
     // Benchmark juror lookup
     group.bench_function("get_juror", |b| {
         b.iter(|| {
-            let juror = pool.get_juror("did:agentme:base:juror-500");
+            let juror = pool.get_juror("did:agoramesh:base:juror-500");
             let _ = black_box(juror);
         });
     });
@@ -362,7 +362,7 @@ fn bench_high_throughput(c: &mut Criterion) {
     // Simulate high message throughput
     let messages: Vec<_> = (0..10000)
         .map(|i| TrustMessage::TrustUpdate {
-            did: format!("did:agentme:base:agent-{}", i),
+            did: format!("did:agoramesh:base:agent-{}", i),
             trust_score: 0.5 + (i as f64 * 0.00005),
             timestamp: 1704067200 + i as u64,
         })
@@ -387,7 +387,7 @@ fn bench_high_throughput(c: &mut Criterion) {
 
     // Simulate concurrent discovery cache updates
     let cards: Vec<_> = (0..1000)
-        .map(|i| create_sample_card(&format!("did:agentme:base:agent-{}", i)))
+        .map(|i| create_sample_card(&format!("did:agoramesh:base:agent-{}", i)))
         .collect();
 
     group.throughput(Throughput::Elements(1000));
@@ -398,7 +398,7 @@ fn bench_high_throughput(c: &mut Criterion) {
                 .iter()
                 .map(|c| {
                     let did = c
-                        .agentme
+                        .agoramesh
                         .as_ref()
                         .map(|ext| ext.did.clone())
                         .unwrap_or_default();
@@ -432,7 +432,7 @@ fn create_sample_card(did: &str) -> CapabilityCard {
             output_schema: None,
         }],
         authentication: None,
-        agentme: Some(AgentMeExtension {
+        agoramesh: Some(AgoraMeshExtension {
             did: did.to_string(),
             trust_score: Some(0.85),
             stake: Some(1_000_000_000),

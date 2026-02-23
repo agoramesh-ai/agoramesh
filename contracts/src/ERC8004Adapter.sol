@@ -10,7 +10,7 @@ import "./AgentToken.sol";
 ///         ERC-8004 compatible query interfaces without modifying underlying contracts
 /// @dev This is a read-only adapter. All write functions revert with ReadOnlyAdapter().
 ///      Maps between ERC-8004's uint256 agentId (AgentToken token IDs) and
-///      AgentMe's bytes32 didHash (TrustRegistry identifiers).
+///      AgoraMesh's bytes32 didHash (TrustRegistry identifiers).
 contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry, IERC8004ValidationRegistry {
     // ============ Errors ============
 
@@ -35,7 +35,7 @@ contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry,
 
     // ============ State Variables ============
 
-    /// @notice Reference to the AgentMe TrustRegistry contract
+    /// @notice Reference to the AgoraMesh TrustRegistry contract
     ITrustRegistry public immutable trustRegistry;
 
     /// @notice Reference to the AgentToken ERC-721 contract
@@ -168,7 +168,7 @@ contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry,
     }
 
     /// @notice Read a specific feedback entry
-    /// @dev Returns zeroed placeholder values. AgentMe does not track per-client feedback
+    /// @dev Returns zeroed placeholder values. AgoraMesh does not track per-client feedback
     ///      entries; reputation is computed from aggregate transaction history.
     /// @param agentId Ignored
     /// @param clientAddress Ignored
@@ -192,7 +192,7 @@ contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry,
     }
 
     /// @notice Get all client addresses that have submitted feedback for an agent
-    /// @dev Returns empty array. AgentMe does not track individual feedback clients.
+    /// @dev Returns empty array. AgoraMesh does not track individual feedback clients.
     /// @param agentId Ignored
     /// @return Empty address array
     function getClients(uint256 agentId) external pure returns (address[] memory) {
@@ -201,7 +201,7 @@ contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry,
     }
 
     /// @notice Get the last feedback index for a specific (agentId, clientAddress) pair
-    /// @dev Returns 0. AgentMe does not track per-client feedback indices.
+    /// @dev Returns 0. AgoraMesh does not track per-client feedback indices.
     /// @param agentId Ignored
     /// @param clientAddress Ignored
     /// @return Always 0
@@ -217,7 +217,7 @@ contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry,
     // and is implemented once above.
 
     /// @notice Get the current status of a validation request
-    /// @dev Returns zeroed placeholder values. AgentMe does not use request-hash-based
+    /// @dev Returns zeroed placeholder values. AgoraMesh does not use request-hash-based
     ///      validation tracking; trust is computed via the composite trust score.
     /// @param requestHash Ignored
     /// @return validatorAddress Always address(0)
@@ -276,7 +276,7 @@ contract ERC8004Adapter is IERC8004IdentityRegistry, IERC8004ReputationRegistry,
     }
 
     /// @notice Get all validation request hashes associated with an agent
-    /// @dev Returns empty array. AgentMe does not use individual validation requests.
+    /// @dev Returns empty array. AgoraMesh does not use individual validation requests.
     /// @param agentId Ignored
     /// @return Empty bytes32 array
     function getAgentValidations(uint256 agentId) external pure returns (bytes32[] memory) {

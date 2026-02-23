@@ -19,7 +19,7 @@ describe('Bridge ↔ Node Integration', () => {
   beforeAll(async () => {
     // Generate a unique DID for this test
     const timestamp = Date.now();
-    testAgentDid = `did:agentme:local:bridge-test-${timestamp}`;
+    testAgentDid = `did:agoramesh:local:bridge-test-${timestamp}`;
   });
 
   describe('Bridge Agent Registration', () => {
@@ -50,7 +50,7 @@ describe('Bridge ↔ Node Integration', () => {
             description: 'Testing bridge-node integration'
           }
         ],
-        'x-agentme': {
+        'x-agoramesh': {
           did: testAgentDid,
           trust_score: 0.8,
           payment_methods: ['escrow', 'x402'],
@@ -201,8 +201,8 @@ describe('Bridge ↔ Node Integration', () => {
           name: skill.name,
           description: skill.description
         })) || [],
-        'x-agentme': {
-          did: `did:agentme:local:${Date.now()}`,
+        'x-agoramesh': {
+          did: `did:agoramesh:local:${Date.now()}`,
           trust_score: 0.9,
           payment_methods: bridgeCard.payment?.methods || ['escrow'],
           pricing: {

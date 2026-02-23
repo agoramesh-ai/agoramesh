@@ -1,6 +1,6 @@
-# AgentMe Smart Contract Deployment Guide
+# AgoraMesh Smart Contract Deployment Guide
 
-This guide covers deploying the AgentMe smart contracts to Base L2.
+This guide covers deploying the AgoraMesh smart contracts to Base L2.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ The deployment script deploys 9 contracts in the following order:
 |---|----------|-------------|
 | 1 | TrustRegistry | Core identity & reputation registry |
 | 2 | ChainRegistry | Multi-chain configuration |
-| 3 | AgentMeshEscrow | One-time payment escrow |
+| 3 | AgoraMeshEscrow | One-time payment escrow |
 | 4 | TieredDisputeResolution | Dispute resolution system |
 | 5 | StreamingPayments | Sablier-style payment streams |
 | 6 | CrossChainTrustSync | LayerZero V2 cross-chain messaging |
@@ -112,11 +112,11 @@ forge script script/Deploy.s.sol \
 The deployment script automatically configures these roles:
 
 ### TrustRegistry
-- `ORACLE_ROLE` → AgentMeshEscrow (records transactions)
+- `ORACLE_ROLE` → AgoraMeshEscrow (records transactions)
 - `ARBITER_ROLE` → TieredDisputeResolution (slashes stakes)
 
 ### NFTBoundReputation
-- `ORACLE_ROLE` → AgentMeshEscrow (records transactions)
+- `ORACLE_ROLE` → AgoraMeshEscrow (records transactions)
 - `ARBITER_ROLE` → TieredDisputeResolution (slashes stakes)
 
 ## Post-Deployment Verification
@@ -165,7 +165,7 @@ Approximate gas costs for deployment (Base L2 prices are ~1/100th of mainnet):
 |----------|----------|------------------|
 | TrustRegistry | ~2.5M | ~$0.05 |
 | ChainRegistry | ~1.5M | ~$0.03 |
-| AgentMeshEscrow | ~2.0M | ~$0.04 |
+| AgoraMeshEscrow | ~2.0M | ~$0.04 |
 | TieredDisputeResolution | ~3.0M | ~$0.06 |
 | StreamingPayments | ~2.0M | ~$0.04 |
 | CrossChainTrustSync | ~2.5M | ~$0.05 |

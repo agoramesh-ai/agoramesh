@@ -1,8 +1,8 @@
-# AgentMe Node Dockerfile
+# AgoraMesh Node Dockerfile
 # Multi-stage build for security and minimal image size
 #
-# Build: docker build -t agentme-node .
-# Run:   docker run -p 8080:8080 -p 4001:4001 agentme-node
+# Build: docker build -t agoramesh-node .
+# Run:   docker run -p 8080:8080 -p 4001:4001 agoramesh-node
 
 # ==============================================================================
 # Build Stage - Rust compilation
@@ -65,9 +65,9 @@ RUN printf '%s\n' \
 
 # Build dependencies only (cached layer)
 RUN cargo build --release 2>/dev/null || true && \
-    rm -rf src benches target/release/.fingerprint/agentme* \
-    target/release/agentme* target/release/deps/agentme* \
-    target/release/deps/libagentme*
+    rm -rf src benches target/release/.fingerprint/agoramesh* \
+    target/release/agoramesh* target/release/deps/agoramesh* \
+    target/release/deps/libagoramesh*
 
 # Copy actual source and benchmarks
 COPY src/ ./src/
@@ -77,7 +77,7 @@ COPY benches/ ./benches/
 RUN cargo build --release
 
 # Verify the binary exists
-RUN ls -la target/release/agentme
+RUN ls -la target/release/agoramesh
 
 # ==============================================================================
 # Production Stage - Minimal runtime
@@ -93,33 +93,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Security: Create non-root user and group
-RUN groupadd -g 1001 agentme && \
-    useradd -u 1001 -g agentme -s /bin/false agentme
+RUN groupadd -g 1001 agoramesh && \
+    useradd -u 1001 -g agoramesh -s /bin/false agoramesh
 
 # Create directories
 RUN mkdir -p /app/data /app/config && \
-    chown -R agentme:agentme /app
+    chown -R agoramesh:agoramesh /app
 
 # Set working directory
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /build/target/release/agentme ./
+COPY --from=builder /build/target/release/agoramesh ./
 
 # Set ownership
-RUN chown agentme:agentme ./agentme && \
-    chmod +x ./agentme
+RUN chown agoramesh:agoramesh ./agoramesh && \
+    chmod +x ./agoramesh
 
 # Switch to non-root user
-USER agentme
+USER agoramesh
 
 # Environment variables with defaults
 ENV RUST_LOG=info \
-    AGENTME_API_LISTEN=0.0.0.0:8080 \
-    AGENTME_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001 \
-    AGENTME_DATA_DIR=/app/data \
-    AGENTME_NETWORK=mainnet \
-    AGENTME_CHAIN_RPC=https://mainnet.base.org
+    AGORAMESH_API_LISTEN=0.0.0.0:8080 \
+    AGORAMESH_P2P_LISTEN=/ip4/0.0.0.0/tcp/4001 \
+    AGORAMESH_DATA_DIR=/app/data \
+    AGORAMESH_NETWORK=mainnet \
+    AGORAMESH_CHAIN_RPC=https://mainnet.base.org
 
 # Expose ports
 # 8080 - HTTP API
@@ -137,4 +137,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Start the node
-CMD ["./agentme", "start"]
+CMD ["./agoramesh", "start"]

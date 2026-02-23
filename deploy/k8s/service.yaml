@@ -1,17 +1,17 @@
-# AgentMe Node Services
+# AgoraMesh Node Services
 # Exposes HTTP API and P2P ports
 apiVersion: v1
 kind: Service
 metadata:
-  name: agentme-node
-  namespace: agentme
+  name: agoramesh-node
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: service
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
   ports:
     - name: http
       port: 8080
@@ -26,16 +26,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: agentme-node-headless
-  namespace: agentme
+  name: agoramesh-node-headless
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: headless
 spec:
   type: ClusterIP
   clusterIP: None
   selector:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
   ports:
     - name: p2p
       port: 4001
@@ -46,10 +46,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: agentme-node-p2p
-  namespace: agentme
+  name: agoramesh-node-p2p
+  namespace: agoramesh
   labels:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
     app.kubernetes.io/component: p2p-external
   annotations:
     # For cloud providers
@@ -58,7 +58,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app.kubernetes.io/name: agentme-node
+    app.kubernetes.io/name: agoramesh-node
   ports:
     - name: p2p
       port: 4001

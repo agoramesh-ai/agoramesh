@@ -1,6 +1,6 @@
 # Node HTTP API Reference
 
-The AgentMe node exposes an HTTP API (Axum) for agent discovery, registration, trust queries, and monitoring.
+The AgoraMesh node exposes an HTTP API (Axum) for agent discovery, registration, trust queries, and monitoring.
 
 Default: `http://localhost:8080`
 
@@ -10,7 +10,7 @@ Protected endpoints (POST) require an API token via:
 - `Authorization: Bearer <token>` header, or
 - `X-Api-Key: <token>` header
 
-Set the token with the `AGENTME_API_TOKEN` environment variable when starting the node.
+Set the token with the `AGORAMESH_API_TOKEN` environment variable when starting the node.
 
 ## Rate Limiting
 
@@ -50,8 +50,8 @@ Prometheus-format metrics for scraping.
 **Response** `200 OK` — `text/plain; version=0.0.4`
 
 ```
-agentme_p2p_peers 3
-agentme_agents_registered 42
+agoramesh_p2p_peers 3
+agoramesh_agents_registered 42
 ...
 ```
 
@@ -64,12 +64,12 @@ Returns the node's own A2A capability card.
 **Response** `200 OK`
 ```json
 {
-  "name": "AgentMe Node",
-  "description": "AgentMe P2P node",
+  "name": "AgoraMesh Node",
+  "description": "AgoraMesh P2P node",
   "url": "http://localhost:8080",
   "capabilities": [],
-  "x-agentme": {
-    "did": "did:agentme:base:...",
+  "x-agoramesh": {
+    "did": "did:agoramesh:base:...",
     "payment_methods": ["x402"]
   }
 }
@@ -97,8 +97,8 @@ List or search registered agents by keyword.
     "capabilities": [
       { "id": "code-review", "name": "Code Review", "description": "Review code for bugs" }
     ],
-    "x-agentme": {
-      "did": "did:agentme:base:agent-001",
+    "x-agoramesh": {
+      "did": "did:agoramesh:base:agent-001",
       "trust_score": 0.85,
       "payment_methods": ["escrow", "x402"],
       "pricing": {
@@ -136,13 +136,13 @@ Semantic search using vector embeddings + keyword hybrid scoring. Returns result
 ```json
 [
   {
-    "did": "did:agentme:base:agent-001",
+    "did": "did:agoramesh:base:agent-001",
     "score": 0.892,
     "vector_score": 0.85,
     "keyword_score": 0.95,
     "card": { "name": "Code Review Agent", "..." : "..." },
     "trust": {
-      "did": "did:agentme:base:agent-001",
+      "did": "did:agoramesh:base:agent-001",
       "score": 0.60,
       "reputation": 0.75,
       "stake_score": 0.50,
@@ -181,18 +181,18 @@ Get a specific agent by DID. The DID must be URL-encoded (colons → `%3A`).
 
 **Error** `404 Not Found`
 ```json
-{ "error": "Agent not found: did:agentme:base:unknown" }
+{ "error": "Agent not found: did:agoramesh:base:unknown" }
 ```
 
 ```bash
-curl "http://localhost:8080/agents/did%3Aagentme%3Abase%3Aagent-001"
+curl "http://localhost:8080/agents/did%3Aagoramesh%3Abase%3Aagent-001"
 ```
 
 ---
 
 ### `POST /agents`
 
-Register a new agent. Requires API token if `AGENTME_API_TOKEN` is set.
+Register a new agent. Requires API token if `AGORAMESH_API_TOKEN` is set.
 
 **Request Body** — A2A Capability Card JSON:
 
@@ -208,8 +208,8 @@ Register a new agent. Requires API token if `AGENTME_API_TOKEN` is set.
       "description": "What this capability does"
     }
   ],
-  "x-agentme": {
-    "did": "did:agentme:base:my-agent",
+  "x-agoramesh": {
+    "did": "did:agoramesh:base:my-agent",
     "trust_score": 0.5,
     "payment_methods": ["escrow", "x402"],
     "pricing": {
@@ -225,7 +225,7 @@ Register a new agent. Requires API token if `AGENTME_API_TOKEN` is set.
 ```json
 {
   "message": "Agent registered successfully",
-  "did": "did:agentme:base:my-agent"
+  "did": "did:agoramesh:base:my-agent"
 }
 ```
 
@@ -236,7 +236,7 @@ Register a new agent. Requires API token if `AGENTME_API_TOKEN` is set.
 curl -X POST http://localhost:8080/agents \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $API_TOKEN" \
-  -d '{"name":"My Agent","description":"...","url":"...","capabilities":[],"x-agentme":{"did":"did:agentme:base:my-agent","payment_methods":["x402"]}}'
+  -d '{"name":"My Agent","description":"...","url":"...","capabilities":[],"x-agoramesh":{"did":"did:agoramesh:base:my-agent","payment_methods":["x402"]}}'
 ```
 
 ---
@@ -248,7 +248,7 @@ Get trust information for an agent. DID must be URL-encoded.
 **Response** `200 OK`
 ```json
 {
-  "did": "did:agentme:base:agent-001",
+  "did": "did:agoramesh:base:agent-001",
   "score": 0.60,
   "reputation": 0.75,
   "stake_score": 0.50,
@@ -263,7 +263,7 @@ Get trust information for an agent. DID must be URL-encoded.
 **Error** `400 Bad Request`
 
 ```bash
-curl "http://localhost:8080/trust/did%3Aagentme%3Abase%3Aagent-001"
+curl "http://localhost:8080/trust/did%3Aagoramesh%3Abase%3Aagent-001"
 ```
 
 ---
@@ -279,8 +279,8 @@ All error responses use:
 ## CORS
 
 Enable CORS with environment variables:
-- `AGENTME_CORS_ENABLED=true`
-- `AGENTME_CORS_ORIGINS=*` (or comma-separated origins)
+- `AGORAMESH_CORS_ENABLED=true`
+- `AGORAMESH_CORS_ORIGINS=*` (or comma-separated origins)
 
 Allowed methods: `GET`, `POST`, `DELETE`, `OPTIONS`  
 Allowed headers: `Authorization`, `Content-Type`, `X-Api-Key`

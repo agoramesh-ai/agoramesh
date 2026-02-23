@@ -2,12 +2,12 @@
 export { BridgeServer } from './server.js';
 export type { BridgeServerConfig } from './server.js';
 export { ClaudeExecutor } from './executor.js';
-export { AgentMeIntegration } from './integration.js';
+export { AgoraMeshIntegration } from './integration.js';
 export { IPFSService } from './ipfs.js';
 
 // Error Types
 export {
-  AgentMeError,
+  AgoraMeshError,
   EscrowNotFoundError,
   EscrowOperationError,
   PaymentValidationError,

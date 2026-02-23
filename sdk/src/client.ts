@@ -1,7 +1,7 @@
 /**
- * AgentMe Client
+ * AgoraMesh Client
  *
- * Main client for interacting with the AgentMe network.
+ * Main client for interacting with the AgoraMesh network.
  *
  * @packageDocumentation
  */
@@ -22,7 +22,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 
 import type {
-  AgentMeConfig,
+  AgoraMeshConfig,
   ContractAddresses,
   CapabilityCard,
   Agent,
@@ -142,18 +142,18 @@ const TRUST_REGISTRY_ABI = [
 // =============================================================================
 
 /**
- * Valid DID patterns for AgentMe (W3C DID spec compliant).
+ * Valid DID patterns for AgoraMesh (W3C DID spec compliant).
  *
  * Supported DID methods:
- * - did:agentme:[network]:[identifier] - AgentMe native DIDs
+ * - did:agoramesh:[network]:[identifier] - AgoraMesh native DIDs
  * - did:web:[network]:[identifier] - Web DIDs
  * - did:key:[multibase-key] - Key DIDs (multibase-encoded public keys starting with 'z')
  * - did:ethr:[address] or did:ethr:[network]:[address] - Ethereum DIDs
  */
 
-// AgentMe/Web DID: did:(agentme|web):[method]:[identifier]
+// AgoraMesh/Web DID: did:(agoramesh|web):[method]:[identifier]
 // Method must be lowercase, identifier alphanumeric
-const DID_AGENTME_WEB_PATTERN = /^did:(agentme|web):[a-z]+:[a-zA-Z0-9]+$/;
+const DID_AGORAMESH_WEB_PATTERN = /^did:(agoramesh|web):[a-z]+:[a-zA-Z0-9]+$/;
 
 // Key DID: did:key:z[base58-multicodec-key]
 // Must start with 'z' (multibase prefix for base58btc) followed by alphanumeric chars
@@ -167,14 +167,14 @@ const DID_ETHR_PATTERN = /^did:ethr:(?:[a-zA-Z0-9]+:)?0x[a-fA-F0-9]{40}$/;
  * Validate a DID string format according to W3C DID spec.
  *
  * Supported formats:
- * - did:agentme:base:abc123 (AgentMe native)
+ * - did:agoramesh:base:abc123 (AgoraMesh native)
  * - did:web:ethereum:ABC123 (Web DID)
  * - did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK (Key DID)
  * - did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a (Ethereum DID)
  * - did:ethr:mainnet:0xb9c5714089478a327f09197987f16f9e5d936e8a (Ethereum DID with network)
  *
  * Invalid patterns:
- * - agentme:base:abc123 (missing did: prefix)
+ * - agoramesh:base:abc123 (missing did: prefix)
  * - did:invalid:base:abc123 (unsupported method)
  * - did:KEY:... (uppercase method not allowed)
  * - did:key:abc123 (key must start with 'z' for multibase)
@@ -189,8 +189,8 @@ export function validateDID(did: string): void {
   }
 
   // Check which DID method is being used and validate accordingly
-  if (did.startsWith('did:agentme:') || did.startsWith('did:web:')) {
-    if (!DID_AGENTME_WEB_PATTERN.test(did)) {
+  if (did.startsWith('did:agoramesh:') || did.startsWith('did:web:')) {
+    if (!DID_AGORAMESH_WEB_PATTERN.test(did)) {
       throw new Error(`Invalid DID format: ${did}`);
     }
   } else if (did.startsWith('did:key:')) {
@@ -275,15 +275,15 @@ function parseAgentInfo(result: {
 }
 
 // =============================================================================
-// AgentMeClient
+// AgoraMeshClient
 // =============================================================================
 
 /**
- * Main client for interacting with the AgentMe network.
+ * Main client for interacting with the AgoraMesh network.
  *
  * @example
  * ```typescript
- * const client = new AgentMeClient({
+ * const client = new AgoraMeshClient({
  *   rpcUrl: 'https://sepolia.base.org',
  *   chainId: 84532,
  *   privateKey: '0x...',
@@ -296,11 +296,11 @@ function parseAgentInfo(result: {
  * await client.registerAgent(capabilityCard, 'ipfs://Qm...');
  *
  * // Get agent info
- * const agent = await client.getAgent('did:agentme:base:0x...');
+ * const agent = await client.getAgent('did:agoramesh:base:0x...');
  * ```
  */
-export class AgentMeClient {
-  private readonly config: AgentMeConfig;
+export class AgoraMeshClient {
+  private readonly config: AgoraMeshConfig;
   private readonly chain: Chain;
   private readonly addresses: Partial<ContractAddresses>;
 
@@ -310,11 +310,11 @@ export class AgentMeClient {
   private connected = false;
 
   /**
-   * Create a new AgentMe client.
+   * Create a new AgoraMesh client.
    *
    * @param config - Client configuration
    */
-  constructor(config: AgentMeConfig) {
+  constructor(config: AgoraMeshConfig) {
     this.config = config;
     this.chain = getChain(config.chainId);
     this.addresses = {
@@ -604,10 +604,10 @@ export class AgentMeClient {
 // =============================================================================
 
 /**
- * Create a new AgentMe client.
+ * Create a new AgoraMesh client.
  *
  * @param config - Client configuration
- * @returns A new AgentMeClient instance
+ * @returns A new AgoraMeshClient instance
  *
  * @example
  * ```typescript
@@ -617,6 +617,6 @@ export class AgentMeClient {
  * });
  * ```
  */
-export function createClient(config: AgentMeConfig): AgentMeClient {
-  return new AgentMeClient(config);
+export function createClient(config: AgoraMeshConfig): AgoraMeshClient {
+  return new AgoraMeshClient(config);
 }

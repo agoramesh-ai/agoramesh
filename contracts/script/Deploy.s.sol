@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
 import "../src/TrustRegistry.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/StreamingPayments.sol";
 import "../src/ChainRegistry.sol";
@@ -12,8 +12,8 @@ import "../src/VerifiedNamespaces.sol";
 import "../src/AgentToken.sol";
 import "../src/NFTBoundReputation.sol";
 
-/// @title Deploy - AgentMe Deployment Script
-/// @notice Deploys all AgentMe contracts to Base L2
+/// @title Deploy - AgoraMesh Deployment Script
+/// @notice Deploys all AgoraMesh contracts to Base L2
 /// @dev Run with: forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast
 contract Deploy is Script {
     // ============ USDC Addresses ============
@@ -50,7 +50,7 @@ contract Deploy is Script {
         address usdc = isMainnet ? USDC_MAINNET : USDC_SEPOLIA;
         address lzEndpoint = isMainnet ? LZ_ENDPOINT_MAINNET : LZ_ENDPOINT_SEPOLIA;
 
-        console.log("Deploying AgentMe to chain:", block.chainid);
+        console.log("Deploying AgoraMesh to chain:", block.chainid);
         console.log("Admin:", admin);
         console.log("USDC:", usdc);
         console.log("LayerZero Endpoint:", lzEndpoint);
@@ -79,8 +79,8 @@ contract Deploy is Script {
         console.log("2. ChainRegistry deployed at:", c.chainRegistry);
 
         // 3. Escrow (one-time payments)
-        c.escrow = address(new AgentMeshEscrow(c.trustRegistry, admin));
-        console.log("3. AgentMeshEscrow deployed at:", c.escrow);
+        c.escrow = address(new AgoraMeshEscrow(c.trustRegistry, admin));
+        console.log("3. AgoraMeshEscrow deployed at:", c.escrow);
 
         // 4. TieredDisputeResolution
         c.disputes = address(new TieredDisputeResolution(c.escrow, c.trustRegistry, usdc, admin));
@@ -99,7 +99,7 @@ contract Deploy is Script {
         console.log("7. VerifiedNamespaces deployed at:", c.namespaces);
 
         // 8. AgentToken (ERC-721 + ERC-2981 for agent ownership)
-        c.agentToken = address(new AgentToken("AgentMe Agents", "AGENT", usdc, admin, admin));
+        c.agentToken = address(new AgentToken("AgoraMesh Agents", "AGENT", usdc, admin, admin));
         console.log("8. AgentToken deployed at:", c.agentToken);
 
         // 9. NFTBoundReputation (reputation tied to agent NFTs)
@@ -170,7 +170,7 @@ contract Deploy is Script {
         console.log("  ChainRegistry:           ", c.chainRegistry);
         console.log("");
         console.log("Payment Layer:");
-        console.log("  AgentMeshEscrow:         ", c.escrow);
+        console.log("  AgoraMeshEscrow:         ", c.escrow);
         console.log("  TieredDisputeResolution: ", c.disputes);
         console.log("  StreamingPayments:       ", c.streaming);
         console.log("");

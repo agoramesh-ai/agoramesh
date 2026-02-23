@@ -1,4 +1,4 @@
-//! Rate limiting for the AgentMe API.
+//! Rate limiting for the AgoraMesh API.
 //!
 //! This module provides configurable rate limiting using the GCRA algorithm
 //! (Generic Cell Rate Algorithm) via the `governor` crate.

@@ -1,7 +1,7 @@
 /**
- * AgentMe Integration
+ * AgoraMesh Integration
  *
- * Handles automatic registration and announcement to the AgentMe network.
+ * Handles automatic registration and announcement to the AgoraMesh network.
  */
 
 import { createHash } from 'crypto';
@@ -13,13 +13,13 @@ import { RegistrationError, type Result, success, failure } from './errors.js';
 import type {
   CapabilityCard,
   Skill,
-  AgentMeConfig,
-  AgentMeClient,
+  AgoraMeshConfig,
+  AgoraMeshClient,
   DiscoveryClient,
-} from '@agentme/sdk';
+} from '@agoramesh/sdk';
 
 /**
- * Configuration for AgentMe integration.
+ * Configuration for AgoraMesh integration.
  */
 export interface IntegrationConfig {
   /** RPC URL for the blockchain */
@@ -28,7 +28,7 @@ export interface IntegrationConfig {
   chainId: number;
   /** Trust Registry contract address */
   trustRegistryAddress?: string;
-  /** AgentMe node URL for P2P discovery */
+  /** AgoraMesh node URL for P2P discovery */
   nodeUrl?: string;
   /** IPFS gateway for capability card retrieval */
   ipfsGateway?: string;
@@ -37,32 +37,32 @@ export interface IntegrationConfig {
 }
 
 /**
- * Handles integration with the AgentMe network.
+ * Handles integration with the AgoraMesh network.
  *
  * Provides methods to:
  * - Register agent on-chain
  * - Announce capability card to P2P network
  * - Generate DID from private key
  */
-export class AgentMeIntegration {
+export class AgoraMeshIntegration {
   private readonly agentConfig: AgentConfig;
   private readonly integrationConfig: IntegrationConfig;
   private readonly did: string;
-  private client: AgentMeClient | null = null;
+  private client: AgoraMeshClient | null = null;
   private discovery: DiscoveryClient | null = null;
   private ipfsService: IPFSService;
   private connected = false;
 
   /**
-   * Create a new AgentMe integration.
+   * Create a new AgoraMesh integration.
    *
    * @param agentConfig - The agent's configuration
-   * @param integrationConfig - AgentMe network configuration
+   * @param integrationConfig - AgoraMesh network configuration
    * @throws Error if privateKey is missing
    */
   constructor(agentConfig: AgentConfig, integrationConfig: IntegrationConfig) {
     if (!agentConfig.privateKey || agentConfig.privateKey === '') {
-      throw new Error('Private key is required for AgentMe integration');
+      throw new Error('Private key is required for AgoraMesh integration');
     }
 
     this.agentConfig = agentConfig;
@@ -92,13 +92,13 @@ export class AgentMeIntegration {
   /**
    * Generate a DID from the private key.
    *
-   * Format: did:agentme:base:0x{address}
+   * Format: did:agoramesh:base:0x{address}
    */
   private generateDID(privateKey: string): string {
     // In a real implementation, we'd use viem to derive the address
     // For now, use a cryptographic hash of the key
     const hash = this.secureHash(privateKey);
-    return `did:agentme:base:${hash}`;
+    return `did:agoramesh:base:${hash}`;
   }
 
   /**
@@ -189,16 +189,16 @@ export class AgentMeIntegration {
 
     try {
       // Dynamic import to avoid requiring SDK at module load time
-      const { AgentMeClient, DiscoveryClient } = await import('@agentme/sdk');
+      const { AgoraMeshClient, DiscoveryClient } = await import('@agoramesh/sdk');
 
-      const clientConfig: AgentMeConfig = {
+      const clientConfig: AgoraMeshConfig = {
         rpcUrl: this.integrationConfig.rpcUrl,
         chainId: this.integrationConfig.chainId,
         privateKey: this.agentConfig.privateKey as `0x${string}`,
         trustRegistryAddress: this.integrationConfig.trustRegistryAddress as `0x${string}` | undefined,
       };
 
-      this.client = new AgentMeClient(clientConfig);
+      this.client = new AgoraMeshClient(clientConfig);
       await this.client.connect();
 
       this.discovery = new DiscoveryClient(this.client);
@@ -209,7 +209,7 @@ export class AgentMeIntegration {
       this.connected = true;
     } catch (error) {
       // SDK not available - log warning but continue
-      console.warn('[Integration] AgentMe SDK not available:', error);
+      console.warn('[Integration] AgoraMesh SDK not available:', error);
       throw error;
     }
   }
@@ -241,7 +241,7 @@ export class AgentMeIntegration {
       if (this.ipfsService.isConfigured()) {
         console.log('[Integration] Uploading capability card to IPFS...');
         capabilityCardCID = await this.ipfsService.uploadJSON(card, {
-          name: `agentme-capability-card-${this.did}`,
+          name: `agoramesh-capability-card-${this.did}`,
           keyvalues: {
             type: 'capability-card',
             did: this.did,

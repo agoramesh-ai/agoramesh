@@ -1,10 +1,10 @@
 [package]
-name = "agentme-node"
+name = "agoramesh-node"
 version = "0.1.0"
 edition = "2021"
-description = "AgentMe P2P node for decentralized agent marketplace"
+description = "AgoraMesh P2P node for decentralized agent marketplace"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/agentmecz/agentme"
+repository = "https://github.com/agoramesh-ai/agoramesh"
 keywords = ["agents", "p2p", "blockchain", "marketplace"]
 categories = ["network-programming", "cryptography"]
 
@@ -75,7 +75,7 @@ criterion = { version = "0.5", features = ["async_tokio"] }
 rand = "0.8"
 
 [[bin]]
-name = "agentme"
+name = "agoramesh"
 path = "src/main.rs"
 
 [[bench]]

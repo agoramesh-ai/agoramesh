@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title ITrustRegistry - Interface for the AgentMe Trust Registry
+/// @title ITrustRegistry - Interface for the AgoraMesh Trust Registry
 /// @notice Manages agent registration, reputation, staking, and endorsements
-/// @dev Part of the AgentMe trust layer, compatible with ERC-8004
+/// @dev Part of the AgoraMesh trust layer, compatible with ERC-8004
 interface ITrustRegistry {
     // ============ Structs ============
 

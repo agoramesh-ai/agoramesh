@@ -2,9 +2,9 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in AgentMe, please report it responsibly.
+If you discover a security vulnerability in AgoraMesh, please report it responsibly.
 
-**Email:** prdko@agentme.cz
+**Email:** prdko@agoramesh.ai
 
 Please include:
 
@@ -26,7 +26,7 @@ Please include:
 
 The following components are in scope:
 
-- **Smart contracts** (`contracts/`) - TrustRegistry, AgentMeEscrow, dispute resolution
+- **Smart contracts** (`contracts/`) - TrustRegistry, AgoraMeshEscrow, dispute resolution
 - **Bridge** (`bridge/`) - HTTP/WebSocket server, Claude Code executor
 - **P2P Node** (`node/`) - libp2p networking, DHT discovery
 - **SDK** (`sdk/`) - Client library, trust scoring, payment handling
@@ -52,4 +52,4 @@ A formal bug bounty program will be announced prior to mainnet launch. Critical 
 
 ## PGP Key
 
-A PGP key for encrypted communication will be published at [https://agentme.cz/.well-known/security.txt](https://agentme.cz/.well-known/security.txt) prior to mainnet launch.
+A PGP key for encrypted communication will be published at [https://agoramesh.ai/.well-known/security.txt](https://agoramesh.ai/.well-known/security.txt) prior to mainnet launch.

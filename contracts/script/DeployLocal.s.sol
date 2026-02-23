@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "../src/MockUSDC.sol";
 import "../src/TrustRegistry.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/StreamingPayments.sol";
 import "../src/ChainRegistry.sol";
@@ -15,7 +15,7 @@ import "../src/NFTBoundReputation.sol";
 import "../src/ERC8004Adapter.sol";
 
 /// @title DeployLocal - Deploy all contracts to local Anvil with MockUSDC
-/// @notice Deploys MockUSDC, mints test tokens, then deploys all AgentMe contracts.
+/// @notice Deploys MockUSDC, mints test tokens, then deploys all AgoraMesh contracts.
 ///         Writes addresses to deployments/local.json for other components.
 /// @dev Run with: forge script script/DeployLocal.s.sol --rpc-url localhost --broadcast
 contract DeployLocal is Script {
@@ -40,7 +40,7 @@ contract DeployLocal is Script {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address admin = vm.addr(deployerPrivateKey);
 
-        console.log("Deploying AgentMe to local Anvil (chain 31337)");
+        console.log("Deploying AgoraMesh to local Anvil (chain 31337)");
         console.log("Admin:", admin);
 
         vm.startBroadcast(deployerPrivateKey);
@@ -63,8 +63,8 @@ contract DeployLocal is Script {
         c.chainRegistry = address(new ChainRegistry(admin));
         console.log("ChainRegistry:", c.chainRegistry);
 
-        c.escrow = address(new AgentMeshEscrow(c.trustRegistry, admin));
-        console.log("AgentMeshEscrow:", c.escrow);
+        c.escrow = address(new AgoraMeshEscrow(c.trustRegistry, admin));
+        console.log("AgoraMeshEscrow:", c.escrow);
 
         c.disputes = address(new TieredDisputeResolution(c.escrow, c.trustRegistry, c.usdc, admin));
         console.log("TieredDisputeResolution:", c.disputes);
@@ -78,7 +78,7 @@ contract DeployLocal is Script {
         c.namespaces = address(new VerifiedNamespaces(admin));
         console.log("VerifiedNamespaces:", c.namespaces);
 
-        c.agentToken = address(new AgentToken("AgentMe Agents", "AGENT", c.usdc, admin, admin));
+        c.agentToken = address(new AgentToken("AgoraMesh Agents", "AGENT", c.usdc, admin, admin));
         console.log("AgentToken:", c.agentToken);
 
         c.nftReputation = address(new NFTBoundReputation(c.agentToken, c.usdc, admin));
@@ -90,7 +90,7 @@ contract DeployLocal is Script {
         // 3. Configure roles
         TrustRegistry registry = TrustRegistry(c.trustRegistry);
         NFTBoundReputation nftRep = NFTBoundReputation(c.nftReputation);
-        AgentMeshEscrow escrowContract = AgentMeshEscrow(c.escrow);
+        AgoraMeshEscrow escrowContract = AgoraMeshEscrow(c.escrow);
 
         registry.grantRole(registry.ORACLE_ROLE(), c.escrow);
         registry.grantRole(registry.ARBITER_ROLE(), c.disputes);

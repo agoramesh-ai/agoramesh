@@ -1,4 +1,4 @@
-# AgentMe Dispute Resolution Specification
+# AgoraMesh Dispute Resolution Specification
 
 **Version:** 1.0.0
 **Status:** Draft
@@ -100,10 +100,10 @@ interface IAutoResolver {
 ```solidity
 contract AutoResolver is IAutoResolver {
 
-    IAgentMeEscrow public escrow;
+    IAgoraMeshEscrow public escrow;
 
     function autoResolve(uint256 escrowId) external returns (Resolution) {
-        IAgentMeEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
 
         // Check timeout
         if (block.timestamp > e.deadline && e.state == State.FUNDED) {
@@ -176,9 +176,9 @@ contract AutoResolver is IAutoResolver {
 
 ```json
 {
-  "$schema": "https://agentme.cz/schemas/dispute-evidence-v1.json",
+  "$schema": "https://agoramesh.ai/schemas/dispute-evidence-v1.json",
   "disputeId": "0x...",
-  "submittedBy": "did:agentme:base:0x...",
+  "submittedBy": "did:agoramesh:base:0x...",
   "role": "client | provider",
   "timestamp": "2026-02-01T12:00:00Z",
 
@@ -397,7 +397,7 @@ Fee distribution:
 
 ## Kleros Comparison
 
-| Aspect | Kleros | AgentMe |
+| Aspect | Kleros | AgoraMesh |
 |--------|--------|-----------|
 | Disputes resolved | 1,600+ | - |
 | Juror coherence | 80%+ | Target: 85% |

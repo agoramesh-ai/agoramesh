@@ -1,4 +1,4 @@
-# AgentMe Bridge - Docker Compose
+# AgoraMesh Bridge - Docker Compose
 #
 # Runs the bridge in an isolated sandbox environment.
 # Uses security best practices: non-root user, read-only filesystem,
@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: agentme-bridge
+    container_name: agoramesh-bridge
     restart: unless-stopped
 
     # Security: Run as non-root user (matches Dockerfile USER)
@@ -45,7 +45,7 @@ services:
       # Workspace for Claude Code tasks (read-write)
       - ${WORKSPACE_DIR:-./workspace}:/workspace:rw
       # Optional: Mount Claude CLI config from host
-      # - ~/.config/claude-code:/home/agentme/.config/claude-code:ro
+      # - ~/.config/claude-code:/home/agoramesh/.config/claude-code:ro
 
     # Security hardening
     security_opt:
@@ -95,7 +95,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: builder
-    container_name: agentme-bridge-dev
+    container_name: agoramesh-bridge-dev
 
     env_file:
       - .env
@@ -129,5 +129,5 @@ volumes:
 # ===========================================================================
 networks:
   default:
-    name: agentme
+    name: agoramesh
     driver: bridge

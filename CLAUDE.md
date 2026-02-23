@@ -1,8 +1,8 @@
-# AgentMe - Project Context
+# AgoraMesh - Project Context
 
 ## What is this?
 
-AgentMe is a decentralized marketplace and trust layer for AI agents. It enables agents to discover each other, verify trustworthiness, and safely transact services.
+AgoraMesh is a decentralized marketplace and trust layer for AI agents. It enables agents to discover each other, verify trustworthiness, and safely transact services.
 
 ## Project Status
 
@@ -12,7 +12,7 @@ AgentMe is a decentralized marketplace and trust layer for AI agents. It enables
 ## Repository Structure
 
 ```
-agentme/
+agoramesh/
 ├── bridge/              # Local AI agent bridge (Claude Code worker)
 │   ├── src/
 │   │   ├── cli.ts       # CLI entry point
@@ -23,7 +23,7 @@ agentme/
 ├── contracts/           # Solidity smart contracts (Foundry)
 │   ├── src/
 │   │   ├── TrustRegistry.sol
-│   │   └── AgentMeEscrow.sol
+│   │   └── AgoraMeshEscrow.sol
 │   └── test/
 ├── deploy/              # Deployment configurations
 │   ├── k8s/             # Kubernetes manifests
@@ -45,7 +45,7 @@ agentme/
 ```
 docs/
 ├── plans/
-│   ├── 2026-02-01-agentme-design.md    # Original design document
+│   ├── 2026-02-01-agoramesh-design.md    # Original design document
 │   ├── 2026-02-01-implementation-plan.md  # Implementation plan
 │   └── 2026-02-02-competitive-analysis.md # Competitive analysis
 ├── specs/

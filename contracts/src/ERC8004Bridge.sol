@@ -4,12 +4,12 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IERC8004Identity.sol";
 
-/// @title ERC8004Bridge - Bridge Between AgentMe and Official ERC-8004 Registries
-/// @notice Registers AgentMe agents on the official ERC-8004 IdentityRegistry and
+/// @title ERC8004Bridge - Bridge Between AgoraMesh and Official ERC-8004 Registries
+/// @notice Registers AgoraMesh agents on the official ERC-8004 IdentityRegistry and
 ///         submits feedback/validations to the official ReputationRegistry on Base Sepolia.
 /// @dev Unlike the read-only ERC8004Adapter, this contract writes to the official
 ///      ERC-8004 registries (IdentityRegistry at 0x8004...1e, ReputationRegistry at 0x8004...13).
-///      It maintains a bidirectional mapping between AgentMe token IDs and ERC-8004 agent IDs.
+///      It maintains a bidirectional mapping between AgoraMesh token IDs and ERC-8004 agent IDs.
 contract ERC8004Bridge is Ownable {
     // ============ Errors ============
 
@@ -20,8 +20,8 @@ contract ERC8004Bridge is Ownable {
 
     // ============ Events ============
 
-    /// @notice Emitted when an AgentMe agent is registered on the official ERC-8004 IdentityRegistry
-    /// @param agentTokenId The AgentMe token ID
+    /// @notice Emitted when an AgoraMesh agent is registered on the official ERC-8004 IdentityRegistry
+    /// @param agentTokenId The AgoraMesh token ID
     /// @param erc8004AgentId The ERC-8004 agent ID returned by the official registry
     /// @param agentURI The URI registered on ERC-8004
     event AgentRegistered(uint256 indexed agentTokenId, uint256 indexed erc8004AgentId, string agentURI);
@@ -64,11 +64,11 @@ contract ERC8004Bridge is Ownable {
     /// @notice Reference to the official ERC-8004 ReputationRegistry
     IERC8004ReputationRegistry public reputationRegistry;
 
-    /// @notice Mapping from AgentMe token ID to ERC-8004 agent ID
-    mapping(uint256 => uint256) public agentMeToERC8004;
+    /// @notice Mapping from AgoraMesh token ID to ERC-8004 agent ID
+    mapping(uint256 => uint256) public agoraMeshToERC8004;
 
-    /// @notice Mapping from ERC-8004 agent ID to AgentMe token ID
-    mapping(uint256 => uint256) public erc8004ToAgentMe;
+    /// @notice Mapping from ERC-8004 agent ID to AgoraMesh token ID
+    mapping(uint256 => uint256) public erc8004ToAgoraMesh;
 
     /// @notice Total number of agents registered through this bridge
     uint256 public totalRegistered;
@@ -89,10 +89,10 @@ contract ERC8004Bridge is Ownable {
 
     // ============ Registration ============
 
-    /// @notice Register an AgentMe agent on the official ERC-8004 IdentityRegistry
+    /// @notice Register an AgoraMesh agent on the official ERC-8004 IdentityRegistry
     /// @dev Calls the official IdentityRegistry.register(agentURI) and maps the returned
     ///      ERC-8004 agentId to our agentTokenId. Only callable by the contract owner.
-    /// @param agentTokenId The AgentMe token ID to register
+    /// @param agentTokenId The AgoraMesh token ID to register
     /// @param agentURI The agent metadata URI (e.g., IPFS CID pointing to capability card)
     /// @return erc8004AgentId The ERC-8004 agent ID assigned by the official registry
     function registerAgent(uint256 agentTokenId, string calldata agentURI)
@@ -100,7 +100,7 @@ contract ERC8004Bridge is Ownable {
         onlyOwner
         returns (uint256 erc8004AgentId)
     {
-        if (agentMeToERC8004[agentTokenId] != 0) {
+        if (agoraMeshToERC8004[agentTokenId] != 0) {
             revert AgentAlreadyRegistered(agentTokenId);
         }
 
@@ -108,18 +108,18 @@ contract ERC8004Bridge is Ownable {
         erc8004AgentId = identityRegistry.register(agentURI);
 
         // Store bidirectional mapping
-        agentMeToERC8004[agentTokenId] = erc8004AgentId;
-        erc8004ToAgentMe[erc8004AgentId] = agentTokenId;
+        agoraMeshToERC8004[agentTokenId] = erc8004AgentId;
+        erc8004ToAgoraMesh[erc8004AgentId] = agentTokenId;
         totalRegistered++;
 
         emit AgentRegistered(agentTokenId, erc8004AgentId, agentURI);
     }
 
     /// @notice Update an agent's URI on the official ERC-8004 IdentityRegistry
-    /// @param agentTokenId The AgentMe token ID
+    /// @param agentTokenId The AgoraMesh token ID
     /// @param newURI The new metadata URI
     function updateAgentURI(uint256 agentTokenId, string calldata newURI) external onlyOwner {
-        uint256 erc8004AgentId = agentMeToERC8004[agentTokenId];
+        uint256 erc8004AgentId = agoraMeshToERC8004[agentTokenId];
         if (erc8004AgentId == 0) revert AgentNotRegistered(agentTokenId);
 
         identityRegistry.setAgentURI(erc8004AgentId, newURI);
@@ -171,33 +171,33 @@ contract ERC8004Bridge is Ownable {
 
     // ============ View Functions ============
 
-    /// @notice Get the ERC-8004 agent ID for an AgentMe token ID
-    /// @param agentTokenId The AgentMe token ID
+    /// @notice Get the ERC-8004 agent ID for an AgoraMesh token ID
+    /// @param agentTokenId The AgoraMesh token ID
     /// @return The ERC-8004 agent ID (0 if not registered)
     function getERC8004AgentId(uint256 agentTokenId) external view returns (uint256) {
-        return agentMeToERC8004[agentTokenId];
+        return agoraMeshToERC8004[agentTokenId];
     }
 
-    /// @notice Get the AgentMe token ID for an ERC-8004 agent ID
+    /// @notice Get the AgoraMesh token ID for an ERC-8004 agent ID
     /// @param erc8004AgentId The ERC-8004 agent ID
-    /// @return The AgentMe token ID (0 if not mapped)
-    function getAgentMeTokenId(uint256 erc8004AgentId) external view returns (uint256) {
-        return erc8004ToAgentMe[erc8004AgentId];
+    /// @return The AgoraMesh token ID (0 if not mapped)
+    function getAgoraMeshTokenId(uint256 erc8004AgentId) external view returns (uint256) {
+        return erc8004ToAgoraMesh[erc8004AgentId];
     }
 
-    /// @notice Check if an AgentMe agent is registered on ERC-8004
-    /// @param agentTokenId The AgentMe token ID
+    /// @notice Check if an AgoraMesh agent is registered on ERC-8004
+    /// @param agentTokenId The AgoraMesh token ID
     /// @return True if the agent has been registered through this bridge
     function isRegistered(uint256 agentTokenId) external view returns (bool) {
-        return agentMeToERC8004[agentTokenId] != 0;
+        return agoraMeshToERC8004[agentTokenId] != 0;
     }
 
     /// @notice Get the agent's metadata from the official ERC-8004 IdentityRegistry
-    /// @param agentTokenId The AgentMe token ID
+    /// @param agentTokenId The AgoraMesh token ID
     /// @param metadataKey The metadata key to query
     /// @return The raw metadata value as bytes
-    function getAgentMetadata(uint256 agentTokenId, string calldata metadataKey) external view returns (bytes memory) {
-        uint256 erc8004AgentId = agentMeToERC8004[agentTokenId];
+    function getAgoraMeshtadata(uint256 agentTokenId, string calldata metadataKey) external view returns (bytes memory) {
+        uint256 erc8004AgentId = agoraMeshToERC8004[agentTokenId];
         if (erc8004AgentId == 0) revert AgentNotRegistered(agentTokenId);
 
         return identityRegistry.getMetadata(erc8004AgentId, metadataKey);

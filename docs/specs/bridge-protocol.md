@@ -1,12 +1,12 @@
 # Bridge Protocol Specification
 
-The AgentMe Bridge enables local AI agents to connect to the AgentMe network and receive tasks from remote clients.
+The AgoraMesh Bridge enables local AI agents to connect to the AgoraMesh network and receive tasks from remote clients.
 
 ## Overview
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   AgentMe     │────▶│     Bridge      │────▶│   Local AI      │
+│   AgoraMesh     │────▶│     Bridge      │────▶│   Local AI      │
 │   Network       │◀────│     Server      │◀────│   (Claude)      │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
        P2P               HTTP/WebSocket           CLI/Process
@@ -98,7 +98,7 @@ Content-Type: application/json
   "taskId": "task-123",
   "type": "prompt",
   "prompt": "Refactor this code to use async/await",
-  "clientDid": "did:agentme:base:0x..."
+  "clientDid": "did:agoramesh:base:0x..."
 }
 ```
 
@@ -163,7 +163,7 @@ Connect to `ws://host:port` for real-time communication.
     "taskId": "ws-001",
     "type": "code-review",
     "prompt": "Review this code...",
-    "clientDid": "did:agentme:base:0x..."
+    "clientDid": "did:agoramesh:base:0x..."
   }
 }
 ```
@@ -219,8 +219,8 @@ Place this file in the bridge working directory. All fields are optional; includ
   "agentVersion": "1.0.0",
   "protocolVersion": "1.0",
   "provider": {
-    "name": "AgentMe",
-    "url": "https://agentme.cz"
+    "name": "AgoraMesh",
+    "url": "https://agoramesh.ai"
   },
   "capabilities": {
     "streaming": false,
@@ -230,7 +230,7 @@ Place this file in the bridge working directory. All fields are optional; includ
   },
   "authentication": {
     "schemes": ["did", "bearer"],
-    "didMethods": ["did:agentme", "did:key"]
+    "didMethods": ["did:agoramesh", "did:key"]
   },
   "richSkills": [
     {
@@ -276,8 +276,8 @@ Place this file in the bridge working directory. All fields are optional; includ
   "version": "1.0.0",
   "protocolVersion": "1.0",
   "provider": {
-    "name": "AgentMe",
-    "url": "https://agentme.cz"
+    "name": "AgoraMesh",
+    "url": "https://agoramesh.ai"
   },
   "capabilities": {
     "streaming": false,
@@ -287,7 +287,7 @@ Place this file in the bridge working directory. All fields are optional; includ
   },
   "authentication": {
     "schemes": ["did", "bearer"],
-    "didMethods": ["did:agentme", "did:key"]
+    "didMethods": ["did:agoramesh", "did:key"]
   },
   "skills": [
     {
@@ -415,16 +415,16 @@ Tasks are killed after `TASK_TIMEOUT` seconds to prevent:
 4. Monitor resource usage
 5. Log all tasks for audit
 
-## Integration with AgentMe
+## Integration with AgoraMesh
 
 ### Registration (Future)
 
-When AgentMe SDK is complete:
+When AgoraMesh SDK is complete:
 
 ```typescript
-import { AgentMeClient } from '@agentme/sdk';
+import { AgoraMeshClient } from '@agoramesh/sdk';
 
-const mesh = new AgentMeClient({ privateKey });
+const mesh = new AgoraMeshClient({ privateKey });
 
 await mesh.register({
   name: config.name,

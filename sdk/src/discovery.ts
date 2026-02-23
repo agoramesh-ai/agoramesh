@@ -1,7 +1,7 @@
 /**
- * AgentMe Discovery Client
+ * AgoraMesh Discovery Client
  *
- * Client for discovering agents in the AgentMe network.
+ * Client for discovering agents in the AgoraMesh network.
  *
  * @packageDocumentation
  */
@@ -11,7 +11,7 @@ import type {
   SearchOptions,
   DiscoveryResult,
 } from './types.js';
-import type { AgentMeClient } from './client.js';
+import type { AgoraMeshClient } from './client.js';
 
 // =============================================================================
 // URL Validation (SSRF Protection)
@@ -89,7 +89,7 @@ function isPrivateUrl(urlStr: string): boolean {
 // =============================================================================
 
 /**
- * Client for discovering and announcing agents in the AgentMe network.
+ * Client for discovering and announcing agents in the AgoraMesh network.
  *
  * Discovery uses a combination of:
  * - On-chain registry for registered agents
@@ -98,7 +98,7 @@ function isPrivateUrl(urlStr: string): boolean {
  *
  * @example
  * ```typescript
- * const client = new AgentMeClient({ ... });
+ * const client = new AgoraMeshClient({ ... });
  * await client.connect();
  *
  * const discovery = new DiscoveryClient(client);
@@ -110,24 +110,24 @@ function isPrivateUrl(urlStr: string): boolean {
  * });
  *
  * // Get a specific agent's capability card
- * const card = await discovery.getCapabilityCard('did:agentme:base:0x...');
+ * const card = await discovery.getCapabilityCard('did:agoramesh:base:0x...');
  * ```
  */
 /** Default IPFS gateway URL */
 const DEFAULT_IPFS_GATEWAY = 'https://ipfs.io/ipfs';
 
 export class DiscoveryClient {
-  private readonly client: AgentMeClient;
+  private readonly client: AgoraMeshClient;
   private nodeUrl: string | null = null;
   private ipfsGateway: string = DEFAULT_IPFS_GATEWAY;
 
   /**
    * Create a new DiscoveryClient.
    *
-   * @param client - The AgentMe client instance
-   * @param nodeUrl - Optional AgentMe node URL for P2P discovery
+   * @param client - The AgoraMesh client instance
+   * @param nodeUrl - Optional AgoraMesh node URL for P2P discovery
    */
-  constructor(client: AgentMeClient, nodeUrl?: string) {
+  constructor(client: AgoraMeshClient, nodeUrl?: string) {
     this.client = client;
     this.nodeUrl = nodeUrl ?? null;
   }
@@ -137,7 +137,7 @@ export class DiscoveryClient {
   // ===========================================================================
 
   /**
-   * Set the AgentMe node URL for P2P discovery.
+   * Set the AgoraMesh node URL for P2P discovery.
    *
    * @param url - The node URL
    * @throws Error if the URL points to a private address
@@ -262,7 +262,7 @@ export class DiscoveryClient {
         description: string;
         url: string;
         capabilities?: Array<{ id: string; name: string; description?: string }>;
-        agentme?: {
+        agoramesh?: {
           did: string;
           trust_score?: number;
           pricing?: { base_price: number; currency: string; model: string };
@@ -290,7 +290,7 @@ export class DiscoveryClient {
             endorsement: item.trust.endorsement_score,
           }
         : {
-            overall: item.card.agentme?.trust_score ?? item.score,
+            overall: item.card.agoramesh?.trust_score ?? item.score,
             reputation: item.score,
             stake: 0,
             endorsement: 0,
@@ -300,11 +300,11 @@ export class DiscoveryClient {
         name: c.name,
         description: c.description,
       })),
-      pricing: item.card.agentme?.pricing
+      pricing: item.card.agoramesh?.pricing
         ? {
             model: 'per_request' as const,
-            amount: String(item.card.agentme.pricing.base_price),
-            currency: item.card.agentme.pricing.currency,
+            amount: String(item.card.agoramesh.pricing.base_price),
+            currency: item.card.agoramesh.pricing.currency,
           }
         : undefined,
     }));
@@ -363,7 +363,7 @@ export class DiscoveryClient {
       description: string;
       url: string;
       capabilities?: Array<{ id: string; name: string; description?: string }>;
-      agentme?: {
+      agoramesh?: {
         did: string;
         trust_score?: number;
         pricing?: { base_price: number; currency: string; model: string };
@@ -371,12 +371,12 @@ export class DiscoveryClient {
     }>;
 
     return data.map((card) => ({
-      did: card.agentme?.did ?? '',
+      did: card.agoramesh?.did ?? '',
       name: card.name,
       description: card.description,
       url: card.url,
       trust: {
-        overall: card.agentme?.trust_score ?? 0,
+        overall: card.agoramesh?.trust_score ?? 0,
         reputation: 0,
         stake: 0,
         endorsement: 0,
@@ -386,11 +386,11 @@ export class DiscoveryClient {
         name: c.name,
         description: c.description,
       })),
-      pricing: card.agentme?.pricing
+      pricing: card.agoramesh?.pricing
         ? {
             model: 'per_request' as const,
-            amount: String(card.agentme.pricing.base_price),
-            currency: card.agentme.pricing.currency,
+            amount: String(card.agoramesh.pricing.base_price),
+            currency: card.agoramesh.pricing.currency,
           }
         : undefined,
     }));
@@ -405,7 +405,7 @@ export class DiscoveryClient {
    *
    * Attempts to fetch from:
    * 1. Well-known URL (https://domain/.well-known/agent.json)
-   * 2. AgentMe DHT (if node URL configured)
+   * 2. AgoraMesh DHT (if node URL configured)
    * 3. IPFS (if CID available on-chain)
    *
    * @param did - The agent's DID
@@ -440,7 +440,7 @@ export class DiscoveryClient {
    */
   private async fetchFromWellKnown(did: string): Promise<CapabilityCard | null> {
     // Extract domain from DID if possible
-    // Format: did:web:example.com or did:agentme:base:0x...
+    // Format: did:web:example.com or did:agoramesh:base:0x...
     const match = did.match(/^did:web:([^:]+)/);
     if (!match) {
       return null;

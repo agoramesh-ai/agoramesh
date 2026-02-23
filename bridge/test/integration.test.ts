@@ -1,17 +1,17 @@
 /**
- * AgentMe Integration Tests
+ * AgoraMesh Integration Tests
  *
- * Tests for automatic agent registration with the AgentMe network.
+ * Tests for automatic agent registration with the AgoraMesh network.
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { AgentMeIntegration } from '../src/integration.js';
+import { AgoraMeshIntegration } from '../src/integration.js';
 import { IPFSService } from '../src/ipfs.js';
 import type { AgentConfig } from '../src/types.js';
 
 // Mock the SDK
-vi.mock('@agentme/sdk', () => ({
-  AgentMeClient: vi.fn().mockImplementation(() => ({
+vi.mock('@agoramesh/sdk', () => ({
+  AgoraMeshClient: vi.fn().mockImplementation(() => ({
     connect: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),
@@ -39,8 +39,8 @@ const createMockIPFSService = (configured = true): IPFSService => {
   return service;
 };
 
-describe('AgentMeIntegration', () => {
-  let integration: AgentMeIntegration;
+describe('AgoraMeshIntegration', () => {
+  let integration: AgoraMeshIntegration;
   let config: AgentConfig;
 
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('AgentMeIntegration', () => {
 
   describe('constructor', () => {
     it('should create integration with valid config', () => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
@@ -73,7 +73,7 @@ describe('AgentMeIntegration', () => {
     it('should throw if privateKey is missing', () => {
       const badConfig = { ...config, privateKey: '' };
 
-      expect(() => new AgentMeIntegration(badConfig, {
+      expect(() => new AgoraMeshIntegration(badConfig, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       })).toThrow('Private key is required');
@@ -81,38 +81,38 @@ describe('AgentMeIntegration', () => {
   });
 
   describe('generateDID', () => {
-    it('should generate a valid AgentMe DID', () => {
-      integration = new AgentMeIntegration(config, {
+    it('should generate a valid AgoraMesh DID', () => {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
 
       const did = integration.getDID();
 
-      expect(did).toMatch(/^did:agentme:base:0x[a-fA-F0-9]+$/);
+      expect(did).toMatch(/^did:agoramesh:base:0x[a-fA-F0-9]+$/);
     });
 
     it('should generate different DIDs for different chainIds', () => {
-      const integration1 = new AgentMeIntegration(config, {
+      const integration1 = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
 
-      const integration2 = new AgentMeIntegration(config, {
+      const integration2 = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://mainnet.base.org',
         chainId: 8453,
       });
 
       // DIDs should be the same since they're derived from the address, not chainId
       // but let's check they're both valid
-      expect(integration1.getDID()).toMatch(/^did:agentme:base:0x/);
-      expect(integration2.getDID()).toMatch(/^did:agentme:base:0x/);
+      expect(integration1.getDID()).toMatch(/^did:agoramesh:base:0x/);
+      expect(integration2.getDID()).toMatch(/^did:agoramesh:base:0x/);
     });
   });
 
   describe('createCapabilityCard', () => {
     it('should create a valid capability card from config', () => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });
@@ -135,7 +135,7 @@ describe('AgentMeIntegration', () => {
 
   describe('register', () => {
     beforeEach(() => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         trustRegistryAddress: '0xTrustRegistry',
@@ -152,7 +152,7 @@ describe('AgentMeIntegration', () => {
     });
 
     it('should throw if IPFS is not configured', async () => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         trustRegistryAddress: '0xTrustRegistry',
@@ -167,8 +167,8 @@ describe('AgentMeIntegration', () => {
 
     it('should skip registration if agent already registered', async () => {
       // Mock getAgent to return existing agent
-      const { AgentMeClient } = await import('@agentme/sdk');
-      vi.mocked(AgentMeClient).mockImplementation(() => ({
+      const { AgoraMeshClient } = await import('@agoramesh/sdk');
+      vi.mocked(AgoraMeshClient).mockImplementation(() => ({
         connect: vi.fn().mockResolvedValue(undefined),
         disconnect: vi.fn(),
         isConnected: vi.fn().mockReturnValue(true),
@@ -178,7 +178,7 @@ describe('AgentMeIntegration', () => {
         getAddress: vi.fn().mockReturnValue('0xAgentAddress'),
       }) as any);
 
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         trustRegistryAddress: '0xTrustRegistry',
@@ -193,7 +193,7 @@ describe('AgentMeIntegration', () => {
 
   describe('announce', () => {
     beforeEach(() => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         nodeUrl: 'http://localhost:8080',
@@ -208,7 +208,7 @@ describe('AgentMeIntegration', () => {
     });
 
     it('should throw if nodeUrl not configured', async () => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         // No nodeUrl
@@ -221,7 +221,7 @@ describe('AgentMeIntegration', () => {
 
   describe('unannounce', () => {
     it('should remove agent from P2P network', async () => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
         nodeUrl: 'http://localhost:8080',
@@ -236,7 +236,7 @@ describe('AgentMeIntegration', () => {
 
   describe('disconnect', () => {
     it('should disconnect from blockchain', () => {
-      integration = new AgentMeIntegration(config, {
+      integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',
         chainId: 84532,
       });

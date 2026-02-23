@@ -20,27 +20,27 @@ use std::{
     time::Duration,
 };
 
-/// AgentMe protocol version string.
-pub const PROTOCOL_VERSION: &str = "/agentme/1.0.0";
+/// AgoraMesh protocol version string.
+pub const PROTOCOL_VERSION: &str = "/agoramesh/1.0.0";
 
-/// GossipSub topics for AgentMe.
+/// GossipSub topics for AgoraMesh.
 pub mod topics {
     /// Topic for agent discovery announcements.
-    pub const DISCOVERY: &str = "/agentme/discovery/1.0.0";
+    pub const DISCOVERY: &str = "/agoramesh/discovery/1.0.0";
     /// Topic for capability card updates.
-    pub const CAPABILITY: &str = "/agentme/capability/1.0.0";
+    pub const CAPABILITY: &str = "/agoramesh/capability/1.0.0";
     /// Topic for trust score updates.
-    pub const TRUST: &str = "/agentme/trust/1.0.0";
+    pub const TRUST: &str = "/agoramesh/trust/1.0.0";
     /// Topic for dispute notifications.
-    pub const DISPUTES: &str = "/agentme/disputes/1.0.0";
+    pub const DISPUTES: &str = "/agoramesh/disputes/1.0.0";
 
-    /// Get all AgentMe topics.
+    /// Get all AgoraMesh topics.
     pub fn all() -> Vec<&'static str> {
         vec![DISCOVERY, CAPABILITY, TRUST, DISPUTES]
     }
 }
 
-/// Combined network behaviour for AgentMe.
+/// Combined network behaviour for AgoraMesh.
 ///
 /// This behaviour combines:
 /// - `gossipsub`: Pub/sub messaging for broadcasting agent updates
@@ -48,8 +48,8 @@ pub mod topics {
 /// - `identify`: Protocol to exchange peer info on connection
 /// - `mdns`: Local network discovery (for development/testing)
 #[derive(NetworkBehaviour)]
-#[behaviour(to_swarm = "AgentMeEvent")]
-pub struct AgentMeBehaviour {
+#[behaviour(to_swarm = "AgoraMeshEvent")]
+pub struct AgoraMeshBehaviour {
     /// GossipSub for pub/sub messaging.
     pub gossipsub: gossipsub::Behaviour,
 
@@ -63,9 +63,9 @@ pub struct AgentMeBehaviour {
     pub mdns: mdns::tokio::Behaviour,
 }
 
-/// Events emitted by the AgentMe behaviour.
+/// Events emitted by the AgoraMesh behaviour.
 #[derive(Debug)]
-pub enum AgentMeEvent {
+pub enum AgoraMeshEvent {
     /// GossipSub event.
     Gossipsub(gossipsub::Event),
     /// Kademlia event.
@@ -76,32 +76,32 @@ pub enum AgentMeEvent {
     Mdns(mdns::Event),
 }
 
-impl From<gossipsub::Event> for AgentMeEvent {
+impl From<gossipsub::Event> for AgoraMeshEvent {
     fn from(event: gossipsub::Event) -> Self {
-        AgentMeEvent::Gossipsub(event)
+        AgoraMeshEvent::Gossipsub(event)
     }
 }
 
-impl From<kad::Event> for AgentMeEvent {
+impl From<kad::Event> for AgoraMeshEvent {
     fn from(event: kad::Event) -> Self {
-        AgentMeEvent::Kademlia(event)
+        AgoraMeshEvent::Kademlia(event)
     }
 }
 
-impl From<identify::Event> for AgentMeEvent {
+impl From<identify::Event> for AgoraMeshEvent {
     fn from(event: identify::Event) -> Self {
-        AgentMeEvent::Identify(Box::new(event))
+        AgoraMeshEvent::Identify(Box::new(event))
     }
 }
 
-impl From<mdns::Event> for AgentMeEvent {
+impl From<mdns::Event> for AgoraMeshEvent {
     fn from(event: mdns::Event) -> Self {
-        AgentMeEvent::Mdns(event)
+        AgoraMeshEvent::Mdns(event)
     }
 }
 
-impl AgentMeBehaviour {
-    /// Create a new AgentMe behaviour.
+impl AgoraMeshBehaviour {
+    /// Create a new AgoraMesh behaviour.
     ///
     /// # Arguments
     ///
@@ -110,7 +110,7 @@ impl AgentMeBehaviour {
     ///
     /// # Returns
     ///
-    /// A new `AgentMeBehaviour` instance.
+    /// A new `AgoraMeshBehaviour` instance.
     ///
     /// # Errors
     ///
@@ -139,7 +139,7 @@ impl AgentMeBehaviour {
         })
     }
 
-    /// Subscribe to all AgentMe topics.
+    /// Subscribe to all AgoraMesh topics.
     ///
     /// Subscribes to discovery, capability, trust, and disputes topics.
     pub fn subscribe_to_topics(&mut self) -> Result<(), gossipsub::SubscriptionError> {
@@ -200,7 +200,7 @@ impl AgentMeBehaviour {
     }
 }
 
-/// Build GossipSub behaviour with AgentMe configuration.
+/// Build GossipSub behaviour with AgoraMesh configuration.
 fn build_gossipsub(
     keypair: &libp2p::identity::Keypair,
 ) -> Result<gossipsub::Behaviour, Box<dyn std::error::Error + Send + Sync>> {
@@ -272,7 +272,7 @@ fn build_peer_score_params() -> gossipsub::PeerScoreParams {
         ..Default::default()
     };
 
-    // Topic-specific scoring for AgentMe topics
+    // Topic-specific scoring for AgoraMesh topics
     let topic_params = TopicScoreParams {
         topic_weight: 1.0,
         time_in_mesh_weight: 0.1,
@@ -293,7 +293,7 @@ fn build_peer_score_params() -> gossipsub::PeerScoreParams {
         invalid_message_deliveries_decay: 0.5,
     };
 
-    // Apply topic scoring to all AgentMe topics
+    // Apply topic scoring to all AgoraMesh topics
     for topic_name in topics::all() {
         let topic_hash = gossipsub::IdentTopic::new(topic_name).hash();
         params.topics.insert(topic_hash, topic_params.clone());
@@ -302,7 +302,7 @@ fn build_peer_score_params() -> gossipsub::PeerScoreParams {
     params
 }
 
-/// Build Kademlia DHT behaviour with AgentMe configuration.
+/// Build Kademlia DHT behaviour with AgoraMesh configuration.
 fn build_kademlia(local_peer_id: PeerId) -> kad::Behaviour<MemoryStore> {
     // Create memory store for DHT records
     let store = MemoryStore::new(local_peer_id);
@@ -338,16 +338,16 @@ mod tests {
     async fn test_create_behaviour() {
         let keypair = Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
-        let behaviour = AgentMeBehaviour::new(peer_id, &keypair);
+        let behaviour = AgoraMeshBehaviour::new(peer_id, &keypair);
         assert!(behaviour.is_ok());
     }
 
     #[test]
     fn test_topic_names() {
-        assert_eq!(topics::DISCOVERY, "/agentme/discovery/1.0.0");
-        assert_eq!(topics::CAPABILITY, "/agentme/capability/1.0.0");
-        assert_eq!(topics::TRUST, "/agentme/trust/1.0.0");
-        assert_eq!(topics::DISPUTES, "/agentme/disputes/1.0.0");
+        assert_eq!(topics::DISCOVERY, "/agoramesh/discovery/1.0.0");
+        assert_eq!(topics::CAPABILITY, "/agoramesh/capability/1.0.0");
+        assert_eq!(topics::TRUST, "/agoramesh/trust/1.0.0");
+        assert_eq!(topics::DISPUTES, "/agoramesh/disputes/1.0.0");
     }
 
     #[test]
@@ -364,7 +364,7 @@ mod tests {
     async fn test_subscribe_to_topics_subscribes_to_all() {
         let keypair = Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
-        let mut behaviour = AgentMeBehaviour::new(peer_id, &keypair).unwrap();
+        let mut behaviour = AgoraMeshBehaviour::new(peer_id, &keypair).unwrap();
 
         // Subscribe to topics
         let result = behaviour.subscribe_to_topics();
@@ -379,7 +379,7 @@ mod tests {
     async fn test_publish_to_topic() {
         let keypair = Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
-        let mut behaviour = AgentMeBehaviour::new(peer_id, &keypair).unwrap();
+        let mut behaviour = AgoraMeshBehaviour::new(peer_id, &keypair).unwrap();
 
         // Must subscribe first before publishing
         behaviour.subscribe_to_topics().unwrap();
@@ -397,7 +397,7 @@ mod tests {
     fn test_peer_score_params_configured_for_all_topics() {
         let params = build_peer_score_params();
 
-        // Verify topic scoring is configured for all AgentMe topics
+        // Verify topic scoring is configured for all AgoraMesh topics
         for topic_name in topics::all() {
             let topic_hash = gossipsub::IdentTopic::new(topic_name).hash();
             assert!(

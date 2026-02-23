@@ -26,7 +26,7 @@ contract CrossChainTrustSyncTest is Test {
     uint32 public constant ARBITRUM_EID = 30110;
 
     // Test DID hash
-    bytes32 public constant TEST_DID = keccak256("did:agentme:base:0x1234");
+    bytes32 public constant TEST_DID = keccak256("did:agoramesh:base:0x1234");
 
     // Events
     event TrustSyncRequested(bytes32 indexed didHash, uint32 dstEid, uint256 trustScore);

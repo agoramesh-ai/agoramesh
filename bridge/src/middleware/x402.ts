@@ -130,7 +130,7 @@ export function createPaymentRequirement(config: X402Config): PaymentRequirement
     maxAmountRequired: amountInMicroUsdc.toString(),
     resource: config.usdcAddress,
     payTo: config.payTo,
-    description: 'AgentMe task execution',
+    description: 'AgoraMesh task execution',
     validUntil: Math.floor(Date.now() / 1000) + validityPeriod,
   };
 }

@@ -1,12 +1,12 @@
 {
-  "name": "@agentme/bridge",
+  "name": "@agoramesh/bridge",
   "version": "0.1.0",
-  "description": "Bridge between AgentMe and local AI agents (Claude Code, etc.)",
+  "description": "Bridge between AgoraMesh and local AI agents (Claude Code, etc.)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agentme-bridge": "./dist/cli.js"
+    "agoramesh-bridge": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -16,7 +16,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@agentme/sdk": "file:../sdk",
+    "@agoramesh/sdk": "file:../sdk",
     "@anthropic-ai/sdk": "^0.72.1",
     "cors": "^2.8.6",
     "dotenv": "^16.4.0",
@@ -44,6 +44,6 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "author": "AgentMe Contributors",
+  "author": "AgoraMesh Contributors",
   "license": "MIT"
 }

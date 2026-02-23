@@ -29,8 +29,8 @@ Total findings: 73 (excluding lib/)
 - **timestamp**: TieredDisputeResolution.executeSettlement(uint256) (src/TieredDisputeResolution.sol#400-425) uses timestamp for comparis
 - **timestamp**: TieredDisputeResolution.castVote(uint256,IDisputeResolution.Vote,uint256,bytes32) (src/TieredDisputeResolution.sol#243-2
 - **timestamp**: TieredDisputeResolution.submitAIAnalysis(uint256,bytes32,uint256) (src/TieredDisputeResolution.sol#212-238) uses timesta
-- **timestamp**: AgentMeshEscrow.createEscrow(bytes32,bytes32,address,address,uint256,bytes32,uint256) (src/AgentMeshEscrow.sol#83-137) u
-- **timestamp**: AgentMeshEscrow.releaseEscrow(uint256) (src/AgentMeshEscrow.sol#177-206) uses timestamp for comparisons
+- **timestamp**: AgoraMeshEscrow.createEscrow(bytes32,bytes32,address,address,uint256,bytes32,uint256) (src/AgoraMeshEscrow.sol#83-137) u
+- **timestamp**: AgoraMeshEscrow.releaseEscrow(uint256) (src/AgoraMeshEscrow.sol#177-206) uses timestamp for comparisons
 - **timestamp**: TieredDisputeResolution.executeAutoResolution(uint256) (src/TieredDisputeResolution.sol#466-500) uses timestamp for comp
 - **timestamp**: StreamingPayments.cancel(uint256) (src/StreamingPayments.sol#268-302) uses timestamp for comparisons
 - **timestamp**: TrustRegistry.registerAgent(bytes32,string) (src/TrustRegistry.sol#117-141) uses timestamp for comparisons
@@ -45,13 +45,13 @@ Total findings: 73 (excluding lib/)
 - **timestamp**: TrustRegistry._requireOwner(bytes32) (src/TrustRegistry.sol#537-541) uses timestamp for comparisons
 - **timestamp**: CrossChainTrustSync.isCacheStale(bytes32) (src/CrossChainTrustSync.sol#244-250) uses timestamp for comparisons
 - **timestamp**: TieredDisputeResolution.submitEvidence(uint256,bytes32) (src/TieredDisputeResolution.sol#184-207) uses timestamp for com
-- **timestamp**: AgentMeshEscrow.claimTimeout(uint256) (src/AgentMeshEscrow.sol#283-305) uses timestamp for comparisons
+- **timestamp**: AgoraMeshEscrow.claimTimeout(uint256) (src/AgoraMeshEscrow.sol#283-305) uses timestamp for comparisons
 - **timestamp**: TrustRegistry._calculateEndorsementScore(bytes32) (src/TrustRegistry.sol#506-533) uses timestamp for comparisons
 
 ## Informational (22)
 - **costly-loop**: TieredDisputeResolution.unregisterArbiter(address) (src/TieredDisputeResolution.sol#655-666) has costly operations insid
 - **costly-loop**: TieredDisputeResolution.unregisterArbiter(address) (src/TieredDisputeResolution.sol#655-666) has costly operations insid
-- **cyclomatic-complexity**: AgentMeshEscrow.createEscrow(bytes32,bytes32,address,address,uint256,bytes32,uint256) (src/AgentMeshEscrow.sol#83-137) h
+- **cyclomatic-complexity**: AgoraMeshEscrow.createEscrow(bytes32,bytes32,address,address,uint256,bytes32,uint256) (src/AgoraMeshEscrow.sol#83-137) h
 - **dead-code**: AgentToken._increaseBalance(address,uint128) (src/AgentToken.sol#348-350) is never used and should be removed
 - **dead-code**: CrossChainTrustSync._handleTrustSync(uint32,bytes) (src/CrossChainTrustSync.sol#179-188) is never used and should be rem
 - **naming-convention**: Parameter TrustRegistry.setTreasury(address)._treasury (src/TrustRegistry.sol#318) is not in mixedCase

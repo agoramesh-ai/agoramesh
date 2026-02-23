@@ -1,4 +1,4 @@
-# ERC-8004 Comparison: Mantle Deployment vs AgentMe Implementation
+# ERC-8004 Comparison: Mantle Deployment vs AgoraMesh Implementation
 
 > Last updated: 2026-02-17
 
@@ -48,7 +48,7 @@
 
 ---
 
-## 2. AgentMe Implementation
+## 2. AgoraMesh Implementation
 
 ### Core Contracts
 
@@ -75,7 +75,7 @@
 
 ## 3. Feature Comparison
 
-| Feature | ERC-8004 (Mantle) | AgentMe |
+| Feature | ERC-8004 (Mantle) | AgoraMesh |
 |---|---|---|
 | **Identity** | ERC-721 + URIStorage, UUPS upgradeable | ERC-721 (AgentToken) + TrustRegistry, non-upgradeable |
 | **Identity Metadata** | Arbitrary key-value (flexible) | Fixed struct (didHash, capabilityCID, registeredAt, isActive) |
@@ -105,11 +105,11 @@
 
 ### 4.1 Philosophy
 - **ERC-8004:** Minimal, modular singletons. Identity, Reputation, Validation are cleanly separated. No economic mechanisms on-chain — designed as a coordination/discovery layer.
-- **AgentMe:** Opinionated, feature-rich. Integrates economic incentives (staking, slashing, escrow, payments) directly into the trust layer. More of a "full stack" for agent economy.
+- **AgoraMesh:** Opinionated, feature-rich. Integrates economic incentives (staking, slashing, escrow, payments) directly into the trust layer. More of a "full stack" for agent economy.
 
 ### 4.2 Reputation: Permissionless vs Oracle
 - **ERC-8004:** Anyone can submit feedback (with anti-sybil via owner check). Rich structured feedback with tags, URIs, revocation, and responses. Decentralized.
-- **AgentMe:** Only ORACLE_ROLE can record transactions. Simpler (success rate + volume), but centralized trust assumption on the oracle.
+- **AgoraMesh:** Only ORACLE_ROLE can record transactions. Simpler (success rate + volume), but centralized trust assumption on the oracle.
 
 ### 4.3 What ERC-8004 Has That We Don't
 1. **Arbitrary metadata** — flexible key-value vs our fixed struct
@@ -147,14 +147,14 @@ The `ERC8004Adapter.sol` provides **read-only compatibility** but has significan
 | Validation: `getSummary()` | ⚠️ Maps trust score to binary valid/invalid |
 | Validation: `getAgentValidations()` | ❌ Returns empty array |
 
-**Verdict:** The adapter allows basic discovery (identity + aggregate reputation) but cannot participate in the ERC-8004 feedback/validation ecosystem. Agents registered only in AgentMe are invisible to ERC-8004 clients expecting `giveFeedback()` or `validationRequest()` flows.
+**Verdict:** The adapter allows basic discovery (identity + aggregate reputation) but cannot participate in the ERC-8004 feedback/validation ecosystem. Agents registered only in AgoraMesh are invisible to ERC-8004 clients expecting `giveFeedback()` or `validationRequest()` flows.
 
 ---
 
 ## 6. Recommendations
 
 ### Immediate (Compatibility)
-1. **Dual registration** — register agents in both AgentMe and the canonical ERC-8004 IdentityRegistry on target chains
+1. **Dual registration** — register agents in both AgoraMesh and the canonical ERC-8004 IdentityRegistry on target chains
 2. **Implement `giveFeedback` relay** — accept ERC-8004 feedback events and relay to our reputation system
 3. **Add agent wallet separation** — support operational wallets distinct from owner
 

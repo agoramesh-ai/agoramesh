@@ -5,11 +5,11 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../src/TrustRegistry.sol";
-import "../src/AgentMeshEscrow.sol";
+import "../src/AgoraMeshEscrow.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/StreamingPayments.sol";
 import "../src/interfaces/ITrustRegistry.sol";
-import "../src/interfaces/IAgentMeshEscrow.sol";
+import "../src/interfaces/IAgoraMeshEscrow.sol";
 import "../src/interfaces/IDisputeResolution.sol";
 import "../src/interfaces/IStreamingPayments.sol";
 
@@ -26,7 +26,7 @@ contract TestnetScenarios is Script {
 
     // Contract references
     TrustRegistry public trustRegistry;
-    AgentMeshEscrow public escrow;
+    AgoraMeshEscrow public escrow;
     TieredDisputeResolution public disputes;
     StreamingPayments public streaming;
     IERC20 public usdc;
@@ -49,13 +49,13 @@ contract TestnetScenarios is Script {
 
         // Initialize contract references
         trustRegistry = TrustRegistry(TRUST_REGISTRY);
-        escrow = AgentMeshEscrow(ESCROW);
+        escrow = AgoraMeshEscrow(ESCROW);
         disputes = TieredDisputeResolution(DISPUTE_RESOLUTION);
         streaming = StreamingPayments(STREAMING_PAYMENTS);
         usdc = IERC20(USDC);
 
         // Generate unique DID for this test run
-        testDid = keccak256(abi.encodePacked("did:agentme:test:", deployer, block.timestamp));
+        testDid = keccak256(abi.encodePacked("did:agoramesh:test:", deployer, block.timestamp));
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -197,7 +197,7 @@ contract TestnetScenarios is Script {
         console.log("\n2. Escrow edge case checks...");
 
         // Check that escrow ID 0 returns empty
-        IAgentMeshEscrow.Escrow memory emptyEscrow = escrow.getEscrow(0);
+        IAgoraMeshEscrow.Escrow memory emptyEscrow = escrow.getEscrow(0);
         require(emptyEscrow.id == 0, "Escrow ID 0 should not exist");
         console.log("   Empty escrow check: PASSED");
 
@@ -345,7 +345,7 @@ contract TestEscrowLifecycle is Script {
     function run() external view {
         console.log("\n=== Escrow Contract Check ===\n");
 
-        AgentMeshEscrow escrowContract = AgentMeshEscrow(ESCROW);
+        AgoraMeshEscrow escrowContract = AgoraMeshEscrow(ESCROW);
 
         console.log("Contract address:", address(escrowContract));
         console.log("TrustRegistry:", address(escrowContract.trustRegistry()));

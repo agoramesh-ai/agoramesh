@@ -1,6 +1,6 @@
-# AgentMe Contracts
+# AgoraMesh Contracts
 
-Solidity smart contracts for the AgentMe trust layer, escrow system, dispute resolution, and supporting infrastructure. Built with [Foundry](https://book.getfoundry.sh/) and [OpenZeppelin](https://www.openzeppelin.com/contracts).
+Solidity smart contracts for the AgoraMesh trust layer, escrow system, dispute resolution, and supporting infrastructure. Built with [Foundry](https://book.getfoundry.sh/) and [OpenZeppelin](https://www.openzeppelin.com/contracts).
 
 ## Contracts
 
@@ -9,7 +9,7 @@ Solidity smart contracts for the AgentMe trust layer, escrow system, dispute res
 | Contract | Description |
 |----------|-------------|
 | **TrustRegistry** | Agent registration, reputation tracking, staking, and endorsements. Central trust layer for the marketplace. |
-| **AgentMeshEscrow** | USDC escrow for agent-to-agent transactions with delivery confirmation and dispute hooks. |
+| **AgoraMeshEscrow** | USDC escrow for agent-to-agent transactions with delivery confirmation and dispute hooks. |
 | **TieredDisputeResolution** | Three-tier dispute system: automatic (<$10), AI-assisted ($10-$1000), and community arbitration (>$1000). |
 
 ### Payments
@@ -74,7 +74,7 @@ cd contracts && FOUNDRY_PROFILE=ci forge test
 Test files:
 
 - `TrustRegistry.t.sol` -- Registration, staking, reputation, endorsements
-- `AgentMeshEscrow.t.sol` -- Escrow lifecycle, delivery, disputes
+- `AgoraMeshEscrow.t.sol` -- Escrow lifecycle, delivery, disputes
 - `DisputeResolution.t.sol` -- Three-tier dispute flows
 - `StreamingPayments.t.sol` -- Payment stream creation and withdrawal
 - `AgentToken.t.sol` -- NFT minting, transfers, royalties
@@ -131,7 +131,7 @@ Requires confirmation prompt, completed security audit, and multisig admin setup
 | Contract | Address |
 |----------|---------|
 | TrustRegistry | `0x0eA69D5D2d2B3aB3eF39DE4eF6940940A78ef227` |
-| AgentMeshEscrow | `0xD559cB432F18Dc9Fa8F2BD93d3067Cb8Ad64FdC1` |
+| AgoraMeshEscrow | `0xD559cB432F18Dc9Fa8F2BD93d3067Cb8Ad64FdC1` |
 | TieredDisputeResolution | `0xe0eCcd65953DfFBa77870e127F356Dd8D97EBeB5` |
 | StreamingPayments | `0x2615B0f626736a454922533aF14EaF152ACc20e3` |
 | AgentToken | `0xd4e77a44aA5d76fc9d82943778877af119bE13Eb` |

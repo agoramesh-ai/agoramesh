@@ -32,8 +32,8 @@ contract AgentTokenTest is Test {
     address public treasury = address(0x4);
 
     // Test DIDs
-    bytes32 public constant DID1 = keccak256("did:agentme:base:0x1111");
-    bytes32 public constant DID2 = keccak256("did:agentme:base:0x2222");
+    bytes32 public constant DID1 = keccak256("did:agoramesh:base:0x1111");
+    bytes32 public constant DID2 = keccak256("did:agoramesh:base:0x2222");
 
     // Test metadata
     string public constant CAPABILITY_CID = "ipfs://QmTest1234";
@@ -52,7 +52,7 @@ contract AgentTokenTest is Test {
         vm.startPrank(admin);
 
         usdc = new MockUSDC();
-        agentToken = new AgentToken("AgentMe Agents", "AGENT", address(usdc), treasury, admin);
+        agentToken = new AgentToken("AgoraMesh Agents", "AGENT", address(usdc), treasury, admin);
 
         // Transfer USDC to test users
         usdc.transfer(user1, 10000 * 10 ** 6);
@@ -64,7 +64,7 @@ contract AgentTokenTest is Test {
     // ============ Constructor Tests ============
 
     function test_Constructor_SetsName() public {
-        assertEq(agentToken.name(), "AgentMe Agents");
+        assertEq(agentToken.name(), "AgoraMesh Agents");
     }
 
     function test_Constructor_SetsSymbol() public {

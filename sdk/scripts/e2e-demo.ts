@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * AgentMe E2E Demo Script
+ * AgoraMesh E2E Demo Script
  *
  * Exercises the full agent lifecycle against a live network:
  *   1. Load deployment addresses
@@ -280,7 +280,7 @@ const ESCROW_STATE_NAMES: Record<number, string> = {
 
 async function main() {
   console.log('='.repeat(62));
-  console.log('  AgentMe E2E Demo');
+  console.log('  AgoraMesh E2E Demo');
   console.log(`  Network: ${deployment.network} (chain ${deployment.chainId})`);
   console.log('='.repeat(62));
 
@@ -325,10 +325,10 @@ async function main() {
     : walletClient;
 
   // Agent identities — check if wallets already have registered agents
-  let clientDid = `did:agentme:base:client${Date.now().toString(36)}`;
+  let clientDid = `did:agoramesh:base:client${Date.now().toString(36)}`;
   let clientDidHash = didToHash(clientDid);
   // Use bridge's provider DID if available (matches PROVIDER_DID env in bridge)
-  const bridgeProviderDid = process.env.PROVIDER_DID ?? `did:agentme:local:agent-001`;
+  const bridgeProviderDid = process.env.PROVIDER_DID ?? `did:agoramesh:local:agent-001`;
   let providerDid = bridgeProviderDid;
   let providerDidHash = didToHash(providerDid);
 
@@ -481,7 +481,7 @@ async function main() {
           { id: 'code-review', name: 'Code Review', description: 'Review code for bugs and improvements' },
           { id: 'debugging', name: 'Debugging', description: 'Debug and fix code issues' },
         ],
-        'x-agentme': {
+        'x-agoramesh': {
           did: providerDid,
           trust_score: 0.5,
           payment_methods: ['escrow', 'x402'],

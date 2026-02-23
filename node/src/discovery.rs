@@ -35,9 +35,9 @@ pub struct CapabilityCard {
     /// Supported authentication methods.
     pub authentication: Option<AuthenticationInfo>,
 
-    /// AgentMe-specific extensions.
-    #[serde(rename = "x-agentme")]
-    pub agentme: Option<AgentMeExtension>,
+    /// AgoraMesh-specific extensions.
+    #[serde(rename = "x-agoramesh")]
+    pub agoramesh: Option<AgoraMeshExtension>,
 }
 
 /// Provider information.
@@ -78,9 +78,9 @@ pub struct AuthenticationInfo {
     pub schemes: Vec<String>,
 }
 
-/// AgentMe-specific extensions to the Capability Card.
+/// AgoraMesh-specific extensions to the Capability Card.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentMeExtension {
+pub struct AgoraMeshExtension {
     /// Agent's DID.
     pub did: String,
 
@@ -231,16 +231,16 @@ impl DiscoveryService {
     /// # Errors
     ///
     /// Returns an error if:
-    /// - The card is missing the AgentMe extension with DID
+    /// - The card is missing the AgoraMesh extension with DID
     /// - The DID format is invalid
     pub async fn register(&self, card: &CapabilityCard) -> Result<()> {
-        // Validate: card must have agentme extension with DID
-        let agentme = card
-            .agentme
+        // Validate: card must have agoramesh extension with DID
+        let agoramesh = card
+            .agoramesh
             .as_ref()
-            .ok_or_else(|| Error::Discovery("Missing agentme extension with DID".to_string()))?;
+            .ok_or_else(|| Error::Discovery("Missing agoramesh extension with DID".to_string()))?;
 
-        let did = &agentme.did;
+        let did = &agoramesh.did;
 
         // Validate DID format: must start with "did:"
         if !did.starts_with("did:") {
@@ -282,7 +282,7 @@ impl DiscoveryService {
 
             // Announce via GossipSub for real-time discovery
             tx.send(SwarmCommand::Publish {
-                topic: "/agentme/discovery/1.0.0".to_string(),
+                topic: "/agoramesh/discovery/1.0.0".to_string(),
                 data: serialized,
             })
             .await
@@ -357,12 +357,12 @@ impl DiscoveryService {
         // Rank results by trust score (highest first)
         matches.sort_by(|a, b| {
             let score_a = a
-                .agentme
+                .agoramesh
                 .as_ref()
                 .and_then(|e| e.trust_score)
                 .unwrap_or(0.0);
             let score_b = b
-                .agentme
+                .agoramesh
                 .as_ref()
                 .and_then(|e| e.trust_score)
                 .unwrap_or(0.0);
@@ -398,7 +398,7 @@ impl DiscoveryService {
             });
 
             tx.send(SwarmCommand::Publish {
-                topic: "/agentme/discovery/1.0.0".to_string(),
+                topic: "/agoramesh/discovery/1.0.0".to_string(),
                 data: serde_json::to_vec(&request)
                     .map_err(|e| Error::Discovery(format!("Failed to serialize request: {}", e)))?,
             })
@@ -550,7 +550,7 @@ mod tests {
                 output_schema: None,
             }],
             authentication: None,
-            agentme: Some(AgentMeExtension {
+            agoramesh: Some(AgoraMeshExtension {
                 did: did.to_string(),
                 trust_score: Some(0.85),
                 stake: Some(1_000_000_000), // 1000 USDC
@@ -570,7 +570,7 @@ mod tests {
     async fn test_register_valid_capability_card() {
         // Arrange
         let service = DiscoveryService::new();
-        let card = sample_capability_card("did:agentme:base:test-agent-123");
+        let card = sample_capability_card("did:agoramesh:base:test-agent-123");
 
         // Act
         let result = service.register(&card).await;
@@ -580,11 +580,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_register_requires_did_in_agentme_extension() {
+    async fn test_register_requires_did_in_agoramesh_extension() {
         // Arrange
         let service = DiscoveryService::new();
-        let mut card = sample_capability_card("did:agentme:base:test");
-        card.agentme = None; // Remove agentme extension
+        let mut card = sample_capability_card("did:agoramesh:base:test");
+        card.agoramesh = None; // Remove agoramesh extension
 
         // Act
         let result = service.register(&card).await;
@@ -593,8 +593,8 @@ mod tests {
         assert!(result.is_err(), "Registration should fail without DID");
         let err = result.unwrap_err();
         assert!(
-            err.to_string().contains("DID") || err.to_string().contains("agentme"),
-            "Error should mention missing DID or agentme extension"
+            err.to_string().contains("DID") || err.to_string().contains("agoramesh"),
+            "Error should mention missing DID or agoramesh extension"
         );
     }
 
@@ -623,7 +623,7 @@ mod tests {
     async fn test_register_stores_card_for_later_retrieval() {
         // Arrange
         let service = DiscoveryService::new();
-        let did = "did:agentme:base:retrievable-agent";
+        let did = "did:agoramesh:base:retrievable-agent";
         let card = sample_capability_card(did);
 
         // Act
@@ -651,7 +651,7 @@ mod tests {
         let service = DiscoveryService::new();
 
         // Act
-        let result = service.get("did:agentme:base:nonexistent").await;
+        let result = service.get("did:agoramesh:base:nonexistent").await;
 
         // Assert
         assert!(result.is_ok(), "Get should not error for unknown DID");
@@ -665,9 +665,9 @@ mod tests {
     async fn test_get_returns_correct_card_among_multiple() {
         // Arrange
         let service = DiscoveryService::new();
-        let did1 = "did:agentme:base:agent-1";
-        let did2 = "did:agentme:base:agent-2";
-        let did3 = "did:agentme:base:agent-3";
+        let did1 = "did:agoramesh:base:agent-1";
+        let did2 = "did:agoramesh:base:agent-2";
+        let did3 = "did:agoramesh:base:agent-3";
 
         let mut card1 = sample_capability_card(did1);
         card1.name = "Agent One".to_string();
@@ -695,7 +695,7 @@ mod tests {
     async fn test_search_returns_empty_for_no_matches() {
         // Arrange
         let service = DiscoveryService::new();
-        let card = sample_capability_card("did:agentme:base:translator");
+        let card = sample_capability_card("did:agoramesh:base:translator");
         service.register(&card).await.unwrap();
 
         // Act
@@ -713,11 +713,11 @@ mod tests {
     async fn test_search_finds_agents_by_name() {
         // Arrange
         let service = DiscoveryService::new();
-        let mut card1 = sample_capability_card("did:agentme:base:translator-1");
+        let mut card1 = sample_capability_card("did:agoramesh:base:translator-1");
         card1.name = "French Translator".to_string();
-        let mut card2 = sample_capability_card("did:agentme:base:coder-1");
+        let mut card2 = sample_capability_card("did:agoramesh:base:coder-1");
         card2.name = "Code Assistant".to_string();
-        let mut card3 = sample_capability_card("did:agentme:base:translator-2");
+        let mut card3 = sample_capability_card("did:agoramesh:base:translator-2");
         card3.name = "Spanish Translator".to_string();
 
         service.register(&card1).await.unwrap();
@@ -738,7 +738,7 @@ mod tests {
     async fn test_search_finds_agents_by_capability() {
         // Arrange
         let service = DiscoveryService::new();
-        let card = sample_capability_card("did:agentme:base:agent");
+        let card = sample_capability_card("did:agoramesh:base:agent");
         service.register(&card).await.unwrap();
 
         // Act - search for capability name "Translation"
@@ -758,7 +758,7 @@ mod tests {
     async fn test_search_is_case_insensitive() {
         // Arrange
         let service = DiscoveryService::new();
-        let mut card = sample_capability_card("did:agentme:base:agent");
+        let mut card = sample_capability_card("did:agoramesh:base:agent");
         card.name = "MyAgent".to_string();
         service.register(&card).await.unwrap();
 
@@ -797,7 +797,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = DiscoveryService::with_network(tx);
-        let did = "did:agentme:base:dht-test-agent";
+        let did = "did:agoramesh:base:dht-test-agent";
         let card = sample_capability_card(did);
 
         // Act
@@ -825,7 +825,7 @@ mod tests {
     async fn test_register_still_works_without_network() {
         // Arrange - no network configured
         let service = DiscoveryService::new();
-        let did = "did:agentme:base:offline-agent";
+        let did = "did:agoramesh:base:offline-agent";
         let card = sample_capability_card(did);
 
         // Act
@@ -850,7 +850,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = DiscoveryService::with_network(tx);
-        let did = "did:agentme:base:remote-agent";
+        let did = "did:agoramesh:base:remote-agent";
 
         // Act - get agent not in cache
         // Note: This will send a GetRecord command but we won't wait for response in this test
@@ -874,7 +874,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = DiscoveryService::with_network(tx);
-        let did = "did:agentme:base:dht-stored-agent";
+        let did = "did:agoramesh:base:dht-stored-agent";
         let card = sample_capability_card(did);
         let serialized_card = serde_json::to_vec(&card).unwrap();
 
@@ -920,7 +920,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = DiscoveryService::with_network(tx);
-        let did = "did:agentme:base:nonexistent-dht-agent";
+        let did = "did:agoramesh:base:nonexistent-dht-agent";
 
         // Act - spawn get() in background
         let service_clone = std::sync::Arc::new(service);
@@ -957,7 +957,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = std::sync::Arc::new(DiscoveryService::with_network(tx));
-        let did = "did:agentme:base:cache-from-dht-agent";
+        let did = "did:agoramesh:base:cache-from-dht-agent";
         let card = sample_capability_card(did);
         let serialized_card = serde_json::to_vec(&card).unwrap();
 
@@ -999,7 +999,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = DiscoveryService::with_network(tx);
-        let did = "did:agentme:base:cached-agent";
+        let did = "did:agoramesh:base:cached-agent";
         let card = sample_capability_card(did);
 
         // Pre-populate cache
@@ -1030,7 +1030,7 @@ mod tests {
         // Arrange
         let (tx, mut rx) = mpsc::channel::<SwarmCommand>(10);
         let service = DiscoveryService::with_network(tx);
-        let did = "did:agentme:base:announced-agent";
+        let did = "did:agoramesh:base:announced-agent";
         let card = sample_capability_card(did);
 
         // Act
@@ -1067,21 +1067,21 @@ mod tests {
         let service = DiscoveryService::new();
 
         // Create agents with different trust scores
-        let mut low_trust = sample_capability_card("did:agentme:base:low-trust");
+        let mut low_trust = sample_capability_card("did:agoramesh:base:low-trust");
         low_trust.name = "Translation Agent Low".to_string();
-        if let Some(ref mut ext) = low_trust.agentme {
+        if let Some(ref mut ext) = low_trust.agoramesh {
             ext.trust_score = Some(0.3);
         }
 
-        let mut high_trust = sample_capability_card("did:agentme:base:high-trust");
+        let mut high_trust = sample_capability_card("did:agoramesh:base:high-trust");
         high_trust.name = "Translation Agent High".to_string();
-        if let Some(ref mut ext) = high_trust.agentme {
+        if let Some(ref mut ext) = high_trust.agoramesh {
             ext.trust_score = Some(0.9);
         }
 
-        let mut medium_trust = sample_capability_card("did:agentme:base:medium-trust");
+        let mut medium_trust = sample_capability_card("did:agoramesh:base:medium-trust");
         medium_trust.name = "Translation Agent Medium".to_string();
-        if let Some(ref mut ext) = medium_trust.agentme {
+        if let Some(ref mut ext) = medium_trust.agoramesh {
             ext.trust_score = Some(0.6);
         }
 
@@ -1097,7 +1097,7 @@ mod tests {
         assert_eq!(results.len(), 3);
         let scores: Vec<f64> = results
             .iter()
-            .filter_map(|c| c.agentme.as_ref().and_then(|e| e.trust_score))
+            .filter_map(|c| c.agoramesh.as_ref().and_then(|e| e.trust_score))
             .collect();
 
         assert_eq!(
@@ -1120,13 +1120,13 @@ mod tests {
         let service = DiscoveryService::new();
 
         service
-            .register(&sample_capability_card("did:agentme:base:agent1"))
+            .register(&sample_capability_card("did:agoramesh:base:agent1"))
             .await
             .unwrap();
         assert_eq!(service.cache_size(), 1);
 
         service
-            .register(&sample_capability_card("did:agentme:base:agent2"))
+            .register(&sample_capability_card("did:agoramesh:base:agent2"))
             .await
             .unwrap();
         assert_eq!(service.cache_size(), 2);
@@ -1212,7 +1212,7 @@ mod tests {
             return;
         };
 
-        let card = sample_capability_card("did:agentme:base:indexed-agent");
+        let card = sample_capability_card("did:agoramesh:base:indexed-agent");
 
         // Register the card
         service
@@ -1221,7 +1221,7 @@ mod tests {
             .expect("Registration should succeed");
 
         // Verify card is in local cache
-        let cached = service.get("did:agentme:base:indexed-agent").await;
+        let cached = service.get("did:agoramesh:base:indexed-agent").await;
         assert!(cached.is_ok());
         assert!(
             cached.unwrap().is_some(),
@@ -1247,7 +1247,7 @@ mod tests {
         };
 
         // Register a card with specific capability
-        let mut card = sample_capability_card("did:agentme:base:code-reviewer");
+        let mut card = sample_capability_card("did:agoramesh:base:code-reviewer");
         card.name = "AI Code Review Agent".to_string();
         card.description = "Reviews code for bugs and improvements".to_string();
         card.capabilities = vec![Capability {
@@ -1271,11 +1271,11 @@ mod tests {
         );
         assert_eq!(
             matches[0]
-                .agentme
+                .agoramesh
                 .as_ref()
                 .map(|e| e.did.as_str())
                 .unwrap_or(""),
-            "did:agentme:base:code-reviewer"
+            "did:agoramesh:base:code-reviewer"
         );
     }
 
@@ -1285,7 +1285,7 @@ mod tests {
         let service = DiscoveryService::new();
 
         // Register a card
-        let mut card = sample_capability_card("did:agentme:base:simple-agent");
+        let mut card = sample_capability_card("did:agoramesh:base:simple-agent");
         card.name = "Simple Agent".to_string();
         service.register(&card).await.unwrap();
 
@@ -1304,19 +1304,19 @@ mod tests {
         };
 
         // Create an agent that matches well but has low trust score
-        let mut high_relevance = sample_capability_card("did:agentme:base:high-relevance");
+        let mut high_relevance = sample_capability_card("did:agoramesh:base:high-relevance");
         high_relevance.name = "Code Review Expert".to_string();
         high_relevance.description =
             "Expert code review service for software developers".to_string();
-        if let Some(ref mut ext) = high_relevance.agentme {
+        if let Some(ref mut ext) = high_relevance.agoramesh {
             ext.trust_score = Some(0.3); // Low trust
         }
 
         // Create an agent that matches poorly but has high trust score
-        let mut low_relevance = sample_capability_card("did:agentme:base:low-relevance");
+        let mut low_relevance = sample_capability_card("did:agoramesh:base:low-relevance");
         low_relevance.name = "Weather Forecast".to_string();
         low_relevance.description = "Provides weather predictions for any location".to_string();
-        if let Some(ref mut ext) = low_relevance.agentme {
+        if let Some(ref mut ext) = low_relevance.agoramesh {
             ext.trust_score = Some(0.95); // High trust
         }
 
@@ -1329,12 +1329,12 @@ mod tests {
         // With hybrid search, high relevance should come first despite lower trust
         if !results.is_empty() {
             let first_did = results[0]
-                .agentme
+                .agoramesh
                 .as_ref()
                 .map(|e| e.did.as_str())
                 .unwrap_or("");
             assert_eq!(
-                first_did, "did:agentme:base:high-relevance",
+                first_did, "did:agoramesh:base:high-relevance",
                 "Hybrid search should rank by relevance, not trust score"
             );
         }
@@ -1362,7 +1362,7 @@ mod tests {
         assert!(service.has_semantic_search(), "Should have semantic search");
 
         // Register a card - should send to DHT and index in hybrid search
-        let card = sample_capability_card("did:agentme:base:combined-test");
+        let card = sample_capability_card("did:agoramesh:base:combined-test");
         service.register(&card).await.unwrap();
 
         // Should have sent DHT commands

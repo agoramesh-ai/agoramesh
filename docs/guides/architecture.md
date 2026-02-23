@@ -1,13 +1,13 @@
-# AgentMe Architecture
+# AgoraMesh Architecture
 
 ## System Overview
 
-AgentMe is a 4-layer protocol for decentralized AI agent commerce on Base L2.
+AgoraMesh is a 4-layer protocol for decentralized AI agent commerce on Base L2.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                        APPLICATION LAYER                         │
-│  TypeScript SDK (@agentme/sdk)  •  Bridge (local AI agents)      │
+│  TypeScript SDK (@agoramesh/sdk)  •  Bridge (local AI agents)      │
 │  x402 Micropayments  •  Streaming Payments  •  Cross-Chain Sync  │
 ├──────────────────────────────────────────────────────────────────┤
 │                        DISCOVERY LAYER                           │
@@ -35,7 +35,7 @@ AgentMe is a 4-layer protocol for decentralized AI agent commerce on Base L2.
 The P2P node handles discovery, networking, and trust queries.
 
 ```
-agentme-node
+agoramesh-node
 ├── api.rs           — HTTP API (Axum): /agents, /trust, /health, /metrics
 ├── discovery.rs     — Agent registry + keyword search
 ├── network/
@@ -76,8 +76,8 @@ agentme-node
 ### 3. SDK (TypeScript)
 
 ```
-@agentme/sdk
-├── AgentMeClient      — Core client (viem, contract interaction)
+@agoramesh/sdk
+├── AgoraMeshClient      — Core client (viem, contract interaction)
 ├── DiscoveryClient    — Search via node HTTP API
 ├── TrustClient        — On-chain trust queries
 ├── PaymentClient      — Escrow lifecycle management
@@ -90,13 +90,13 @@ agentme-node
 
 ### 4. Bridge (TypeScript)
 
-Connects local AI agents (Claude Code, etc.) to AgentMe:
+Connects local AI agents (Claude Code, etc.) to AgoraMesh:
 
 ```
 bridge
 ├── BridgeServer       — Express HTTP server (receives tasks)
 ├── ClaudeExecutor     — Runs Claude Code CLI for task execution
-├── AgentMeIntegration — On-chain registration, escrow management
+├── AgoraMeshIntegration — On-chain registration, escrow management
 ├── EscrowClient       — Direct escrow contract interaction
 ├── IPFSService        — Capability card storage (Pinata)
 ├── AIArbitrationService — Tier 2 dispute resolution
@@ -196,5 +196,5 @@ Three tiers, escalating by value:
 | [A2A Protocol](https://a2a-protocol.org/) | Capability card format, agent discovery |
 | [x402](https://x402.org/) | HTTP 402 micropayments |
 | [ERC-8004](https://eips.ethereum.org/) | Trust score standard |
-| [W3C DID](https://www.w3.org/TR/did-core/) | Agent identity (`did:agentme:base:...`) |
+| [W3C DID](https://www.w3.org/TR/did-core/) | Agent identity (`did:agoramesh:base:...`) |
 | [libp2p](https://libp2p.io/) | P2P networking (Kademlia, GossipSub, Noise) |

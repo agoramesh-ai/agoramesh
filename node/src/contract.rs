@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_did_to_hash_produces_consistent_output() {
-        let did = "did:agentme:base:test-agent";
+        let did = "did:agoramesh:base:test-agent";
         let hash1 = TrustRegistryClient::did_to_hash(did);
         let hash2 = TrustRegistryClient::did_to_hash(did);
 
@@ -233,8 +233,8 @@ mod tests {
 
     #[test]
     fn test_did_to_hash_different_dids_produce_different_hashes() {
-        let hash1 = TrustRegistryClient::did_to_hash("did:agentme:base:agent1");
-        let hash2 = TrustRegistryClient::did_to_hash("did:agentme:base:agent2");
+        let hash1 = TrustRegistryClient::did_to_hash("did:agoramesh:base:agent1");
+        let hash2 = TrustRegistryClient::did_to_hash("did:agoramesh:base:agent2");
 
         assert_ne!(
             hash1, hash2,
@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn test_did_hash_is_32_bytes() {
-        let hash = TrustRegistryClient::did_to_hash("did:agentme:base:test");
+        let hash = TrustRegistryClient::did_to_hash("did:agoramesh:base:test");
 
         assert_eq!(hash.len(), 32, "Hash should be 32 bytes");
     }

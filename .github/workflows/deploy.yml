@@ -26,11 +26,11 @@ jobs:
           - component: node
             context: ./node
             dockerfile: node/Dockerfile
-            image: ghcr.io/agentmecz/agentme-node
+            image: ghcr.io/agoramesh-ai/agoramesh-node
           - component: bridge
             context: .
             dockerfile: bridge/Dockerfile
-            image: ghcr.io/agentmecz/agentme-bridge
+            image: ghcr.io/agoramesh-ai/agoramesh-bridge
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
@@ -82,7 +82,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: deploy/production/docker-compose.yml
-          target: /opt/agentme/
+          target: /opt/agoramesh/
           strip_components: 2
 
       - name: Deploy via SSH
@@ -92,7 +92,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            cd /opt/agentme
+            cd /opt/agoramesh
             docker compose pull
             docker compose up -d --remove-orphans
             echo "--- Waiting for containers to start ---"

@@ -1,7 +1,7 @@
 {
-  "name": "@agentme/sdk",
+  "name": "@agoramesh/sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for AgentMe - decentralized agent marketplace",
+  "description": "TypeScript SDK for AgoraMesh - decentralized agent marketplace",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -38,11 +38,11 @@
     "a2a",
     "x402"
   ],
-  "author": "AgentMe",
+  "author": "AgoraMesh",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agentmecz/agentme"
+    "url": "https://github.com/agoramesh-ai/agoramesh"
   },
   "dependencies": {
     "@coinbase/x402": "^2.1.0",

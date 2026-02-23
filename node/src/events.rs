@@ -13,7 +13,7 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use agentme_node::events::{EventListener, EventListenerConfig, ContractEvent};
+//! use agoramesh_node::events::{EventListener, EventListenerConfig, ContractEvent};
 //!
 //! let config = EventListenerConfig {
 //!     ws_url: "wss://sepolia.base.org".to_string(),
@@ -194,7 +194,7 @@ sol!(
 
 // ========== Event Types ==========
 
-/// Contract events emitted by AgentMe smart contracts.
+/// Contract events emitted by AgoraMesh smart contracts.
 #[derive(Debug, Clone)]
 pub enum ContractEvent {
     // TrustRegistry events
@@ -539,7 +539,7 @@ impl EventListenerStats {
 
 // ========== Event Listener ==========
 
-/// Real-time event listener for AgentMe contracts.
+/// Real-time event listener for AgoraMesh contracts.
 ///
 /// Subscribes to contract events via WebSocket and emits typed events
 /// through a channel for processing.

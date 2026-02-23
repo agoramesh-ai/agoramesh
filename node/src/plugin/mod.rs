@@ -1,4 +1,4 @@
-//! AgentMe Plugin System
+//! AgoraMesh Plugin System
 //!
 //! A modular, extensible plugin architecture for AI agents.
 //!
@@ -11,7 +11,7 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! use agentme_node::plugin::{Plugin, PluginRegistry, Action, ActionContext};
+//! use agoramesh_node::plugin::{Plugin, PluginRegistry, Action, ActionContext};
 //!
 //! // Define a simple action
 //! struct EchoAction;

@@ -1,4 +1,4 @@
-//! Trust score caching for AgentMe.
+//! Trust score caching for AgoraMesh.
 //!
 //! This module provides a high-performance cache for trust scores,
 //! reducing load on the blockchain RPC and improving response times.
@@ -13,12 +13,12 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use agentme_node::trust_cache::{TrustCache, TrustCacheConfig};
+//! use agoramesh_node::trust_cache::{TrustCache, TrustCacheConfig};
 //!
 //! let cache = TrustCache::new(TrustCacheConfig::default());
 //!
 //! // Get or load trust score
-//! let score = cache.get_or_load("did:agentme:base:agent1", || async {
+//! let score = cache.get_or_load("did:agoramesh:base:agent1", || async {
 //!     // Load from blockchain
 //!     Ok(trust_service.get_trust(did).await?)
 //! }).await?;

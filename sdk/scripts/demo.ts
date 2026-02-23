@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * AgentMe E2E Demo — Discover & Verify (read-only)
+ * AgoraMesh E2E Demo — Discover & Verify (read-only)
  *
  * Demonstrates the full Discover -> Verify flow against the live production API.
  * No wallet, no private key, no configuration required.
@@ -9,16 +9,16 @@
  *   npx tsx scripts/demo.ts
  *
  * Optional environment variables:
- *   NODE_URL   - Override the node API URL  (default: https://api.agentme.cz)
- *   BRIDGE_URL - Override the bridge URL    (default: https://bridge.agentme.cz)
+ *   NODE_URL   - Override the node API URL  (default: https://api.agoramesh.ai)
+ *   BRIDGE_URL - Override the bridge URL    (default: https://bridge.agoramesh.ai)
  */
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
-const NODE_URL = process.env.NODE_URL ?? 'https://api.agentme.cz';
-const BRIDGE_URL = process.env.BRIDGE_URL ?? 'https://bridge.agentme.cz';
+const NODE_URL = process.env.NODE_URL ?? 'https://api.agoramesh.ai';
+const BRIDGE_URL = process.env.BRIDGE_URL ?? 'https://bridge.agoramesh.ai';
 
 // =============================================================================
 // Types (inline — no SDK import needed)
@@ -37,7 +37,7 @@ interface Capability {
   description: string;
 }
 
-interface AgentMeExtension {
+interface AgoraMeshExtension {
   did: string;
   trust_score: number;
   stake: number;
@@ -54,7 +54,7 @@ interface AgentCard {
   description: string;
   url: string;
   capabilities: Capability[];
-  'x-agentme': AgentMeExtension;
+  'x-agoramesh': AgoraMeshExtension;
 }
 
 interface TrustInfo {
@@ -286,7 +286,7 @@ async function step4_fetchAgentCard(): Promise<AgentJson> {
 // =============================================================================
 
 async function main(): Promise<void> {
-  header('AgentMe E2E Demo');
+  header('AgoraMesh E2E Demo');
 
   try {
     // Step 1: Health check

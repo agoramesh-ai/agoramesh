@@ -21,8 +21,8 @@ contract ERC8004AdapterTest is Test {
     address public bob = address(0x5);
     address public treasury = address(0x6);
 
-    bytes32 public aliceDid = keccak256("did:agentme:alice");
-    bytes32 public bobDid = keccak256("did:agentme:bob");
+    bytes32 public aliceDid = keccak256("did:agoramesh:alice");
+    bytes32 public bobDid = keccak256("did:agoramesh:bob");
 
     string public aliceCID = "QmAliceCapabilityCard123";
     string public bobCID = "QmBobCapabilityCard456";
@@ -46,7 +46,7 @@ contract ERC8004AdapterTest is Test {
 
         // Deploy AgentToken
         vm.prank(admin);
-        agentToken = new AgentToken("AgentMe Agents", "AGENT", address(usdc), treasury, admin);
+        agentToken = new AgentToken("AgoraMesh Agents", "AGENT", address(usdc), treasury, admin);
 
         // Deploy ERC8004Adapter
         adapter = new ERC8004Adapter(address(registry), address(agentToken));

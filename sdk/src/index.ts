@@ -1,22 +1,22 @@
 /**
- * AgentMe SDK
+ * AgoraMesh SDK
  *
- * TypeScript SDK for interacting with the AgentMe decentralized agent marketplace.
+ * TypeScript SDK for interacting with the AgoraMesh decentralized agent marketplace.
  *
  * @packageDocumentation
  *
  * @example
  * ```typescript
  * import {
- *   AgentMeClient,
+ *   AgoraMeshClient,
  *   DiscoveryClient,
  *   TrustClient,
  *   PaymentClient,
  *   BASE_SEPOLIA_CHAIN_ID,
- * } from '@agentme/sdk';
+ * } from '@agoramesh/sdk';
  *
  * // Create and connect client
- * const client = new AgentMeClient({
+ * const client = new AgoraMeshClient({
  *   rpcUrl: 'https://sepolia.base.org',
  *   chainId: BASE_SEPOLIA_CHAIN_ID,
  *   privateKey: '0x...',
@@ -35,12 +35,12 @@
  *
  * // Check trust scores
  * const trust = new TrustClient(client);
- * const score = await trust.getTrustScore('did:agentme:base:0x...');
+ * const score = await trust.getTrustScore('did:agoramesh:base:0x...');
  *
  * // Create escrow for payment
- * const payment = new PaymentClient(client, 'did:agentme:base:0x...');
+ * const payment = new PaymentClient(client, 'did:agoramesh:base:0x...');
  * const escrowId = await payment.createAndFundEscrow({
- *   providerDid: 'did:agentme:base:0x...',
+ *   providerDid: 'did:agoramesh:base:0x...',
  *   providerAddress: '0x...',
  *   amount: '100',
  *   taskHash: '0x...',
@@ -55,7 +55,7 @@
 
 export type {
   // Configuration
-  AgentMeConfig,
+  AgoraMeshConfig,
   ContractAddresses,
 
   // Capability Card
@@ -110,7 +110,7 @@ export {
 // Client
 // =============================================================================
 
-export { AgentMeClient, createClient, didToHash } from './client.js';
+export { AgoraMeshClient, createClient, didToHash } from './client.js';
 
 // =============================================================================
 // Utilities
@@ -229,10 +229,10 @@ export type { DeploymentAddresses } from './deployments.js';
 // Easy API (High-Level for AI Agents)
 // =============================================================================
 
-export { AgentMe, createAgentMe } from './easy.js';
+export { AgoraMesh, createAgoraMesh } from './easy.js';
 
 export type {
-  AgentMeOptions,
+  AgoraMeshOptions,
   FindOptions,
   HireOptions,
   HireResult,
