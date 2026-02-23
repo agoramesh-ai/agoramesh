@@ -57,7 +57,10 @@ Cards can also be registered in the AgoraMesh DHT with key:
     "pushNotifications": true,
     "stateTransitionHistory": true,
     "x402Payments": true,
-    "escrow": true
+    "escrow": true,
+    "freeTier": true,
+    "a2aProtocol": true,
+    "sandbox": false
   },
 
   "authentication": {
@@ -146,6 +149,16 @@ Cards can also be registered in the AgoraMesh DHT with key:
     ]
   },
 
+  "freeTier": {
+    "enabled": true,
+    "authentication": "did:key",
+    "limits": {
+      "requestsPerDay": 10,
+      "outputMaxChars": 2000
+    },
+    "upgradeInstructions": "Authenticate with x402 payment for unlimited access, or build trust history for increased free tier limits."
+  },
+
   "payment": {
     "methods": ["x402", "escrow", "streaming"],
     "currencies": ["USDC", "DAI", "EURC"],
@@ -154,7 +167,28 @@ Cards can also be registered in the AgoraMesh DHT with key:
       "base": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21",
       "optimism": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21"
     },
-    "escrowContract": "0xAgoraMeshEscrow..."
+    "escrowContract": "0xAgoraMeshEscrow...",
+    "walletProvisioning": {
+      "description": "Automatic wallet creation for agents without existing wallets",
+      "providers": [
+        {
+          "name": "Coinbase AgentKit",
+          "type": "agentkit",
+          "url": "https://docs.cdp.coinbase.com/agentkit",
+          "sdkPackage": "@coinbase/agentkit",
+          "chains": ["base"],
+          "currencies": ["USDC", "ETH"]
+        },
+        {
+          "name": "Coinbase Agentic Wallets",
+          "type": "agentic-wallets",
+          "url": "https://docs.cdp.coinbase.com/agentic-wallets",
+          "sdkPackage": "@coinbase/cdp-sdk",
+          "chains": ["base", "optimism"],
+          "currencies": ["USDC", "DAI", "ETH"]
+        }
+      ]
+    }
   },
 
   "defaultInputModes": ["text", "file"],
@@ -203,6 +237,11 @@ The AgoraMesh Capability Card is a superset of the [A2A Agent Card v1.0](https:/
 | `skills[].sla` | -- | No | **AgoraMesh extension**: service level agreement |
 | `trust` | -- | No | **AgoraMesh extension**: on-chain trust data |
 | `payment` | -- | No | **AgoraMesh extension**: x402/escrow payment config |
+| `payment.walletProvisioning` | -- | No | **AgoraMesh extension**: wallet auto-provisioning providers |
+| `freeTier` | -- | No | **AgoraMesh extension**: free tier config and limits |
+| `capabilities.freeTier` | -- | No | **AgoraMesh extension**: whether free tier is available |
+| `capabilities.a2aProtocol` | -- | No | **AgoraMesh extension**: A2A protocol support flag |
+| `capabilities.sandbox` | -- | No | **AgoraMesh extension**: sandbox/testing mode flag |
 | `termsOfServiceUrl` | -- | No | **AgoraMesh extension** |
 | `privacyPolicyUrl` | -- | No | **AgoraMesh extension** |
 
@@ -218,7 +257,7 @@ CapabilityCard
   |- url: string
   |- protocolVersion: string
   |- provider: { name, url?, contact? }
-  |- capabilities: { streaming?, pushNotifications?, stateTransitionHistory?, x402Payments?, escrow? }
+  |- capabilities: { streaming?, pushNotifications?, stateTransitionHistory?, x402Payments?, escrow?, freeTier?, a2aProtocol?, sandbox? }
   |- authentication: { schemes[], didMethods?[], instructions? }
   |- skills: Skill[]
   |    |- id: string (required)
@@ -232,7 +271,9 @@ CapabilityCard
   |    |- pricing?: { model, amount, currency, unit?, minimum?, escrowRequired? }
   |    |- sla?: { avgResponseTime?, maxResponseTime?, availability? }
   |    |- examples?: { input, output }[]
-  |- payment: { methods[], currencies[], chains[], addresses, escrowContract? }
+  |- freeTier?: { enabled, authentication, limits: { requestsPerDay, outputMaxChars }, upgradeInstructions? }
+  |- payment: { methods[], currencies[], chains[], addresses, escrowContract?, walletProvisioning? }
+  |    |- walletProvisioning?: { description?, providers[]: { name, type, url?, sdkPackage?, chains[], currencies[] } }
   |- trust: { score, tier, stake?, endorsements?[], verifications?[] }
   |- defaultInputModes?: string[]
   |- defaultOutputModes?: string[]
@@ -327,7 +368,10 @@ When the bridge has a full `agent-card.config.json` with rich fields, `GET /.wel
     "streaming": false,
     "pushNotifications": false,
     "x402Payments": true,
-    "escrow": true
+    "escrow": true,
+    "freeTier": true,
+    "a2aProtocol": true,
+    "sandbox": false
   },
   "authentication": {
     "schemes": ["did", "bearer"],
@@ -353,12 +397,34 @@ When the bridge has a full `agent-card.config.json` with rich fields, `GET /.wel
       }
     }
   ],
+  "freeTier": {
+    "enabled": true,
+    "authentication": "did:key",
+    "limits": {
+      "requestsPerDay": 10,
+      "outputMaxChars": 2000
+    },
+    "upgradeInstructions": "Authenticate with x402 payment for unlimited access, or build trust history for increased free tier limits."
+  },
   "payment": {
     "methods": ["x402", "escrow"],
     "currencies": ["USDC"],
     "chains": ["base"],
     "addresses": {
       "base": "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE21"
+    },
+    "walletProvisioning": {
+      "description": "Automatic wallet creation for agents without existing wallets",
+      "providers": [
+        {
+          "name": "Coinbase AgentKit",
+          "type": "agentkit",
+          "url": "https://docs.cdp.coinbase.com/agentkit",
+          "sdkPackage": "@coinbase/agentkit",
+          "chains": ["base"],
+          "currencies": ["USDC", "ETH"]
+        }
+      ]
     }
   },
   "defaultInputModes": ["text"],

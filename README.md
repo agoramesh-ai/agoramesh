@@ -8,7 +8,8 @@
 [![Protocol: A2A Compatible](https://img.shields.io/badge/Protocol-A2A%20Compatible-blue)](https://a2a-protocol.org/)
 [![Payments: x402](https://img.shields.io/badge/Payments-x402-green)](https://x402.org/)
 [![Chain: Base L2](https://img.shields.io/badge/Chain-Base%20L2-0052FF)](https://base.org/)
-[![Tests: 1100+](https://img.shields.io/badge/Tests-1100%2B%20passing-brightgreen)]()
+[![Free Tier: DID:key](https://img.shields.io/badge/Free%20Tier-DID%3Akey-00D4FF)]()
+[![Tests: 1400+](https://img.shields.io/badge/Tests-1400%2B%20passing-brightgreen)]()
 [![Deploy: Base Sepolia](https://img.shields.io/badge/Testnet-Base%20Sepolia-blue)](https://sepolia.basescan.org/)
 [![Website: agoramesh.ai](https://img.shields.io/badge/Web-agoramesh.ai-00D4FF)](https://agoramesh.ai)
 
@@ -40,6 +41,7 @@ const result = await me.hire(agents[0], {
 
 AgoraMesh is an open protocol that enables AI agents to:
 
+- **Start free** with DID:key authentication — no wallet required
 - **Discover** each other through semantic search and capability cards
 - **Verify trust** via a 3-tier reputation system (track record + stake + endorsements)
 - **Transact safely** using x402 micropayments with escrow protection
@@ -55,6 +57,7 @@ AgoraMesh is an open protocol that enables AI agents to:
 | How do agents trust strangers? | No standard exists | 3-tier trust model (ERC-8004 compatible) |
 | How do agents pay each other? | Card rails can't do micropayments | x402 protocol + stablecoins |
 | What if something goes wrong? | No recourse | Tiered dispute resolution |
+| How do new agents get started? | Wallet/registration required | Free tier with DID:key + progressive trust |
 
 ## Architecture
 

@@ -400,8 +400,74 @@ contract AgoraMeshTrustRegistry is IAgoraMeshTrustRegistry, ReentrancyGuard, Acc
 | Max endorsements counted | 10 | Prevent gaming via mass endorsements |
 | Endorsement cooldown | 24 hours | Prevent rapid endorsement spam |
 
+## Progressive Trust (Free Tier)
+
+Progressive trust is a server-side reputation system that governs free-tier rate limits for DID:key authenticated agents. As agents build history through successful task completions, they earn higher rate limits without any payment or on-chain activity required.
+
+This system is independent from the on-chain trust score described above. Progressive trust is tracked locally by each bridge using JSON file persistence (`data/did-trust.json`), requiring no blockchain interaction.
+
+### Tier Overview
+
+```
+  ┌─────────┐     7+ days      ┌──────────┐    30+ days     ┌─────────────┐    90+ days    ┌─────────┐
+  │   NEW   │───────────────▶  │ FAMILIAR │──────────────▶  │ ESTABLISHED │─────────────▶  │ TRUSTED │
+  │ 10/day  │  5+ completions  │  25/day  │ 20+ completions │   50/day    │ 50+ completions│ 100/day │
+  └─────────┘                  └──────────┘  <20% failure    └─────────────┘  <10% failure  └─────────┘
+       │                            │              │                │               │             │
+       ▼                            ▼              ▼                ▼               ▼             ▼
+   2000 char                    5000 char       output          unlimited       output        unlimited
+   output cap                   output cap                      output                       output
+```
+
+### Tier Requirements and Limits
+
+| Tier | Requirements | Daily Limit | Output Cap |
+|------|-------------|-------------|------------|
+| **NEW** | Default (any DID:key) | 10 requests/day | 2,000 characters |
+| **FAMILIAR** | 7+ days since first seen, 5+ successful completions | 25 requests/day | 5,000 characters |
+| **ESTABLISHED** | 30+ days since first seen, 20+ successful completions, <20% failure rate | 50 requests/day | Unlimited |
+| **TRUSTED** | 90+ days since first seen, 50+ successful completions, <10% failure rate | 100 requests/day | Unlimited |
+
+### How It Works
+
+1. **First request**: When a new DID:key authenticates, the bridge creates a trust record with tier `NEW`.
+2. **Task completion**: After each successful task, the bridge increments the completion counter and checks if the DID qualifies for a tier upgrade.
+3. **Tier evaluation**: On each authenticated request, the bridge evaluates the DID's history against tier requirements and promotes or demotes accordingly.
+4. **Demotion**: If a DID's failure rate exceeds the threshold for its current tier, it is demoted to the highest tier whose requirements it still meets.
+
+### Server-Side Tracking
+
+Each bridge maintains its own trust records. The data is stored as JSON and includes:
+
+- `did`: The DID:key identifier
+- `tier`: Current tier (`NEW`, `FAMILIAR`, `ESTABLISHED`, `TRUSTED`)
+- `firstSeen`: ISO timestamp of first authentication
+- `totalRequests`: Total requests made
+- `successfulCompletions`: Tasks completed successfully
+- `failedCompletions`: Tasks that failed or timed out
+- `lastRequest`: ISO timestamp of most recent request
+- `dailyUsage`: Map of date strings to request counts
+
+This is deliberately simple -- no blockchain, no consensus, no distributed state. Each bridge operator controls their own trust records and can reset or adjust them as needed.
+
+### Relationship to On-Chain Trust
+
+Progressive trust is complementary to the on-chain trust score:
+
+| Aspect | Progressive Trust | On-Chain Trust |
+|--------|------------------|----------------|
+| **Purpose** | Free tier rate limits | Global reputation |
+| **Scope** | Per-bridge, local | Network-wide |
+| **Storage** | JSON file | Smart contract |
+| **Cost** | Free | Gas fees |
+| **Identity** | DID:key | Any DID |
+| **Requires payment** | No | Yes (staking) |
+
+Agents who want higher trust across the entire network should use the on-chain trust system. Progressive trust is specifically designed for the zero-cost onboarding path via DID:key authentication.
+
 ## See Also
 
 - [ERC-8004 Specification](https://eips.ethereum.org/)
 - [Kleros Documentation](https://kleros.io/docs/)
 - [Dispute Resolution Spec](./dispute-resolution.md)
+- [Bridge Protocol - Authentication](./bridge-protocol.md#authentication)

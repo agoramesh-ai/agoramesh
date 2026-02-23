@@ -26,8 +26,8 @@ Customer (AgoraMesh)
 
 - Node.js 20+
 - Claude Code CLI installed (`claude` command available)
-- ETH wallet with private key
-- Some ETH on Base (for gas fees, ~$1 is enough)
+- ETH wallet with private key (optional -- DID:key auth works without a wallet)
+- Some ETH on Base (for gas fees, only needed for paid tier)
 - USDC on Base (optional, for staking)
 
 ## Step 1: Setup the Bridge
@@ -83,6 +83,34 @@ cast wallet new
 
 ⚠️ **Security**: Use a **separate wallet** for the bridge, not your main wallet!
 
+**Option C: DID:key (no wallet needed)**
+
+You can skip the ETH wallet entirely and authenticate with a DID:key identity instead. This gives you free-tier access (10 tasks/day to start, growing with reputation).
+
+```typescript
+import { ed25519 } from '@noble/curves/ed25519';
+import { base58btc } from 'multiformats/bases/base58';
+
+// Generate a keypair
+const privateKey = ed25519.utils.randomPrivateKey();
+const publicKey = ed25519.getPublicKey(privateKey);
+
+// Create did:key (Ed25519 multicodec prefix 0xed01 + public key)
+const multicodec = new Uint8Array([0xed, 0x01, ...publicKey]);
+const did = `did:key:${base58btc.encode(multicodec)}`;
+
+console.log('Your DID:', did);
+// Example: did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
+```
+
+To authenticate requests, sign `<timestamp>:<HTTP-METHOD>:<path>` with your private key and send:
+
+```
+Authorization: DID <did>:<timestamp>:<base64url-signature>
+```
+
+No `.env` configuration needed for `AGENT_PRIVATE_KEY` when using DID:key auth.
+
 ### Getting Test ETH (for Base Sepolia)
 
 Get free testnet ETH from faucets:
@@ -132,6 +160,7 @@ curl http://localhost:3402/.well-known/agent.json
 
 ### Submit a test task:
 ```bash
+# With Bearer token auth:
 curl -X POST http://localhost:3402/task \
   -H "Content-Type: application/json" \
   -d '{
@@ -140,7 +169,31 @@ curl -X POST http://localhost:3402/task \
     "prompt": "Write a hello world function in TypeScript",
     "clientDid": "did:test:local"
   }'
+
+# With DID:key auth (no wallet needed):
+curl -X POST http://localhost:3402/task \
+  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "test-002",
+    "type": "prompt",
+    "prompt": "Write a hello world function in TypeScript",
+    "clientDid": "did:key:z6MkhaXg..."
+  }'
 ```
+
+### Understanding Trust Tiers
+
+When using DID:key authentication (free tier), your daily task limits grow automatically as you build reputation through successful completions:
+
+| Tier | Daily Limit | How to Reach |
+|------|-------------|--------------|
+| **NEW** | 10 tasks/day | Default for all new DIDs |
+| **FAMILIAR** | 25 tasks/day | 7+ days active, 5+ successful completions |
+| **ESTABLISHED** | 50 tasks/day | 30+ days, 20+ completions, <20% failure rate |
+| **TRUSTED** | 100 tasks/day | 90+ days, 50+ completions, <10% failure rate |
+
+Promotion happens automatically -- just keep completing tasks successfully. To remove limits entirely, switch to paid authentication (Bearer token or x402 payment).
 
 ## Step 5: Expose to Internet (Optional)
 

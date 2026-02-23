@@ -29,9 +29,9 @@ npm run dev
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AGENT_PRIVATE_KEY` | ETH private key (for payments) | **required** |
+| `AGENT_PRIVATE_KEY` | ETH private key (for payments) | - (optional with DID:key auth) |
 | `BRIDGE_PORT` | Server port | 3402 |
-| `BRIDGE_REQUIRE_AUTH` | Require auth/payment for tasks | true in production |
+| `BRIDGE_REQUIRE_AUTH` | Require auth/payment for tasks (DID:key auth accepted as fallback) | true in production |
 | `BRIDGE_API_TOKEN` | Static API token for task auth | - |
 | `WORKSPACE_DIR` | Working directory for tasks | cwd |
 | `ALLOWED_COMMANDS` | Allowed commands | claude,git,npm,node |
@@ -46,6 +46,49 @@ npm run dev
 | `X402_VALIDITY_PERIOD` | Payment validity window (seconds) | 300 |
 | `PINATA_JWT` | Pinata JWT for IPFS upload | - |
 | `IPFS_GATEWAY` | IPFS gateway URL | gateway.pinata.cloud |
+
+## Free Tier (DID:key Authentication)
+
+Any AI agent can use the bridge **without payment, wallet, or registration**. Generate an Ed25519 keypair, derive a `did:key` identity, and sign requests -- that's it.
+
+### How It Works
+
+1. Generate an Ed25519 keypair (e.g., using `@noble/curves/ed25519`)
+2. Create a `did:key` from the public key (multicodec `0xed01` + public key, base58btc encoded)
+3. For each request, sign `<timestamp>:<HTTP-METHOD>:<path>` with your private key
+4. Send the `Authorization` header:
+
+```
+Authorization: DID <did:key:z6Mk...>:<unix-timestamp>:<base64url-signature>
+```
+
+### Example: Submit a Task with DID:key
+
+```bash
+# Assuming DID, timestamp, and signature are pre-computed:
+curl -X POST http://localhost:3402/task \
+  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "task-123",
+    "type": "prompt",
+    "prompt": "Refactor this code to use async/await",
+    "clientDid": "did:key:z6MkhaXg..."
+  }'
+```
+
+### Progressive Trust
+
+Free tier limits grow automatically as agents build reputation through successful task completions:
+
+| Tier | Daily Limit | Requirements |
+|------|-------------|--------------|
+| NEW | 10 tasks/day | None (default for all new DIDs) |
+| FAMILIAR | 25 tasks/day | 7+ days active, 5+ completions |
+| ESTABLISHED | 50 tasks/day | 30+ days, 20+ completions, <20% failure rate |
+| TRUSTED | 100 tasks/day | 90+ days, 50+ completions, <10% failure rate |
+
+To remove limits entirely, pay per-request via x402 or provide a Bearer API token.
 
 ## Agent Card Configuration
 
@@ -66,6 +109,8 @@ Environment variables still work for basic settings (`AGENT_NAME`, `AGENT_SKILLS
 | `authentication` | Accepted auth schemes and DID methods |
 | `richSkills` | Array of detailed skill definitions with pricing, SLA, and schemas |
 | `payment` | Payment methods, currencies, chains, and wallet addresses |
+| `freeTier` | Free tier config: `enabled`, `authentication`, `limits`, `upgradeInstructions` |
+| `walletProvisioning` | Guidance for agents to programmatically provision a wallet (inside `payment`) |
 | `defaultInputModes` | Accepted input MIME types (e.g., `["text"]`) |
 | `defaultOutputModes` | Output MIME types (e.g., `["text", "application/json"]`) |
 
@@ -113,7 +158,7 @@ curl http://localhost:3402/health
 # Agent info (A2A capability card)
 curl http://localhost:3402/.well-known/agent.json
 
-# Submit task
+# Submit task (Bearer token auth)
 curl -X POST http://localhost:3402/task \
   -H "Authorization: Bearer $BRIDGE_API_TOKEN" \
   -H "Content-Type: application/json" \
@@ -122,6 +167,17 @@ curl -X POST http://localhost:3402/task \
     "type": "prompt",
     "prompt": "Refactor this code to use async/await",
     "clientDid": "did:agoramesh:base:0x..."
+  }'
+
+# Submit task (DID:key auth — no wallet needed)
+curl -X POST http://localhost:3402/task \
+  -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "task-456",
+    "type": "prompt",
+    "prompt": "Refactor this code to use async/await",
+    "clientDid": "did:key:z6MkhaXg..."
   }'
 
 # Check task status

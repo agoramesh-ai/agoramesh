@@ -107,9 +107,16 @@ Content-Type: application/json
 {
   "accepted": true,
   "taskId": "task-123",
-  "estimatedTime": 300
+  "estimatedTime": 300,
+  "freeTier": {
+    "tier": "NEW",
+    "remaining": 9,
+    "dailyLimit": 10
+  }
 }
 ```
+
+The `freeTier` field is included when the request was authenticated via DID:key free tier. It is omitted for Bearer or x402-authenticated requests.
 
 **Error Response (400):**
 ```json
@@ -148,6 +155,91 @@ Cancel a running task.
   "cancelled": true
 }
 ```
+
+### A2A Endpoint
+
+`POST /` is also available as an A2A-compatible endpoint. It accepts the same task payload and supports DID:key authentication. This allows standard A2A clients to interact with the bridge without knowing about the `/task` path.
+
+## Authentication
+
+The bridge supports multiple authentication methods with the following priority order:
+
+```
+1. Bearer token    (Authorization: Bearer <token>)
+2. x402 payment    (x-payment header present)
+3. DID:key auth    (Authorization: DID <did>:<timestamp>:<signature>)
+4. Reject          (401 Unauthorized)
+```
+
+If no valid authentication is provided, the bridge returns `401 Unauthorized`.
+
+### DID:key Authentication
+
+DID:key auth provides free-tier access using Ed25519 cryptographic signatures. No wallet or payment is required — agents authenticate by proving ownership of a DID:key identity.
+
+**Authorization Header Format:**
+
+```
+Authorization: DID <did>:<timestamp>:<base64url-signature>
+```
+
+Where:
+- `<did>` is a `did:key:z6Mk...` identifier (Ed25519 public key encoded as multicodec)
+- `<timestamp>` is a Unix epoch timestamp in seconds
+- `<base64url-signature>` is the Ed25519 signature (base64url-encoded, no padding)
+
+**Signature Payload:**
+
+The signature is computed over the following string:
+
+```
+<timestamp>:<HTTP-METHOD>:<path>
+```
+
+For example, a POST to `/task` at timestamp `1708700000`:
+
+```
+1708700000:POST:/task
+```
+
+The bridge verifies the signature by extracting the Ed25519 public key from the DID:key and checking it against the payload.
+
+**Replay Protection:**
+
+The bridge rejects requests where the timestamp is more than 5 minutes (300 seconds) from the server's current time. This prevents replay attacks while allowing for reasonable clock skew.
+
+### Free Tier Limits
+
+DID:key authenticated requests are subject to free tier rate limits:
+
+| Limit | Value | Scope |
+|-------|-------|-------|
+| Requests per DID per day | 10 (default, varies by trust tier) | Per DID identity |
+| Requests per IP per day | 20 | Per source IP address |
+| Output character cap | 2000 (default, varies by trust tier) | Per response |
+
+Both DID-based and IP-based limits are enforced. A request is rejected if either limit is exceeded.
+
+See the [Trust Layer specification](./trust-layer.md) for how progressive trust tiers increase these limits.
+
+### Rate Limit Response (429)
+
+When a free-tier limit is exceeded, the bridge returns `429 Too Many Requests`:
+
+```json
+{
+  "error": "Free tier limit exceeded",
+  "code": "RATE_LIMIT_EXCEEDED",
+  "limit": {
+    "type": "did",
+    "dailyLimit": 10,
+    "used": 10,
+    "resetsAt": "2026-02-24T00:00:00.000Z"
+  }
+}
+```
+
+The `limit.type` is either `"did"` or `"ip"` depending on which limit was hit.
 
 ## WebSocket API
 
