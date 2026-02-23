@@ -8,9 +8,10 @@ import type { AddressInfo } from 'net';
 import { timingSafeEqual } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
-import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig } from './types.js';
+import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
+import { handleA2ARequest, type A2ABridge } from './a2a.js';
 
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {
@@ -33,6 +34,9 @@ export enum ErrorCode {
   NOT_FOUND = 'NOT_FOUND',
   PAYMENT_REQUIRED = 'PAYMENT_REQUIRED',
   INTERNAL_ERROR = 'INTERNAL_ERROR',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  FORBIDDEN = 'FORBIDDEN',
+  RATE_LIMITED = 'RATE_LIMITED',
 }
 
 /**
@@ -43,6 +47,40 @@ interface SafeErrorResponse {
   error: string;
   code: ErrorCode;
   details?: string[];
+}
+
+/**
+ * Rich error response with actionable guidance for programmatic agents.
+ */
+export interface RichError {
+  error: string;
+  code: ErrorCode;
+  details?: string[];
+  help?: {
+    message: string;
+    agentCard?: string;
+    documentation?: string;
+    authMethods?: string[];
+  };
+}
+
+/**
+ * Build a rich error response with machine-readable code and actionable guidance.
+ */
+export function buildRichError(
+  error: string,
+  code: ErrorCode,
+  help?: RichError['help'],
+  details?: string[]
+): RichError {
+  const response: RichError = { error, code };
+  if (details && details.length > 0) {
+    response.details = details;
+  }
+  if (help) {
+    response.help = help;
+  }
+  return response;
 }
 
 /**
@@ -254,7 +292,16 @@ export class BridgeServer {
         return x402Middleware(req, res, next);
       }
 
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json(buildRichError(
+        'Unauthorized',
+        ErrorCode.UNAUTHORIZED,
+        {
+          message: 'Authenticate via Bearer token or x402 payment. See agent card for supported methods.',
+          agentCard: '/.well-known/agent.json',
+          documentation: this.config.documentationUrl,
+          authMethods: ['bearer', 'x402'],
+        }
+      ));
     };
   }
 
@@ -359,10 +406,13 @@ export class BridgeServer {
       max: rateLimitConfig.maxRequests ?? 100, // 100 requests per window default
       standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
       legacyHeaders: true, // Also include `X-RateLimit-*` headers
-      message: {
-        error: 'Too Many Requests',
-        message: 'You have exceeded the rate limit. Please try again later.',
-      },
+      message: buildRichError(
+        'Too Many Requests',
+        ErrorCode.RATE_LIMITED,
+        {
+          message: 'You have exceeded the rate limit. Please try again later.',
+        }
+      ),
       skip: (req: Request) => {
         // Don't rate limit health checks
         return req.path === '/health';
@@ -388,8 +438,74 @@ export class BridgeServer {
     this.app.get('/.well-known/agent.json', agentCardHandler);
     this.app.get('/.well-known/agent-card.json', agentCardHandler);
 
+    // Sandbox endpoint — no auth, strict rate limit
+    const sandboxLimiter = rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: SANDBOX_REQUESTS_PER_HOUR,
+      standardHeaders: true,
+      legacyHeaders: true,
+      message: buildRichError(
+        'Sandbox rate limit exceeded',
+        ErrorCode.RATE_LIMITED,
+        {
+          message: `Sandbox allows ${SANDBOX_REQUESTS_PER_HOUR} requests per hour. Authenticate for unlimited access.`,
+          agentCard: '/.well-known/agent.json',
+          authMethods: ['bearer', 'x402'],
+        }
+      ),
+    });
+
+    this.app.post('/sandbox', sandboxLimiter, async (req: Request, res: Response) => {
+      try {
+        const input = SandboxInputSchema.parse(req.body);
+        const taskId = `sandbox-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const startTime = Date.now();
+
+        const sandboxTask: TaskInput = {
+          taskId,
+          type: 'prompt',
+          prompt: input.prompt,
+          timeout: 60,
+          clientDid: 'did:sandbox:anonymous',
+        };
+
+        const result = await this.executeTask(sandboxTask);
+        const output = result.output
+          ? result.output.slice(0, MAX_SANDBOX_OUTPUT_LENGTH)
+          : undefined;
+
+        res.json({
+          taskId,
+          status: result.status,
+          output,
+          duration: Date.now() - startTime,
+          sandbox: true,
+          limits: {
+            promptMaxChars: 500,
+            outputMaxChars: MAX_SANDBOX_OUTPUT_LENGTH,
+            requestsPerHour: SANDBOX_REQUESTS_PER_HOUR,
+          },
+        });
+      } catch (error) {
+        const safeError = createSafeErrorResponse(error, 'POST /sandbox');
+        res.status(400).json(safeError);
+      }
+    });
+
     // Submit task (REST API)
     const taskAuthMiddleware = this.createTaskAuthMiddleware();
+
+    // A2A JSON-RPC 2.0 endpoint (POST /)
+    this.app.post('/', taskAuthMiddleware, async (req: Request, res: Response) => {
+      const bridge: A2ABridge = {
+        getPendingTask: (taskId) => this.getPendingTask(taskId),
+        submitTask: (task) => this.submitTask(task),
+        cancelTask: (taskId) => this.cancelTaskById(taskId),
+      };
+      const response = await handleA2ARequest(req.body, bridge);
+      res.json(response);
+    });
+
     this.app.post('/task', taskAuthMiddleware, async (req: Request, res: Response) => {
       try {
         const task = TaskInputSchema.parse(req.body);
@@ -453,11 +569,20 @@ export class BridgeServer {
     this.app.get('/task/:taskId', taskAuthMiddleware, (req: Request, res: Response) => {
       const task = this.pendingTasks.get(req.params.taskId);
       if (!task) {
-        return res.status(404).json({ error: 'Task not found or completed' });
+        return res.status(404).json(buildRichError(
+          'Task not found or completed',
+          ErrorCode.NOT_FOUND,
+        ));
       }
       const clientDid = req.headers['x-client-did'] as string;
       if (!clientDid || clientDid !== task.clientDid) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json(buildRichError(
+          'Forbidden',
+          ErrorCode.FORBIDDEN,
+          {
+            message: 'Include x-client-did header matching the task creator DID.',
+          }
+        ));
       }
       // Only return status, not full task data
       res.json({
@@ -471,18 +596,30 @@ export class BridgeServer {
     this.app.delete('/task/:taskId', taskAuthMiddleware, (req: Request, res: Response) => {
       const task = this.pendingTasks.get(req.params.taskId);
       if (!task) {
-        return res.status(404).json({ error: 'Task not found' });
+        return res.status(404).json(buildRichError(
+          'Task not found',
+          ErrorCode.NOT_FOUND,
+        ));
       }
       const clientDid = req.headers['x-client-did'] as string;
       if (!clientDid || clientDid !== task.clientDid) {
-        return res.status(403).json({ error: 'Forbidden' });
+        return res.status(403).json(buildRichError(
+          'Forbidden',
+          ErrorCode.FORBIDDEN,
+          {
+            message: 'Include x-client-did header matching the task creator DID.',
+          }
+        ));
       }
       const cancelled = this.executor.cancelTask(req.params.taskId);
       if (cancelled) {
         this.pendingTasks.delete(req.params.taskId);
         res.json({ cancelled: true });
       } else {
-        res.status(404).json({ error: 'Task not found' });
+        res.status(404).json(buildRichError(
+          'Task not found',
+          ErrorCode.NOT_FOUND,
+        ));
       }
     });
   }
@@ -583,6 +720,31 @@ export class BridgeServer {
     const result = await this.executor.execute(task);
     console.log(`[Bridge] Task ${task.taskId} ${result.status} (${result.duration}ms)`);
     return result;
+  }
+
+  // A2ABridge interface methods for JSON-RPC handler
+  getPendingTask(taskId: string): TaskInput | undefined {
+    return this.pendingTasks.get(taskId);
+  }
+
+  async submitTask(task: TaskInput): Promise<TaskResult> {
+    this.pendingTasks.set(task.taskId, task);
+    try {
+      const result = await this.executeTask(task);
+      this.pendingTasks.delete(task.taskId);
+      return result;
+    } catch (error) {
+      this.pendingTasks.delete(task.taskId);
+      throw error;
+    }
+  }
+
+  cancelTaskById(taskId: string): boolean {
+    const cancelled = this.executor.cancelTask(taskId);
+    if (cancelled) {
+      this.pendingTasks.delete(taskId);
+    }
+    return cancelled;
   }
 
   private broadcastResult(result: TaskResult) {

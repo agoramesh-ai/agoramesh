@@ -11,7 +11,9 @@
     "streaming": false,
     "pushNotifications": false,
     "x402Payments": true,
-    "escrow": true
+    "escrow": true,
+    "a2aProtocol": true,
+    "sandbox": true
   },
   "authentication": {
     "schemes": [

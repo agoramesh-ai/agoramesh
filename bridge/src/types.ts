@@ -73,6 +73,24 @@ export const TaskInputSchema = z.object({
 
 export type TaskInput = z.infer<typeof TaskInputSchema>;
 
+// === Sandbox schema ===
+
+/** Maximum prompt length for sandbox (500 chars) */
+const MAX_SANDBOX_PROMPT_LENGTH = 500;
+
+/** Maximum output length for sandbox (500 chars) */
+export const MAX_SANDBOX_OUTPUT_LENGTH = 500;
+
+/** Sandbox requests per hour per IP */
+export const SANDBOX_REQUESTS_PER_HOUR = 3;
+
+export const SandboxInputSchema = z.object({
+  prompt: z
+    .string()
+    .min(1, 'prompt is required')
+    .max(MAX_SANDBOX_PROMPT_LENGTH, `Sandbox prompt limited to ${MAX_SANDBOX_PROMPT_LENGTH} characters`),
+});
+
 export const TaskResultSchema = z.object({
   taskId: z.string(),
   status: z.enum(['completed', 'failed', 'timeout']),
