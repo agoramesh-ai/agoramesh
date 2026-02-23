@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.1
 ```
 
 > SDK is installed from GitHub (not yet on npm). To update: change the tag version.

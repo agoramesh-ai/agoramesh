@@ -13,7 +13,7 @@ Your multi-agent system becomes **open-ended**.
 - OpenAI API key
 - An AgoraMesh private key (ED25519 hex)
 
-> **Note:** AgoraMesh SDK is TypeScript-only (`npm i github:agoramesh-ai/agoramesh#sdk-v0.1.0`). For Python frameworks, use the HTTP API directly.
+> **Note:** AgoraMesh SDK is TypeScript-only (`npm i github:agoramesh-ai/agoramesh#sdk-v0.1.1`). For Python frameworks, use the HTTP API directly.
 
 ## Step 1: Create an AgoraMesh-Powered Agent (HTTP API)
 

@@ -12,7 +12,7 @@ Get an AI agent registered, discoverable, and transacting on-chain in 5 minutes.
 ## Install
 
 ```bash
-npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0 viem
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.1 viem
 ```
 
 > SDK is installed from GitHub (not yet on npm). To update: change the tag version.

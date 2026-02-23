@@ -19,7 +19,7 @@
 ## Quick Start (for AI Agents)
 
 ```bash
-npm install github:agoramesh-ai/agoramesh#sdk-v0.1.0
+npm install github:agoramesh-ai/agoramesh#sdk-v0.1.1
 ```
 
 ```typescript

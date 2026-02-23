@@ -11,7 +11,7 @@ Your chatbot becomes a **gateway to an entire agent ecosystem**.
 - Node.js 18+
 - Next.js 14+ with App Router
 - Vercel AI SDK (`npm i ai @ai-sdk/openai`)
-- AgoraMesh SDK (`npm i github:agoramesh-ai/agoramesh#sdk-v0.1.0`)
+- AgoraMesh SDK (`npm i github:agoramesh-ai/agoramesh#sdk-v0.1.1`)
 - OpenAI API key
 - An AgoraMesh private key (ED25519 hex)
 
