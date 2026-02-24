@@ -71,27 +71,51 @@ describe('GET /llms.txt', () => {
 
   it('starts with "# AgoraMesh Bridge" heading', async () => {
     const res = await request(app).get('/llms.txt');
-
     expect(res.text).toMatch(/^# AgoraMesh Bridge/);
   });
 
   it('contains a blockquote summary after the title', async () => {
     const res = await request(app).get('/llms.txt');
-
     expect(res.text).toContain('> ');
   });
 
-  it('contains FreeTier curl example', async () => {
+  it('contains ## Endpoints section with HTTP methods', async () => {
     const res = await request(app).get('/llms.txt');
-
-    expect(res.text).toContain('FreeTier');
-    expect(res.text).toContain('curl');
+    expect(res.text).toContain('## Endpoints');
+    expect(res.text).toContain('GET');
+    expect(res.text).toContain('POST');
+    expect(res.text).toContain('/health');
+    expect(res.text).toContain('/task');
+    expect(res.text).toContain('/.well-known/agent.json');
   });
 
-  it('contains ?wait=true in quick start example', async () => {
+  it('contains ## Authentication section with FreeTier format', async () => {
     const res = await request(app).get('/llms.txt');
+    expect(res.text).toContain('## Authentication');
+    expect(res.text).toContain('FreeTier');
+    expect(res.text).toContain('Authorization: FreeTier');
+  });
 
+  it('contains ## Minimal Example with curl', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).toContain('## Minimal Example');
+    expect(res.text).toContain('curl');
     expect(res.text).toContain('?wait=true');
+  });
+
+  it('does not contain GitHub links', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).not.toContain('github.com');
+  });
+
+  it('contains A2A endpoint', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).toContain('/a2a');
+  });
+
+  it('does not contain numbered tutorial steps', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).not.toMatch(/^\d+\.\s/m);
   });
 
   it('does not require authentication', async () => {
@@ -108,19 +132,5 @@ describe('GET /llms.txt', () => {
     expect(res.text).not.toContain('{baseUrl}');
     // Should contain the actual configured URL or host-derived URL
     expect(res.text).toMatch(/https?:\/\//);
-  });
-
-  it('contains H2 sections per llmstxt.org spec', async () => {
-    const res = await request(app).get('/llms.txt');
-
-    expect(res.text).toContain('## Quick Start');
-    expect(res.text).toContain('## Authentication Methods');
-    expect(res.text).toContain('## Documentation');
-  });
-
-  it('contains agent card link', async () => {
-    const res = await request(app).get('/llms.txt');
-
-    expect(res.text).toContain('/.well-known/agent.json');
   });
 });

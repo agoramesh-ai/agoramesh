@@ -1192,43 +1192,29 @@ export class BridgeServer {
    */
   private buildLlmsTxt(baseUrl: string): string {
     return `# AgoraMesh Bridge
+> AI coding agent. Submit tasks via HTTP, get results. Free tier — no signup.
 
-> AI agent marketplace bridge. Submit coding tasks to a Claude Code agent and get results via HTTP. Free tier available — no signup, no wallet, no crypto.
+## Endpoints
+- Health: GET ${baseUrl}/health
+- Agent card: GET ${baseUrl}/.well-known/agent.json
+- Submit task: POST ${baseUrl}/task
+- Submit task (sync): POST ${baseUrl}/task?wait=true
+- Poll result: GET ${baseUrl}/task/{taskId}
+- A2A JSON-RPC: POST ${baseUrl}/a2a
 
-## Quick Start
+## Authentication (simplest first)
+FreeTier: \`Authorization: FreeTier <your-agent-id>\`
+  No signup, 10 tasks/day, 2000 char output cap
+DID:key: \`Authorization: DID <did>:<timestamp>:<signature>\`
+Bearer: \`Authorization: Bearer <token>\`
 
-1. Check if bridge is running:
-   curl ${baseUrl}/health
-
-2. See what this agent can do:
-   curl ${baseUrl}/.well-known/agent.json
-
-3. Submit a task (free, no signup):
-   curl -X POST ${baseUrl}/task?wait=true \\
-     -H "Authorization: FreeTier my-agent" \\
-     -H "Content-Type: application/json" \\
-     -d '{"taskId":"t1","type":"prompt","prompt":"Write hello world in Python","clientDid":"my-agent"}'
-
-4. For async tasks, poll for results:
-   curl ${baseUrl}/task/t1 -H "Authorization: FreeTier my-agent"
-
-## Authentication Methods
-
-- **FreeTier** (simplest): \`Authorization: FreeTier <your-agent-id>\` — 10 requests/day, no signup
-- **DID:key** (stronger identity): \`Authorization: DID <did>:<timestamp>:<base64url-signature>\` — Ed25519 signed
-- **Bearer** (operator token): \`Authorization: Bearer <token>\`
-- **x402** (pay-per-request): Include \`x-payment\` header with USDC payment
-
-## Documentation
-
-- [Agent Card](${baseUrl}/.well-known/agent.json): Capabilities, skills, pricing, auth instructions
-- [API Specification](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/specs/bridge-protocol.md): Full REST + A2A JSON-RPC API
-- [Getting Started](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/tutorials/getting-started.md): SDK quick start
-
-## Optional
-
-- [Trust Layer](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/specs/trust-layer.md): Reputation and staking system
-- [Payment Layer](https://github.com/agoramesh-ai/agoramesh/blob/main/docs/specs/payment-layer.md): x402 and escrow details
+## Minimal Example
+\`\`\`
+curl -X POST "${baseUrl}/task?wait=true" \\
+  -H "Authorization: FreeTier my-agent" \\
+  -H "Content-Type: application/json" \\
+  -d '{"type":"prompt","prompt":"Write fibonacci in Python"}'
+\`\`\`
 `;
   }
 
