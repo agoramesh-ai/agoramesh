@@ -166,8 +166,8 @@ describe('E2E: REST API task lifecycle', () => {
     expect(res.status).toBe(400);
   });
 
-  it('rejects task with invalid DID format', async () => {
-    const task = createValidTask({ clientDid: 'not-a-did' });
+  it('rejects task with invalid client identifier', async () => {
+    const task = createValidTask({ clientDid: 'invalid id with spaces!' });
     const res = await request(app).post('/task').send(task);
 
     expect(res.status).toBe(400);

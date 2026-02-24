@@ -67,7 +67,7 @@ export const TaskInputSchema = z.object({
     .min(MIN_TIMEOUT, `timeout must be at least ${MIN_TIMEOUT} second`)
     .max(MAX_TIMEOUT, `timeout must be at most ${MAX_TIMEOUT} seconds (1 hour)`)
     .default(DEFAULT_TIMEOUT),
-  clientDid: z.string().min(1).max(256).regex(/^did:[a-z]+:[a-zA-Z0-9._:-]+$/, 'Invalid DID format'),
+  clientDid: z.string().min(1).max(256).regex(/^(did:[a-z]+:[a-zA-Z0-9._:-]+|[a-zA-Z0-9._-]+)$/, 'Invalid client identifier format (DID or FreeTier identifier)'),
   escrowId: z.string().regex(/^\d+$/, 'escrowId must be numeric').optional(),
 });
 

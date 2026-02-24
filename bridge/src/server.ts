@@ -831,17 +831,20 @@ export class BridgeServer {
     // Get task status (supports polling: pending -> completed/failed -> 404 after TTL)
     this.app.get('/task/:taskId', taskAuthMiddleware, (req: Request, res: Response) => {
       const taskId = req.params.taskId;
-      const clientDid = req.headers['x-client-did'] as string;
+      // Identity from auth middleware (FreeTier or DID:key) and/or x-client-did header
+      const pollIdentity = (req as DIDRequest).didIdentity;
+      const pollClientDid = req.headers['x-client-did'] as string;
 
-      // Verify owner across all states
+      // Verify owner across all states — accept match on auth identity OR x-client-did
       const owner = this.taskOwners.get(taskId);
       if (owner) {
-        if (!clientDid || clientDid !== owner) {
+        const isOwner = (pollIdentity?.did === owner) || (pollClientDid === owner);
+        if (!isOwner) {
           return res.status(403).json(buildRichError(
             'Forbidden',
             ErrorCode.FORBIDDEN,
             {
-              message: 'Include x-client-did header matching the task creator DID.',
+              message: 'Authenticated identity must match the task creator.',
             }
           ));
         }
@@ -884,13 +887,14 @@ export class BridgeServer {
           ErrorCode.NOT_FOUND,
         ));
       }
-      const clientDid = req.headers['x-client-did'] as string;
-      if (!clientDid || clientDid !== task.clientDid) {
+      const didIdentityDel = (req as DIDRequest).didIdentity;
+      const clientIdDel = didIdentityDel?.did || req.headers['x-client-did'] as string;
+      if (!clientIdDel || clientIdDel !== task.clientDid) {
         return res.status(403).json(buildRichError(
           'Forbidden',
           ErrorCode.FORBIDDEN,
           {
-            message: 'Include x-client-did header matching the task creator DID.',
+            message: 'Authenticated identity must match the task creator.',
           }
         ));
       }

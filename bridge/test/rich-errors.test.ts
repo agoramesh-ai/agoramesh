@@ -145,7 +145,7 @@ describe('Rich Error Responses', () => {
       expect(res.status).toBe(403);
       expect(res.body.code).toBe(ErrorCode.FORBIDDEN);
       expect(res.body.help).toBeDefined();
-      expect(res.body.help.message).toContain('x-client-did');
+      expect(res.body.help.message).toContain('must match the task creator');
     });
 
     it('DELETE /task/:taskId returns help about DID header on 403', async () => {
@@ -155,7 +155,7 @@ describe('Rich Error Responses', () => {
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe(ErrorCode.FORBIDDEN);
-      expect(res.body.help.message).toContain('x-client-did');
+      expect(res.body.help.message).toContain('must match the task creator');
     });
   });
 });
