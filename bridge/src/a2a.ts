@@ -5,7 +5,7 @@
  * Methods: message/send, tasks/get, tasks/cancel
  */
 
-import type { TaskInput, TaskResult } from './types.js';
+import type { ResolvedTaskInput, TaskResult } from './types.js';
 
 // =============================================================================
 // JSON-RPC types
@@ -65,9 +65,9 @@ export interface A2ATask {
 // =============================================================================
 
 export interface A2ABridge {
-  getPendingTask(taskId: string): TaskInput | undefined;
+  getPendingTask(taskId: string): ResolvedTaskInput | undefined;
   getCompletedTask(taskId: string): TaskResult | undefined;
-  submitTask(task: TaskInput): Promise<TaskResult>;
+  submitTask(task: ResolvedTaskInput): Promise<TaskResult>;
   cancelTask(taskId: string): boolean;
 }
 
@@ -143,7 +143,7 @@ async function handleMessageSend(
   }
 
   const taskId = `a2a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const task: TaskInput = {
+  const task: ResolvedTaskInput = {
     taskId,
     type: 'prompt',
     prompt,

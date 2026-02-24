@@ -434,6 +434,60 @@ describe('Task polling & sync mode', () => {
   });
 
   // ============================
+  // Optional taskId and clientDid
+  // ============================
+
+  describe('optional taskId and clientDid', () => {
+    it('accepts task without taskId and auto-generates one', async () => {
+      const res = await request(app)
+        .post('/task')
+        .send({
+          type: 'prompt',
+          prompt: 'Write hello world',
+        });
+
+      expect(res.status).toBe(202);
+      expect(res.body.taskId).toBeDefined();
+      expect(res.body.taskId).toMatch(/^task-\d+-[a-f0-9]+$/);
+    });
+
+    it('accepts task without clientDid and uses auth identity', async () => {
+      const res = await request(app)
+        .post('/task')
+        .send({
+          type: 'prompt',
+          prompt: 'Write hello world',
+          taskId: 'no-client-did-test',
+        });
+
+      expect(res.status).toBe(202);
+    });
+
+    it('still accepts task with explicit taskId and clientDid', async () => {
+      const res = await request(app)
+        .post('/task')
+        .send({
+          taskId: 'explicit-id',
+          type: 'prompt',
+          prompt: 'Write hello world',
+          clientDid: 'did:test:explicit',
+        });
+
+      expect(res.status).toBe(202);
+      expect(res.body.taskId).toBe('explicit-id');
+    });
+
+    it('auto-generates unique taskIds for concurrent tasks', async () => {
+      const [res1, res2] = await Promise.all([
+        request(app).post('/task').send({ type: 'prompt', prompt: 'Task 1' }),
+        request(app).post('/task').send({ type: 'prompt', prompt: 'Task 2' }),
+      ]);
+
+      expect(res1.body.taskId).not.toBe(res2.body.taskId);
+    });
+  });
+
+  // ============================
   // Multiple concurrent tasks
   // ============================
 

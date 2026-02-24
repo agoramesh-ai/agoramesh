@@ -1,6 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 import { resolve, normalize } from 'path';
-import { TaskInput, TaskResult } from './types.js';
+import { ResolvedTaskInput, TaskResult } from './types.js';
 
 export interface ExecutorOptions {
   workspaceDir: string;
@@ -77,7 +77,7 @@ export class ClaudeExecutor {
   /**
    * Spustí Claude Code s daným promptem
    */
-  async execute(task: TaskInput): Promise<TaskResult> {
+  async execute(task: ResolvedTaskInput): Promise<TaskResult> {
     const startTime = Date.now();
 
     // Validace

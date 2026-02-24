@@ -72,6 +72,7 @@ export type { IntegrationConfig } from './integration.js';
 export type { IPFSConfig, IPFSProvider, PinataMetadata } from './ipfs.js';
 export type {
   TaskInput,
+  ResolvedTaskInput,
   TaskResult,
   AgentConfig,
   RichAgentConfig,

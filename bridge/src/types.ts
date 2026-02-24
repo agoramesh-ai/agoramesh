@@ -40,12 +40,13 @@ const TASK_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 export const TaskInputSchema = z.object({
   taskId: z
     .string()
-    .min(1, 'taskId is required')
+    .min(1, 'taskId must not be empty')
     .max(MAX_TASK_ID_LENGTH, `taskId must be at most ${MAX_TASK_ID_LENGTH} characters`)
     .regex(
       TASK_ID_PATTERN,
       'taskId must contain only alphanumeric characters, dashes, and underscores'
-    ),
+    )
+    .optional(),
   type: z.enum(['prompt', 'code-review', 'refactor', 'debug', 'custom']),
   prompt: z
     .string()
@@ -67,11 +68,20 @@ export const TaskInputSchema = z.object({
     .min(MIN_TIMEOUT, `timeout must be at least ${MIN_TIMEOUT} second`)
     .max(MAX_TIMEOUT, `timeout must be at most ${MAX_TIMEOUT} seconds (1 hour)`)
     .default(DEFAULT_TIMEOUT),
-  clientDid: z.string().min(1).max(256).regex(/^(did:[a-z]+:[a-zA-Z0-9._:-]+|[a-zA-Z0-9._-]+)$/, 'Invalid client identifier format (DID or FreeTier identifier)'),
+  clientDid: z.string().min(1).max(256).regex(
+    /^(did:[a-z]+:[a-zA-Z0-9._:-]+|[a-zA-Z0-9._-]+)$/,
+    'Invalid client identifier format (DID or FreeTier identifier)'
+  ).optional(),
   escrowId: z.string().regex(/^\d+$/, 'escrowId must be numeric').optional(),
 });
 
 export type TaskInput = z.infer<typeof TaskInputSchema>;
+
+/**
+ * TaskInput after server-side auto-fill: taskId and clientDid are always present.
+ * Use this type in code that runs after the auto-fill logic in POST /task.
+ */
+export type ResolvedTaskInput = TaskInput & Required<Pick<TaskInput, 'taskId' | 'clientDid'>>;
 
 // === Task polling constants ===
 

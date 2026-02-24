@@ -5,10 +5,10 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server, IncomingMessage } from 'http';
 import type { AddressInfo } from 'net';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, randomBytes } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
-import { TaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
+import { TaskInput, ResolvedTaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
 import { handleA2ARequest, type A2ABridge } from './a2a.js';
@@ -193,7 +193,7 @@ export class BridgeServer {
   private wss: WebSocketServer;
   private executor: ClaudeExecutor;
   private config: BridgeServerConfig;
-  private pendingTasks: Map<string, TaskInput> = new Map();
+  private pendingTasks: Map<string, ResolvedTaskInput> = new Map();
   private completedTasks: Map<string, { result: TaskResult; expiresAt: number }> = new Map();
   private taskOwners: Map<string, string> = new Map();
   private taskResultListeners: Map<string, Array<(result: TaskResult) => void>> = new Map();
@@ -612,7 +612,7 @@ export class BridgeServer {
         const taskId = `sandbox-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const startTime = Date.now();
 
-        const sandboxTask: TaskInput = {
+        const sandboxTask: ResolvedTaskInput = {
           taskId,
           type: 'prompt',
           prompt: input.prompt,
@@ -668,7 +668,21 @@ export class BridgeServer {
 
     this.app.post('/task', taskAuthMiddleware, async (req: Request, res: Response) => {
       try {
-        const task = TaskInputSchema.parse(req.body);
+        const parsed = TaskInputSchema.parse(req.body);
+
+        // Auto-generate taskId if not provided
+        if (!parsed.taskId) {
+          parsed.taskId = `task-${Date.now()}-${randomBytes(4).toString('hex')}`;
+        }
+
+        // Auto-fill clientDid from auth identity if not provided
+        if (!parsed.clientDid) {
+          const identity = (req as DIDRequest).didIdentity;
+          parsed.clientDid = identity?.did || 'anonymous';
+        }
+
+        // After auto-fill, taskId and clientDid are always present
+        const task = parsed as ResolvedTaskInput;
 
         console.log(`[Bridge] Received task ${task.taskId}: ${task.type}`);
 
@@ -940,7 +954,21 @@ export class BridgeServer {
           const message = JSON.parse(data.toString());
 
           if (message.type === 'task') {
-            const task = TaskInputSchema.parse(message.payload);
+            const wsParsed = TaskInputSchema.parse(message.payload);
+
+            // Auto-generate taskId if not provided
+            if (!wsParsed.taskId) {
+              wsParsed.taskId = `task-${Date.now()}-${randomBytes(4).toString('hex')}`;
+            }
+
+            // Auto-fill clientDid if not provided
+            if (!wsParsed.clientDid) {
+              wsParsed.clientDid = 'anonymous';
+            }
+
+            // After auto-fill, taskId and clientDid are always present
+            const task = wsParsed as ResolvedTaskInput;
+
             console.log(`[Bridge] WS task ${task.taskId}: ${task.type}`);
 
             // Validate escrow if escrowId provided and escrowClient configured
@@ -1002,7 +1030,7 @@ export class BridgeServer {
     });
   }
 
-  private async executeTask(task: TaskInput): Promise<TaskResult> {
+  private async executeTask(task: ResolvedTaskInput): Promise<TaskResult> {
     console.log(`[Bridge] Executing task ${task.taskId}...`);
     const result = await this.executor.execute(task);
     console.log(`[Bridge] Task ${task.taskId} ${result.status} (${result.duration}ms)`);
@@ -1010,7 +1038,7 @@ export class BridgeServer {
   }
 
   // A2ABridge interface methods for JSON-RPC handler
-  getPendingTask(taskId: string): TaskInput | undefined {
+  getPendingTask(taskId: string): ResolvedTaskInput | undefined {
     return this.pendingTasks.get(taskId);
   }
 
@@ -1022,7 +1050,7 @@ export class BridgeServer {
     return undefined;
   }
 
-  async submitTask(task: TaskInput): Promise<TaskResult> {
+  async submitTask(task: ResolvedTaskInput): Promise<TaskResult> {
     this.pendingTasks.set(task.taskId, task);
     try {
       const result = await this.executeTask(task);

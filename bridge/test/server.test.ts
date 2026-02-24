@@ -94,13 +94,13 @@ describe('BridgeServer', () => {
   });
 
   describe('POST /task', () => {
-    it('rejects invalid task without taskId', async () => {
+    it('accepts task without taskId and auto-generates one', async () => {
       const res = await request(app)
         .post('/task')
         .send({ type: 'prompt', prompt: 'test', clientDid: 'did:test:123' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBeDefined();
+      expect(res.status).toBe(202);
+      expect(res.body.taskId).toMatch(/^task-\d+-[a-f0-9]+$/);
     });
 
     it('rejects invalid task without type', async () => {
@@ -119,12 +119,13 @@ describe('BridgeServer', () => {
       expect(res.status).toBe(400);
     });
 
-    it('rejects invalid task without clientDid', async () => {
+    it('accepts task without clientDid and auto-fills anonymous', async () => {
       const res = await request(app)
         .post('/task')
         .send({ taskId: 'task-1', type: 'prompt', prompt: 'test' });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(202);
+      expect(res.body.taskId).toBe('task-1');
     });
 
     it('rejects invalid task type', async () => {
