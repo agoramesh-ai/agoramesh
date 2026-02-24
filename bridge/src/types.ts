@@ -138,6 +138,7 @@ export const TaskResultSchema = z.object({
   error: z.string().optional(),
   duration: z.number(),
   filesChanged: z.array(z.string()).optional(),
+  mock: z.boolean().optional(),
 });
 
 export type TaskResult = z.infer<typeof TaskResultSchema>;

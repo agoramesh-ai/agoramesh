@@ -240,6 +240,42 @@ describe('ClaudeExecutor', () => {
     });
   });
 
+  describe('mock mode', () => {
+    it('returns mock response with prompt echo when in mock mode', async () => {
+      const mockExecutor = new ClaudeExecutor(testOptions);
+      (mockExecutor as any).mockMode = true;
+
+      const result = await mockExecutor.execute(createTask({ prompt: 'Write fibonacci in Python' }));
+
+      expect(result.status).toBe('completed');
+      expect(result.output).toContain('mock');
+      expect(result.output).toContain('fibonacci');
+      expect((result as any).mock).toBe(true);
+    });
+
+    it('mock response includes the task type', async () => {
+      const mockExecutor = new ClaudeExecutor(testOptions);
+      (mockExecutor as any).mockMode = true;
+
+      const result = await mockExecutor.execute(createTask({ type: 'code-review', prompt: 'Review this code' }));
+
+      expect(result.status).toBe('completed');
+      expect(result.output).toContain('code-review');
+      expect((result as any).mock).toBe(true);
+    });
+
+    it('mock response truncates long prompts', async () => {
+      const mockExecutor = new ClaudeExecutor(testOptions);
+      (mockExecutor as any).mockMode = true;
+
+      const longPrompt = 'x'.repeat(200);
+      const result = await mockExecutor.execute(createTask({ prompt: longPrompt }));
+
+      expect(result.status).toBe('completed');
+      expect(result.output).toContain('...');
+    });
+  });
+
   describe('cancelTask', () => {
     it('returns false for unknown task', () => {
       const result = executor.cancelTask('unknown-task');

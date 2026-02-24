@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import { resolve, normalize } from 'path';
 import { ResolvedTaskInput, TaskResult } from './types.js';
 
@@ -27,9 +27,18 @@ const DANGEROUS_SHELL_CHARS = /[;|&`<>]/;
 export class ClaudeExecutor {
   private options: ExecutorOptions;
   private runningProcesses: Map<string, ChildProcess> = new Map();
+  private mockMode: boolean = false;
 
   constructor(options: ExecutorOptions) {
     this.options = options;
+
+    // Detect if claude CLI is available
+    try {
+      execSync('which claude', { stdio: 'ignore' });
+    } catch {
+      this.mockMode = true;
+      console.log('[Bridge] Running in mock mode (claude CLI not found)');
+    }
   }
 
   /**
@@ -79,6 +88,11 @@ export class ClaudeExecutor {
    */
   async execute(task: ResolvedTaskInput): Promise<TaskResult> {
     const startTime = Date.now();
+
+    // Mock mode: return template response when claude CLI is not available
+    if (this.mockMode) {
+      return this.buildMockResponse(task, startTime);
+    }
 
     // Validace
     if (!this.isCommandAllowed('claude')) {
@@ -218,6 +232,30 @@ export class ClaudeExecutor {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Builds a mock response when claude CLI is not available.
+   * Echoes back task metadata so callers can verify routing works.
+   */
+  private buildMockResponse(task: ResolvedTaskInput, startTime: number): TaskResult {
+    const promptPreview = task.prompt.slice(0, 100);
+    const output = [
+      `[mock response — bridge is running in demo mode, claude CLI not installed]`,
+      ``,
+      `Task: ${task.type}`,
+      `Prompt: ${promptPreview}${task.prompt.length > 100 ? '...' : ''}`,
+      ``,
+      `This is a placeholder response. Install Claude CLI in the bridge container to get real results.`,
+    ].join('\n');
+
+    return {
+      taskId: task.taskId,
+      status: 'completed',
+      output,
+      duration: Date.now() - startTime,
+      mock: true,
+    };
   }
 
   /**
