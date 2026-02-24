@@ -562,4 +562,10 @@ describe('Agent Card endpoint (authentication instructions)', () => {
 
     expect(res.body.authentication.schemes).toEqual(['freeTier', 'did:key', 'bearer']);
   });
+
+  it('includes mode field (demo or live)', async () => {
+    const res = await request(app).get('/.well-known/agent.json');
+
+    expect(res.body.mode).toMatch(/^(demo|live)$/);
+  });
 });

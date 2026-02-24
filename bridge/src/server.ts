@@ -573,7 +573,11 @@ export class BridgeServer {
   private setupRoutes() {
     // Health check
     this.app.get('/health', (_req: Request, res: Response) => {
-      res.json({ status: 'ok', agent: this.config.name });
+      res.json({
+        status: 'ok',
+        agent: this.config.name,
+        mode: this.executor.isDemoMode ? 'demo' : 'live',
+      });
     });
 
     // Agent info (A2A compatible capability card)
@@ -1189,6 +1193,8 @@ export class BridgeServer {
       card.a2a = cfg.a2a;
     }
 
+    card.mode = this.executor.isDemoMode ? 'demo' : 'live';
+
     return card;
   }
 
@@ -1197,30 +1203,61 @@ export class BridgeServer {
    * Provides machine-readable documentation for AI agents discovering this bridge.
    */
   private buildLlmsTxt(baseUrl: string): string {
+    const mode = this.executor.isDemoMode ? 'demo' : 'live';
     return `# AgoraMesh Bridge
-> AI coding agent. Submit tasks via HTTP, get results. Free tier — no signup.
+> AI coding agent. Submit tasks via HTTP, get results. Free tier — no signup.${mode === 'demo' ? ' Currently in demo mode (returns mock responses).' : ''}
 
 ## Endpoints
 - Health: GET ${baseUrl}/health
 - Agent card: GET ${baseUrl}/.well-known/agent.json
-- Submit task: POST ${baseUrl}/task
 - Submit task (sync): POST ${baseUrl}/task?wait=true
+- Submit task (async): POST ${baseUrl}/task
 - Poll result: GET ${baseUrl}/task/{taskId}
 - A2A JSON-RPC: POST ${baseUrl}/a2a
+- Sandbox (no auth): POST ${baseUrl}/sandbox
 
 ## Authentication (simplest first)
 FreeTier: \`Authorization: FreeTier <your-agent-id>\`
-  No signup, 10 tasks/day, 2000 char output cap
+  No signup, 10 tasks/day, 2000 char output cap. Pick any string as ID.
 DID:key: \`Authorization: DID <did>:<timestamp>:<signature>\`
 Bearer: \`Authorization: Bearer <token>\`
 
-## Minimal Example
+## Sync Request (recommended)
 \`\`\`
-curl -X POST "${baseUrl}/task?wait=true" \\
-  -H "Authorization: FreeTier my-agent" \\
-  -H "Content-Type: application/json" \\
-  -d '{"type":"prompt","prompt":"Write fibonacci in Python"}'
+POST ${baseUrl}/task?wait=true
+Authorization: FreeTier my-agent
+Content-Type: application/json
+
+{"type":"prompt","prompt":"Write fibonacci in Python"}
 \`\`\`
+
+Response:
+\`\`\`
+{"taskId":"task-...","status":"completed","output":"...","duration":1234}
+\`\`\`
+
+## Async Request (for long tasks)
+\`\`\`
+POST ${baseUrl}/task
+\`\`\`
+Returns 202 with \`{"taskId":"task-..."}\`. Poll with:
+\`\`\`
+GET ${baseUrl}/task/{taskId}
+\`\`\`
+Returns \`{"status":"pending"}\` or \`{"status":"completed","output":"..."}\`.
+
+## Request Body
+Only \`type\` and \`prompt\` are required:
+\`\`\`
+{"type":"prompt","prompt":"your task here"}
+\`\`\`
+Optional: \`taskId\` (auto-generated), \`clientDid\` (auto-filled from auth), \`timeout\` (seconds).
+
+## Error Responses
+- 400: Invalid request body (JSON with \`error\`, \`code\`, \`details\`)
+- 401: Missing or invalid auth header
+- 429: Rate limit exceeded (check X-RateLimit-Remaining header)
+- 503: Bridge overloaded
 `;
   }
 

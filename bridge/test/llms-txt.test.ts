@@ -96,11 +96,33 @@ describe('GET /llms.txt', () => {
     expect(res.text).toContain('Authorization: FreeTier');
   });
 
-  it('contains ## Minimal Example with curl', async () => {
+  it('contains sync request example with response format', async () => {
     const res = await request(app).get('/llms.txt');
-    expect(res.text).toContain('## Minimal Example');
-    expect(res.text).toContain('curl');
+    expect(res.text).toContain('## Sync Request');
     expect(res.text).toContain('?wait=true');
+    expect(res.text).toContain('"status":"completed"');
+  });
+
+  it('contains async request flow with polling', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).toContain('## Async Request');
+    expect(res.text).toContain('202');
+    expect(res.text).toContain('GET');
+    expect(res.text).toContain('{taskId}');
+  });
+
+  it('documents request body with required and optional fields', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).toContain('## Request Body');
+    expect(res.text).toContain('"type"');
+    expect(res.text).toContain('"prompt"');
+  });
+
+  it('documents error responses', async () => {
+    const res = await request(app).get('/llms.txt');
+    expect(res.text).toContain('## Error Responses');
+    expect(res.text).toContain('400');
+    expect(res.text).toContain('429');
   });
 
   it('does not contain GitHub links', async () => {

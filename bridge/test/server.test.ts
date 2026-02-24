@@ -42,6 +42,12 @@ describe('BridgeServer', () => {
       expect(res.body.agent).toBe('test-agent');
     });
 
+    it('returns mode field (demo or live)', async () => {
+      const res = await request(app).get('/health');
+
+      expect(res.body.mode).toMatch(/^(demo|live)$/);
+    });
+
     it('does not expose pending tasks count', async () => {
       const res = await request(app).get('/health');
 

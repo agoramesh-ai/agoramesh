@@ -29,6 +29,11 @@ export class ClaudeExecutor {
   private runningProcesses: Map<string, ChildProcess> = new Map();
   private mockMode: boolean = false;
 
+  /** Whether the executor is running in mock/demo mode (claude CLI not found). */
+  get isDemoMode(): boolean {
+    return this.mockMode;
+  }
+
   constructor(options: ExecutorOptions) {
     this.options = options;
 
