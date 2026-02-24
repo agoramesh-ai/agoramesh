@@ -8,7 +8,7 @@ import type { AddressInfo } from 'net';
 import { timingSafeEqual, randomBytes } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
-import { TaskInput, ResolvedTaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
+import { ResolvedTaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
 import { handleA2ARequest, type A2ABridge } from './a2a.js';
