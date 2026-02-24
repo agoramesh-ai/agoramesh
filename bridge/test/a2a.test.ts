@@ -366,3 +366,115 @@ describe('A2A JSON-RPC 2.0 — POST /', () => {
     });
   });
 });
+
+describe('A2A JSON-RPC 2.0 — POST /a2a (agent card endpoint)', () => {
+  let server: BridgeServer;
+  let app: any;
+
+  beforeAll(async () => {
+    server = new BridgeServer({
+      ...testConfig,
+      rateLimit: { enabled: false },
+    });
+    app = (server as any).app;
+  });
+
+  afterAll(async () => {
+    await server.stop();
+  });
+
+  it('returns valid JSON-RPC response for message/send', async () => {
+    const executor = (server as any).executor;
+    const originalExecute = executor.execute.bind(executor);
+    executor.execute = vi.fn().mockResolvedValueOnce({
+      taskId: 'mock-a2a-endpoint-task',
+      status: 'completed',
+      output: 'Hello from /a2a!',
+      duration: 200,
+    });
+
+    const res = await request(app)
+      .post('/a2a')
+      .send({
+        jsonrpc: '2.0',
+        id: 'a2a-req-1',
+        method: 'message/send',
+        params: {
+          message: {
+            role: 'user',
+            parts: [{ type: 'text', text: 'Say hello via /a2a' }],
+          },
+        },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.jsonrpc).toBe('2.0');
+    expect(res.body.id).toBe('a2a-req-1');
+    expect(res.body.result).toBeDefined();
+    expect(res.body.result.id).toMatch(/^a2a-/);
+    expect(res.body.result.status.state).toBe('completed');
+    expect(res.body.result.artifacts).toBeDefined();
+    expect(res.body.result.artifacts[0].parts[0].text).toBe('Hello from /a2a!');
+    expect(res.body.error).toBeUndefined();
+
+    executor.execute = originalExecute;
+  });
+
+  it('returns JSON-RPC error for invalid request', async () => {
+    const res = await request(app)
+      .post('/a2a')
+      .send({ id: 1, method: 'message/send' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe(A2A_ERRORS.INVALID_REQUEST.code);
+  });
+
+  it('returns METHOD_NOT_FOUND for unknown method', async () => {
+    const res = await request(app)
+      .post('/a2a')
+      .send({
+        jsonrpc: '2.0',
+        id: 'a2a-req-unknown',
+        method: 'bogus/method',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe(A2A_ERRORS.METHOD_NOT_FOUND.code);
+  });
+
+  it('handles tasks/get via /a2a endpoint', async () => {
+    const res = await request(app)
+      .post('/a2a')
+      .send({
+        jsonrpc: '2.0',
+        id: 'a2a-req-get',
+        method: 'tasks/get',
+        params: { id: 'nonexistent-task' },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.jsonrpc).toBe('2.0');
+    expect(res.body.id).toBe('a2a-req-get');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe(A2A_ERRORS.TASK_NOT_FOUND.code);
+  });
+
+  it('handles tasks/cancel via /a2a endpoint', async () => {
+    const res = await request(app)
+      .post('/a2a')
+      .send({
+        jsonrpc: '2.0',
+        id: 'a2a-req-cancel',
+        method: 'tasks/cancel',
+        params: { id: 'nonexistent-task' },
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.jsonrpc).toBe('2.0');
+    expect(res.body.id).toBe('a2a-req-cancel');
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe(A2A_ERRORS.TASK_NOT_CANCELLABLE.code);
+  });
+});

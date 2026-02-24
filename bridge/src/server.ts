@@ -647,8 +647,8 @@ export class BridgeServer {
     // Submit task (REST API)
     const taskAuthMiddleware = this.createTaskAuthMiddleware();
 
-    // A2A JSON-RPC 2.0 endpoint (POST /)
-    this.app.post('/', taskAuthMiddleware, async (req: Request, res: Response) => {
+    // A2A JSON-RPC 2.0 handler (shared by POST / and POST /a2a)
+    const a2aHandler = async (req: Request, res: Response) => {
       const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
       const bridge: A2ABridge = {
         getPendingTask: (taskId) => this.getPendingTask(taskId),
@@ -665,7 +665,13 @@ export class BridgeServer {
       };
       const response = await handleA2ARequest(req.body, bridge);
       res.json(response);
-    });
+    };
+
+    // A2A JSON-RPC 2.0 endpoint (POST /) — kept for backward compatibility
+    this.app.post('/', taskAuthMiddleware, a2aHandler);
+
+    // A2A JSON-RPC 2.0 endpoint (POST /a2a) — matches agent card a2a.endpoint
+    this.app.post('/a2a', taskAuthMiddleware, a2aHandler);
 
     this.app.post('/task', taskAuthMiddleware, async (req: Request, res: Response) => {
       try {
