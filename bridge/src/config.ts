@@ -196,6 +196,10 @@ export const AgentCardConfigSchema = z.object({
   documentationUrl: z.string().url().optional(),
   termsOfServiceUrl: z.string().url().optional(),
   privacyPolicyUrl: z.string().url().optional(),
+  a2a: z.object({
+    endpoint: z.string(),
+    methods: z.array(z.string()),
+  }).optional(),
 });
 
 /** Inferred type from the config Zod schema */

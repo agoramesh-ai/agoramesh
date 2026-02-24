@@ -217,6 +217,11 @@ export interface RichAgentConfig extends AgentConfig {
   termsOfServiceUrl?: string;
   /** URL to privacy policy */
   privacyPolicyUrl?: string;
+  /** A2A JSON-RPC endpoint and supported methods */
+  a2a?: {
+    endpoint: string;
+    methods: string[];
+  };
 }
 
 // === Bridge events ===

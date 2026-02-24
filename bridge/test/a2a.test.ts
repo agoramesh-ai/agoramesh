@@ -255,6 +255,45 @@ describe('A2A JSON-RPC 2.0 — POST /', () => {
     });
   });
 
+  describe('A2A discoverability', () => {
+    let server: BridgeServer;
+    let app: any;
+
+    beforeAll(async () => {
+      server = new BridgeServer({
+        ...testConfig,
+        rateLimit: { enabled: false },
+        a2a: {
+          endpoint: '/a2a',
+          methods: ['message/send', 'tasks/get', 'tasks/cancel'],
+        },
+      });
+      app = (server as any).app;
+    });
+
+    afterAll(async () => {
+      await server.stop();
+    });
+
+    it('serves /.well-known/a2a.json as alias for agent card', async () => {
+      const agentRes = await request(app).get('/.well-known/agent.json');
+      const a2aRes = await request(app).get('/.well-known/a2a.json');
+
+      expect(a2aRes.status).toBe(200);
+      expect(a2aRes.body.name).toBe(agentRes.body.name);
+    });
+
+    it('agent card includes a2a section with methods', async () => {
+      const res = await request(app).get('/.well-known/agent.json');
+
+      expect(res.body.a2a).toBeDefined();
+      expect(res.body.a2a.endpoint).toBe('/a2a');
+      expect(res.body.a2a.methods).toContain('message/send');
+      expect(res.body.a2a.methods).toContain('tasks/get');
+      expect(res.body.a2a.methods).toContain('tasks/cancel');
+    });
+  });
+
   describe('with auth (requireAuth: true)', () => {
     let server: BridgeServer;
     let app: any;

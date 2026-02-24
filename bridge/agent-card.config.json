@@ -7,6 +7,10 @@
     "name": "AgoraMesh",
     "url": "https://agoramesh.ai"
   },
+  "a2a": {
+    "endpoint": "/a2a",
+    "methods": ["message/send", "tasks/get", "tasks/cancel"]
+  },
   "capabilities": {
     "streaming": false,
     "pushNotifications": false,

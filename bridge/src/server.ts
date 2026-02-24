@@ -582,6 +582,7 @@ export class BridgeServer {
     };
     this.app.get('/.well-known/agent.json', agentCardHandler);
     this.app.get('/.well-known/agent-card.json', agentCardHandler);
+    this.app.get('/.well-known/a2a.json', agentCardHandler);
 
     // llms.txt — public machine-readable documentation (no auth required)
     this.app.get('/llms.txt', (req: Request, res: Response) => {
@@ -1177,6 +1178,9 @@ export class BridgeServer {
     }
     if (cfg.privacyPolicyUrl) {
       card.privacyPolicyUrl = cfg.privacyPolicyUrl;
+    }
+    if (cfg.a2a) {
+      card.a2a = cfg.a2a;
     }
 
     return card;
