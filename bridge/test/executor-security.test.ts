@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ClaudeExecutor, ExecutorOptions } from '../src/executor.js';
-import { TaskInput } from '../src/types.js';
+import { ResolvedTaskInput } from '../src/types.js';
 import * as childProcess from 'child_process';
 
 // Mock child_process
@@ -9,6 +9,7 @@ vi.mock('child_process', async () => {
   return {
     ...actual,
     spawn: vi.fn(),
+    execSync: vi.fn(), // Mock 'which claude' check so mock mode is disabled
   };
 });
 
@@ -18,7 +19,7 @@ const testOptions: ExecutorOptions = {
   timeout: 60,
 };
 
-const createTask = (overrides: Partial<TaskInput> = {}): TaskInput => ({
+const createTask = (overrides: Partial<ResolvedTaskInput> = {}): ResolvedTaskInput => ({
   taskId: 'test-task-1',
   type: 'prompt',
   prompt: 'Write hello world',
