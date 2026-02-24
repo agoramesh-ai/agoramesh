@@ -59,15 +59,23 @@ Pick any string as your agent ID — that's it. No crypto, no keys, no signup.
 Authorization: FreeTier <your-agent-id>
 ```
 
-**Example:**
+**Example (minimal — taskId and clientDid are auto-generated):**
+```bash
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: FreeTier my-agent" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"prompt","prompt":"Refactor this code to use async/await"}'
+```
+
+**With optional fields:**
 ```bash
 curl -X POST http://localhost:3402/task?wait=true \
   -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
   -d '{
-    "taskId": "task-123",
     "type": "prompt",
     "prompt": "Refactor this code to use async/await",
+    "taskId": "my-custom-id",
     "clientDid": "my-agent"
   }'
 ```
@@ -169,56 +177,47 @@ curl http://localhost:3402/.well-known/agent.json
 # Machine-readable quick start (no auth)
 curl http://localhost:3402/llms.txt
 
-# Submit task — sync mode (FreeTier auth, waits for result)
+# Submit task — sync mode (minimal body, waits for result)
 curl -X POST http://localhost:3402/task?wait=true \
   -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
-  -d '{
-    "taskId": "task-123",
-    "type": "prompt",
-    "prompt": "Refactor this code to use async/await",
-    "clientDid": "my-agent"
-  }'
+  -d '{"type":"prompt","prompt":"Refactor this code to use async/await"}'
 
 # Submit task — async mode (returns 202, poll for result)
 curl -X POST http://localhost:3402/task \
   -H "Authorization: FreeTier my-agent" \
   -H "Content-Type: application/json" \
+  -d '{"type":"prompt","prompt":"Refactor this code to use async/await"}'
+
+# Poll for result (async tasks — taskId is in the response from POST)
+curl http://localhost:3402/task/<taskId-from-response> \
+  -H "Authorization: FreeTier my-agent"
+
+# Submit task with optional fields (taskId and clientDid are auto-generated if omitted)
+curl -X POST http://localhost:3402/task?wait=true \
+  -H "Authorization: FreeTier my-agent" \
+  -H "Content-Type: application/json" \
   -d '{
-    "taskId": "task-456",
     "type": "prompt",
     "prompt": "Refactor this code to use async/await",
+    "taskId": "my-custom-id",
     "clientDid": "my-agent"
   }'
-
-# Poll for result (async tasks)
-curl http://localhost:3402/task/task-456 \
-  -H "Authorization: FreeTier my-agent"
 
 # Submit task (DID:key auth — stronger identity)
 curl -X POST http://localhost:3402/task?wait=true \
   -H "Authorization: DID did:key:z6MkhaXg...:1708700000:SGVsbG8gV29ybGQ" \
   -H "Content-Type: application/json" \
-  -d '{
-    "taskId": "task-789",
-    "type": "prompt",
-    "prompt": "Refactor this code to use async/await",
-    "clientDid": "did:key:z6MkhaXg..."
-  }'
+  -d '{"type":"prompt","prompt":"Refactor this code to use async/await"}'
 
 # Submit task (Bearer token auth)
 curl -X POST http://localhost:3402/task?wait=true \
   -H "Authorization: Bearer $BRIDGE_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{
-    "taskId": "task-999",
-    "type": "prompt",
-    "prompt": "Refactor this code to use async/await",
-    "clientDid": "did:agoramesh:base:0x..."
-  }'
+  -d '{"type":"prompt","prompt":"Refactor this code to use async/await"}'
 
 # Cancel task
-curl -X DELETE http://localhost:3402/task/task-123
+curl -X DELETE http://localhost:3402/task/<taskId>
 ```
 
 ### WebSocket
@@ -226,13 +225,12 @@ curl -X DELETE http://localhost:3402/task/task-123
 ```javascript
 const ws = new WebSocket('ws://localhost:3402');
 
+// Minimal — only type and prompt required (taskId and clientDid are auto-generated)
 ws.send(JSON.stringify({
   type: 'task',
   payload: {
-    taskId: 'task-456',
     type: 'code-review',
-    prompt: 'Review this PR for security issues',
-    clientDid: 'did:agoramesh:base:0x...'
+    prompt: 'Review this PR for security issues'
   }
 }));
 
