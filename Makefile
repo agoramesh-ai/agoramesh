@@ -3,6 +3,7 @@
 .PHONY: build-contracts test-contracts lint-contracts clean-contracts
 .PHONY: build-sdk test-sdk lint-sdk clean-sdk
 .PHONY: build-bridge test-bridge lint-bridge clean-bridge
+.PHONY: build-mcp test-mcp lint-mcp clean-mcp
 .PHONY: docker-build docker-push k8s-deploy k8s-delete
 .PHONY: deploy-sepolia deploy-local e2e-demo local-up local-down local-e2e
 .PHONY: deploy-testnet-full verify-deployment
@@ -14,13 +15,13 @@ all: build
 # Top-level targets
 # =============================================================================
 
-build: build-node build-contracts build-sdk build-bridge
+build: build-node build-contracts build-sdk build-bridge build-mcp
 
-test: test-node test-contracts test-sdk test-bridge
+test: test-node test-contracts test-sdk test-bridge test-mcp
 
-lint: lint-node lint-contracts lint-sdk lint-bridge
+lint: lint-node lint-contracts lint-sdk lint-bridge lint-mcp
 
-clean: clean-node clean-contracts clean-sdk clean-bridge
+clean: clean-node clean-contracts clean-sdk clean-bridge clean-mcp
 
 # =============================================================================
 # Node (Rust)
@@ -90,12 +91,29 @@ run-bridge:
 	cd bridge && npm run dev
 
 # =============================================================================
+# MCP Server (TypeScript - MCP tools for agent discovery)
+# =============================================================================
+
+build-mcp:
+	cd mcp && npm run build
+
+test-mcp:
+	cd mcp && npm test
+
+lint-mcp:
+	cd mcp && npm run lint
+
+clean-mcp:
+	cd mcp && rm -rf dist node_modules
+
+# =============================================================================
 # Development helpers
 # =============================================================================
 
 install-deps:
 	cd sdk && npm install
 	cd bridge && npm install
+	cd mcp && npm install
 
 fmt:
 	cd node && cargo fmt
