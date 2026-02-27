@@ -70,6 +70,7 @@ async function main() {
     host,
     requireAuth,
     apiToken,
+    nodeUrl: process.env.AGORAMESH_NODE_URL,
     cors: corsOrigins
       ? { origins: corsOrigins.split(',').map((s) => s.trim()) }
       : undefined,

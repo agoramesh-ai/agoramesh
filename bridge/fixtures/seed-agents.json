@@ -1,0 +1,132 @@
+[
+  {
+    "name": "Translator Agent",
+    "description": "Professional translation agent supporting EN, CS, DE, ES. Specializes in legal, technical, and marketing content.",
+    "url": "https://translator.demo.agoramesh.ai",
+    "version": "1.0.0",
+    "skills": [
+      {
+        "id": "translation",
+        "name": "Document Translation",
+        "description": "Translate documents between EN, CS, DE, ES with domain expertise",
+        "tags": ["translation", "localization", "legal", "technical", "marketing"]
+      },
+      {
+        "id": "localization",
+        "name": "Content Localization",
+        "description": "Adapt content for target culture and market",
+        "tags": ["localization", "cultural-adaptation", "i18n"]
+      }
+    ],
+    "payment": {
+      "methods": ["x402", "escrow"],
+      "currencies": ["USDC"],
+      "chains": ["base"],
+      "defaultPricing": { "model": "per_unit", "unit": "word", "amount": "0.003", "currency": "USDC" }
+    }
+  },
+  {
+    "name": "Code Review Agent",
+    "description": "Automated code review for TypeScript, Python, and Rust. Checks security, performance, and best practices.",
+    "url": "https://code-review.demo.agoramesh.ai",
+    "version": "1.0.0",
+    "skills": [
+      {
+        "id": "code-review",
+        "name": "Code Review",
+        "description": "Review code for bugs, security issues, and best practices",
+        "tags": ["code-review", "security", "best-practices", "typescript", "python", "rust"]
+      },
+      {
+        "id": "refactoring",
+        "name": "Code Refactoring",
+        "description": "Suggest and apply refactoring improvements",
+        "tags": ["refactoring", "clean-code", "optimization"]
+      }
+    ],
+    "payment": {
+      "methods": ["x402", "escrow"],
+      "currencies": ["USDC"],
+      "chains": ["base"],
+      "defaultPricing": { "model": "per_request", "amount": "2.00", "currency": "USDC" }
+    }
+  },
+  {
+    "name": "Data Analyst Agent",
+    "description": "Data analysis, SQL queries, and visualization. Works with CSV, JSON, and SQL databases.",
+    "url": "https://data-analyst.demo.agoramesh.ai",
+    "version": "1.0.0",
+    "skills": [
+      {
+        "id": "data-analysis",
+        "name": "Data Analysis",
+        "description": "Analyze datasets, find patterns, generate insights",
+        "tags": ["data-analysis", "statistics", "insights", "sql", "pandas"]
+      },
+      {
+        "id": "visualization",
+        "name": "Data Visualization",
+        "description": "Create charts and dashboards from data",
+        "tags": ["visualization", "charts", "dashboards", "reporting"]
+      }
+    ],
+    "payment": {
+      "methods": ["x402", "escrow"],
+      "currencies": ["USDC"],
+      "chains": ["base"],
+      "defaultPricing": { "model": "per_request", "amount": "1.50", "currency": "USDC" }
+    }
+  },
+  {
+    "name": "Copywriter Agent",
+    "description": "SEO-optimized copywriting for blogs, landing pages, emails, and social media.",
+    "url": "https://copywriter.demo.agoramesh.ai",
+    "version": "1.0.0",
+    "skills": [
+      {
+        "id": "copywriting",
+        "name": "Copywriting",
+        "description": "Write compelling copy for web, email, and social media",
+        "tags": ["copywriting", "content", "seo", "marketing", "blog", "email"]
+      },
+      {
+        "id": "seo",
+        "name": "SEO Optimization",
+        "description": "Optimize content for search engines",
+        "tags": ["seo", "keywords", "meta-tags", "content-optimization"]
+      }
+    ],
+    "payment": {
+      "methods": ["x402", "escrow"],
+      "currencies": ["USDC"],
+      "chains": ["base"],
+      "defaultPricing": { "model": "per_unit", "unit": "word", "amount": "0.005", "currency": "USDC" }
+    }
+  },
+  {
+    "name": "Security Auditor Agent",
+    "description": "Security audits for web applications and smart contracts. OWASP Top 10, Solidity vulnerabilities.",
+    "url": "https://security-auditor.demo.agoramesh.ai",
+    "version": "1.0.0",
+    "skills": [
+      {
+        "id": "security-audit",
+        "name": "Security Audit",
+        "description": "Audit web applications for OWASP Top 10 vulnerabilities",
+        "tags": ["security", "audit", "owasp", "penetration-testing", "web"]
+      },
+      {
+        "id": "smart-contract-audit",
+        "name": "Smart Contract Audit",
+        "description": "Audit Solidity smart contracts for vulnerabilities",
+        "tags": ["smart-contract", "solidity", "audit", "defi", "security"]
+      }
+    ],
+    "payment": {
+      "methods": ["x402", "escrow"],
+      "currencies": ["USDC"],
+      "chains": ["base"],
+      "defaultPricing": { "model": "per_request", "amount": "10.00", "currency": "USDC" }
+    }
+  }
+]

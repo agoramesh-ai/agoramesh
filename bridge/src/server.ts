@@ -15,6 +15,8 @@ import { handleA2ARequest, type A2ABridge } from './a2a.js';
 import { isDIDAuthHeader, parseDIDAuthHeader, verifyDIDSignature } from './did-auth.js';
 import { FreeTierLimiter } from './free-tier-limiter.js';
 import { TrustStore } from './trust-store.js';
+import { createDiscoveryProxy } from './discovery-proxy.js';
+import { createTrustEndpoint } from './trust-endpoint.js';
 
 /** Express request with optional DID identity attached by auth middleware */
 interface DIDRequest extends Request {
@@ -182,6 +184,8 @@ export interface BridgeServerConfig extends RichAgentConfig {
   host?: string;
   /** Allowed WebSocket origins (if set, rejects connections from other origins) */
   allowedOrigins?: string[];
+  /** P2P node URL for discovery proxy (e.g. https://api.agoramesh.ai) */
+  nodeUrl?: string;
 }
 
 /**
@@ -579,6 +583,15 @@ export class BridgeServer {
         mode: this.executor.isDemoMode ? 'demo' : 'live',
       });
     });
+
+    // Discovery proxy — no auth, proxies to P2P node
+    this.app.use(createDiscoveryProxy(this.config.nodeUrl));
+
+    // Trust endpoint — no auth, returns local + network trust data
+    this.app.use(createTrustEndpoint({
+      trustStore: this.trustStore,
+      nodeUrl: this.config.nodeUrl,
+    }));
 
     // Agent info (A2A compatible capability card)
     const agentCardHandler = (_req: Request, res: Response) => {
