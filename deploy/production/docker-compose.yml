@@ -44,6 +44,7 @@ services:
       - BRIDGE_API_TOKEN=${BRIDGE_API_TOKEN}
       - BRIDGE_CORS_ORIGINS=${BRIDGE_CORS_ORIGINS:-}
       - API_ENDPOINT=http://node:8080
+      - AGORAMESH_NODE_URL=http://node:8080
       - AGENT_PRIVATE_KEY=${BRIDGE_AGENT_PRIVATE_KEY}
       - RPC_URL=https://sepolia.base.org
       - CHAIN_ID=84532
