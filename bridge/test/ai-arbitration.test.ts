@@ -78,6 +78,7 @@ const SAMPLE_DISPUTED_ESCROW: Escrow = {
   state: EscrowState.DISPUTED,
   createdAt: BigInt(Math.floor(Date.now() / 1000) - 86400),
   deliveredAt: BigInt(Math.floor(Date.now() / 1000) - 3600),
+  facilitator: '0x0000000000000000000000000000000000000000' as `0x${string}`,
 };
 
 // Sample evidence from client

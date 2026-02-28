@@ -50,6 +50,7 @@ const FUNDED_ESCROW: Escrow = {
   state: EscrowState.FUNDED,
   createdAt: BigInt(Math.floor(Date.now() / 1000) - 600),
   deliveredAt: 0n,
+  facilitator: '0x0000000000000000000000000000000000000000' as `0x${string}`,
 };
 
 // ========== TDD Tests: Escrow Validation Before Task Execution ==========

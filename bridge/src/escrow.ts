@@ -43,6 +43,7 @@ export interface Escrow {
   state: EscrowState;
   createdAt: bigint;
   deliveredAt: bigint;
+  facilitator: `0x${string}`;  // NEW: Node operator address
 }
 
 /**
@@ -93,6 +94,7 @@ const ESCROW_ABI = [
           { name: 'state', type: 'uint8' },
           { name: 'createdAt', type: 'uint256' },
           { name: 'deliveredAt', type: 'uint256' },
+          { name: 'facilitator', type: 'address' },
         ],
       },
     ],
@@ -197,6 +199,7 @@ export class EscrowClient {
         state: result.state as EscrowState,
         createdAt: result.createdAt,
         deliveredAt: result.deliveredAt,
+        facilitator: result.facilitator,
       });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));

@@ -58,6 +58,7 @@ const SAMPLE_ESCROW: Escrow = {
   state: EscrowState.FUNDED,
   createdAt: BigInt(Math.floor(Date.now() / 1000) - 600), // 10 minutes ago
   deliveredAt: 0n,
+  facilitator: '0x0000000000000000000000000000000000000000' as `0x${string}`,
 };
 
 describe('EscrowClient', () => {
