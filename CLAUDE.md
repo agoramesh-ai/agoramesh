@@ -6,8 +6,8 @@ AgoraMesh is a decentralized marketplace and trust layer for AI agents. It enabl
 
 ## Project Status
 
-**Phase:** Early Implementation
-**Last Updated:** 2026-02-01
+**Phase:** Beta — Testnet Live
+**Last Updated:** 2026-02-28
 
 ## Repository Structure
 
@@ -21,9 +21,11 @@ agoramesh/
 │   │   └── types.ts     # TypeScript types
 │   └── README.md
 ├── contracts/           # Solidity smart contracts (Foundry)
-│   ├── src/
-│   │   ├── TrustRegistry.sol
-│   │   └── AgoraMeshEscrow.sol
+│   ├── src/             # 12 contracts: TrustRegistry, AgoraMeshEscrow,
+│   │                    # TieredDisputeResolution, StreamingPayments,
+│   │                    # AgentToken, NFTBoundReputation, VerifiedNamespaces,
+│   │                    # CrossChainTrustSync, ChainRegistry, ERC8004Adapter,
+│   │                    # ERC8004Bridge, MockUSDC
 │   └── test/
 ├── deploy/              # Deployment configurations
 │   ├── k8s/             # Kubernetes manifests
@@ -32,9 +34,12 @@ agoramesh/
 │   └── src/
 ├── sdk/                 # TypeScript SDK
 │   └── src/
+├── mcp/                 # MCP HTTP server (Streamable HTTP transport)
+│   └── src/
 ├── docs/                # Documentation
 │   ├── plans/           # Design documents
 │   ├── specs/           # Protocol specifications
+│   ├── guides/          # Getting started, SDK, integration guides
 │   ├── tutorials/       # Step-by-step guides
 │   └── reference/       # Reference material
 └── Makefile             # Build commands
@@ -58,6 +63,16 @@ docs/
 │   ├── getting-started.md                 # Quick start for SDK developers
 │   ├── running-a-node.md                  # Node operator guide
 │   └── running-local-agent.md             # Run Claude Code as worker
+├── guides/
+│   ├── getting-started.md                  # Getting started guide
+│   ├── quickstart-agents.md                # Agent quickstart
+│   ├── sdk-guide.md                        # SDK usage guide
+│   ├── api-reference.md                    # API reference
+│   ├── architecture.md                     # Architecture overview
+│   ├── integration-autogen.md              # AutoGen integration
+│   ├── integration-crewai.md               # CrewAI integration
+│   ├── integration-langchain.md            # LangChain integration
+│   └── integration-vercel-ai.md            # Vercel AI integration
 ├── security/
 │   └── audit-preparation.md               # Security audit checklist
 └── reference/
@@ -160,6 +175,7 @@ make deploy-mainnet       # Deploy to Base Mainnet
 6. `docs/specs/trust-layer.md` - Trust system details
 7. `docs/specs/dispute-resolution.md` - Dispute resolution tiers
 8. `bridge/README.md` - Bridge module documentation
+9. `mcp/src/index.ts` - MCP server entry point
 
 ## Research Sources
 
@@ -179,7 +195,10 @@ Documentation is based on research from:
 - [x] Solidity contracts (TrustRegistry, Escrow, dispute resolution + extras)
 - [x] TypeScript SDK (client, trust, payment, discovery, x402)
 - [x] Bridge module (Claude Code executor, escrow integration, HTTP/WS server)
+- [x] Deploy to Base Sepolia testnet (TrustRegistry 0x3e3326D4..., Escrow 0x7A582cf5...)
+- [x] MCP server (Streamable HTTP, 6 tools)
+- [x] Production deployment (Docker Compose on Hetzner)
+- [x] CI/CD (GitHub Actions)
 - [ ] Integration testing (end-to-end agent workflow)
-- [ ] Deploy to Base Sepolia testnet
 - [ ] Security audit
 - [ ] Mainnet launch
