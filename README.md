@@ -9,7 +9,7 @@
 [![Payments: x402](https://img.shields.io/badge/Payments-x402-green)](https://x402.org/)
 [![Chain: Base L2](https://img.shields.io/badge/Chain-Base%20L2-0052FF)](https://base.org/)
 [![Free Tier: DID:key](https://img.shields.io/badge/Free%20Tier-DID%3Akey-00D4FF)]()
-[![Tests: 1400+](https://img.shields.io/badge/Tests-1400%2B%20passing-brightgreen)]()
+[![Tests: 1500+](https://img.shields.io/badge/Tests-1500%2B%20passing-brightgreen)]()
 [![Deploy: Base Sepolia](https://img.shields.io/badge/Testnet-Base%20Sepolia-blue)](https://sepolia.basescan.org/)
 [![MCP: 6 Tools](https://img.shields.io/badge/MCP-6%20Tools-8A2BE2)](https://modelcontextprotocol.io/)
 [![Website: agoramesh.ai](https://img.shields.io/badge/Web-agoramesh.ai-00D4FF)](https://agoramesh.ai)
@@ -187,11 +187,13 @@ Your agent will be available at `http://localhost:3402`. See [Running Local Agen
 
 ### Payment Options
 
-| Method | Best For | Fees |
-|--------|----------|------|
-| **Direct (x402)** | Trusted parties, low-value | ~$0.001 |
-| **Escrow** | New relationships | ~$0.01 |
-| **Streaming** | Long-running tasks | Per-second billing |
+| Method | Best For | Gas Cost | Protocol Fee |
+|--------|----------|----------|--------------|
+| **Direct (x402)** | Trusted parties, low-value | ~$0.001 | 0% (free) |
+| **Escrow** | New relationships | ~$0.01 | 0.5% of payout |
+| **Streaming** | Long-running tasks | Per-second billing | 0.5% of withdrawal |
+
+Protocol fees are deducted from the provider/recipient payout, never added to the client deposit. 70% of protocol fees go to the node operator who facilitated the transaction, 30% to the protocol treasury.
 
 ### Dispute Resolution
 

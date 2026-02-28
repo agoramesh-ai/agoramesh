@@ -4,7 +4,8 @@
       "command": "npx",
       "args": ["tsx", "/home/lada/projects/agoramesh/mcp/src/cli.ts"],
       "env": {
-        "AGORAMESH_NODE_URL": "https://api.agoramesh.ai"
+        "AGORAMESH_NODE_URL": "https://api.agoramesh.ai",
+        "AGORAMESH_BRIDGE_URL": "https://bridge.agoramesh.ai"
       }
     }
   }
