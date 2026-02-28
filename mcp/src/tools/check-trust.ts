@@ -2,17 +2,24 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { NodeClient } from '../node-client.js';
 
-interface Endorsement {
-  endorser?: string;
-  endorserTrust?: number;
+// Flat trust response from P2P node API
+interface TrustData {
+  did?: string;
+  score?: number;
+  reputation?: number;
+  stake_score?: number;
+  endorsement_score?: number;
+  stake_amount?: number;
+  successful_transactions?: number;
+  failed_transactions?: number;
+  endorsement_count?: number;
+  // Fallback nested format (SDK/bridge shape)
+  tier?: string;
+  endorsements?: { endorser?: string; endorserTrust?: number }[];
 }
 
-interface TrustData {
-  score?: number;
-  tier?: string;
-  reputation?: { successRate?: number; totalTasks?: number; recentTasks?: number };
-  stake?: { amount?: string; currency?: string };
-  endorsements?: Endorsement[];
+function formatUsdc(raw: number): string {
+  return (raw / 1_000_000).toFixed(2);
 }
 
 function formatTrust(did: string, trust: TrustData): string {
@@ -25,23 +32,37 @@ function formatTrust(did: string, trust: TrustData): string {
   if (trust.tier) lines.push(`- **Tier**: ${trust.tier}`);
 
   lines.push('');
-  lines.push('## Components');
+  lines.push('## Components (weight: 50% reputation + 30% stake + 20% endorsement)');
 
-  if (trust.reputation) {
-    const sr = trust.reputation.successRate !== undefined ? trust.reputation.successRate.toFixed(2) : 'N/A';
-    const parts = [`${sr} (success rate)`];
-    if (trust.reputation.totalTasks !== undefined) parts.push(`${trust.reputation.totalTasks} total tasks`);
-    if (trust.reputation.recentTasks !== undefined) parts.push(`${trust.reputation.recentTasks} recent`);
-    lines.push(`- **Reputation**: ${parts.join(' | ')}`);
+  // Reputation component (flat field from node)
+  if (trust.reputation !== undefined) {
+    lines.push(`- **Reputation Score**: ${trust.reputation.toFixed(4)}`);
+    const total = trust.successful_transactions ?? 0;
+    const failed = trust.failed_transactions ?? 0;
+    if (total > 0 || failed > 0) {
+      const successRate = total / (total + failed);
+      lines.push(`  - Success rate: ${(successRate * 100).toFixed(1)}% (${total} successful, ${failed} failed)`);
+    }
   }
 
-  if (trust.stake) {
-    lines.push(`- **Stake**: ${trust.stake.amount ?? '0'} ${trust.stake.currency ?? 'USDC'}`);
+  // Stake component
+  if (trust.stake_score !== undefined) {
+    lines.push(`- **Stake Score**: ${trust.stake_score.toFixed(4)}`);
+    if (trust.stake_amount !== undefined) {
+      lines.push(`  - Staked: ${formatUsdc(trust.stake_amount)} USDC`);
+    }
   }
 
+  // Endorsement component
+  if (trust.endorsement_score !== undefined) {
+    lines.push(`- **Endorsement Score**: ${trust.endorsement_score.toFixed(4)}`);
+    if (trust.endorsement_count !== undefined) {
+      lines.push(`  - Endorsers: ${trust.endorsement_count}`);
+    }
+  }
+
+  // Fallback: nested endorsements array (SDK/bridge format)
   const endorsements = trust.endorsements ?? [];
-  lines.push(`- **Endorsements**: ${endorsements.length} endorsers`);
-
   if (endorsements.length > 0) {
     lines.push('');
     lines.push('### Endorsers');

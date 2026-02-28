@@ -29,8 +29,13 @@ describe('check_trust tool', () => {
     vi.spyOn(nodeClient, 'getTrust').mockResolvedValueOnce({
       score: 0.85,
       tier: 'verified',
-      reputation: { successRate: 0.95, totalTasks: 42, recentTasks: 10 },
-      stake: { amount: '5000', currency: 'USDC' },
+      reputation: 0.9531,
+      stake_score: 0.7071,
+      endorsement_score: 0.45,
+      stake_amount: 5000_000_000,
+      successful_transactions: 40,
+      failed_transactions: 2,
+      endorsement_count: 2,
       endorsements: [
         { endorser: 'did:agoramesh:base:xyz', endorserTrust: 0.90 },
         { endorser: 'did:agoramesh:base:def', endorserTrust: 0.75 },
@@ -50,8 +55,13 @@ describe('check_trust tool', () => {
     vi.spyOn(nodeClient, 'getTrust').mockResolvedValueOnce({
       score: 0.85,
       tier: 'verified',
-      reputation: { successRate: 0.95, totalTasks: 42, recentTasks: 10 },
-      stake: { amount: '5000', currency: 'USDC' },
+      reputation: 0.9531,
+      stake_score: 0.7071,
+      endorsement_score: 0.45,
+      stake_amount: 5000_000_000,
+      successful_transactions: 40,
+      failed_transactions: 2,
+      endorsement_count: 2,
       endorsements: [
         { endorser: 'did:agoramesh:base:xyz', endorserTrust: 0.90 },
         { endorser: 'did:agoramesh:base:def', endorserTrust: 0.75 },
@@ -66,17 +76,19 @@ describe('check_trust tool', () => {
     expect(text).toContain('verified');
 
     // Reputation
-    expect(text).toContain('Reputation');
-    expect(text).toContain('0.95');
+    expect(text).toContain('Reputation Score');
+    expect(text).toContain('0.9531');
+    expect(text).toContain('95.2%');
+    expect(text).toContain('40 successful');
 
     // Stake
-    expect(text).toContain('Stake');
-    expect(text).toContain('5000');
-    expect(text).toContain('USDC');
+    expect(text).toContain('Stake Score');
+    expect(text).toContain('0.7071');
+    expect(text).toContain('5000.00 USDC');
 
     // Endorsements
-    expect(text).toContain('Endorsements');
-    expect(text).toContain('2');
+    expect(text).toContain('Endorsement Score');
+    expect(text).toContain('Endorsers: 2');
     expect(text).toContain('did:agoramesh:base:xyz');
     expect(text).toContain('0.90');
     expect(text).toContain('did:agoramesh:base:def');
@@ -109,9 +121,13 @@ describe('check_trust tool', () => {
     vi.spyOn(nodeClient, 'getTrust').mockResolvedValueOnce({
       score: 0.40,
       tier: 'newcomer',
-      reputation: { successRate: 0.80, totalTasks: 5, recentTasks: 2 },
-      stake: { amount: '100', currency: 'USDC' },
-      endorsements: [],
+      reputation: 0.8000,
+      stake_score: 0.01,
+      endorsement_score: 0.0,
+      stake_amount: 100_000_000,
+      successful_transactions: 4,
+      failed_transactions: 1,
+      endorsement_count: 0,
     });
 
     const result = await client.callTool({ name: 'check_trust', arguments: { did: 'did:agoramesh:base:new' } });
@@ -120,6 +136,6 @@ describe('check_trust tool', () => {
     const text = (result.content as Array<{ type: string; text: string }>)[0].text;
     expect(text).toContain('0.40');
     expect(text).toContain('newcomer');
-    expect(text).toContain('0 endorsers');
+    expect(text).toContain('Endorsers: 0');
   });
 });

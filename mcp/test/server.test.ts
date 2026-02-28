@@ -104,11 +104,13 @@ describe('AgoraMesh MCP Server (integration)', () => {
       json: async () => ({
         score: 0.85,
         tier: 'verified',
-        reputation: { successRate: 0.95, totalTasks: 42 },
-        stake: { amount: '5000', currency: 'USDC' },
-        endorsements: [
-          { endorser: 'did:agoramesh:base:xyz', endorserTrust: 0.9 },
-        ],
+        reputation: 0.9531,
+        stake_score: 0.7071,
+        endorsement_score: 0.45,
+        stake_amount: 5000_000_000,
+        successful_transactions: 40,
+        failed_transactions: 2,
+        endorsement_count: 2,
       }),
     });
 

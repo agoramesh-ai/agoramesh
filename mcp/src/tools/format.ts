@@ -1,41 +1,72 @@
 /**
  * Shared formatting for agent data returned by MCP tools.
+ * Handles both node API shape (x-agoramesh metadata) and semantic search results.
  */
 
-interface AgentData {
+interface SearchResult {
   did?: string;
   name?: string;
   description?: string;
-  capabilities?: string[];
-  pricing?: { model?: string; amount?: string; currency?: string };
   trust?: { score?: number; tier?: string };
+  // Semantic search results may include these directly
+  capabilities?: { id?: string; name?: string }[] | string[];
+  pricing?: { model?: string; amount?: string; currency?: string };
+  matchingSkills?: string[];
+  // Node API full agent shape
+  'x-agoramesh'?: {
+    did?: string;
+    trust_score?: number;
+    pricing?: { base_price?: number; currency?: string; model?: string };
+  };
   [key: string]: unknown;
 }
 
 export function formatAgent(agent: unknown): string {
-  const a = agent as AgentData;
+  const a = agent as SearchResult;
   const lines: string[] = [];
+  const meta = a['x-agoramesh'];
 
-  lines.push(`## ${a.name ?? 'Unknown Agent'}`);
-  lines.push(`- **DID**: ${a.did ?? 'N/A'}`);
+  const name = a.name ?? 'Unknown Agent';
+  const did = meta?.did ?? a.did ?? 'N/A';
 
-  if (a.trust) {
-    const tier = a.trust.tier ? ` (${a.trust.tier})` : '';
-    lines.push(`- **Trust Score**: ${a.trust.score ?? 'N/A'}${tier}`);
+  lines.push(`## ${name}`);
+  lines.push(`- **DID**: ${did}`);
+
+  // Trust score — from x-agoramesh or search result trust object
+  const trustScore = meta?.trust_score ?? a.trust?.score;
+  if (trustScore !== undefined) {
+    const tier = a.trust?.tier ? ` (${a.trust.tier})` : '';
+    lines.push(`- **Trust Score**: ${trustScore.toFixed(2)}${tier}`);
   }
 
   if (a.description) {
     lines.push(`- **Description**: ${a.description}`);
   }
 
-  if (a.capabilities?.length) {
-    lines.push(`- **Skills**: ${a.capabilities.join(', ')}`);
+  // Capabilities — array of objects or strings
+  if (Array.isArray(a.capabilities) && a.capabilities.length > 0) {
+    const names = a.capabilities.map((c) =>
+      typeof c === 'string' ? c : (c as { name?: string }).name ?? (c as { id?: string }).id ?? '?'
+    );
+    lines.push(`- **Capabilities**: ${names.join(', ')}`);
   }
 
-  if (a.pricing) {
-    const price = `${a.pricing.amount ?? '?'} ${a.pricing.currency ?? ''}`.trim();
-    const model = a.pricing.model ? `/${a.pricing.model.replace('per_', '')}` : '';
-    lines.push(`- **Pricing**: $${price}${model}`);
+  if (a.matchingSkills?.length) {
+    lines.push(`- **Matching**: ${a.matchingSkills.join(', ')}`);
+  }
+
+  // Pricing — from x-agoramesh or direct
+  const pricing = meta?.pricing ?? a.pricing;
+  if (pricing) {
+    if ('base_price' in pricing && pricing.base_price !== undefined) {
+      const price = ((pricing.base_price as number) / 1_000_000).toFixed(2);
+      const model = pricing.model ? `/${pricing.model.replace('per_', '')}` : '';
+      lines.push(`- **Pricing**: $${price} ${pricing.currency ?? 'USDC'}${model}`);
+    } else if ('amount' in pricing) {
+      const price = `${pricing.amount ?? '?'} ${pricing.currency ?? ''}`.trim();
+      const model = pricing.model ? `/${pricing.model.replace('per_', '')}` : '';
+      lines.push(`- **Pricing**: $${price}${model}`);
+    }
   }
 
   return lines.join('\n');

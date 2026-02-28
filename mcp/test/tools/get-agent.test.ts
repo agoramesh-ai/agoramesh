@@ -26,28 +26,21 @@ describe('get_agent tool', () => {
   });
 
   it('returns full formatted agent card for valid DID', async () => {
+    // Mock data matches actual node API response shape
     vi.spyOn(nodeClient, 'getAgent').mockResolvedValueOnce({
-      did: 'did:agoramesh:base:abc123',
       name: 'CodeReviewer',
       description: 'Reviews code for quality and security',
-      version: '1.0.0',
       url: 'https://agent.example.com',
-      trust: { score: 0.85, tier: 'verified' },
-      skills: [
-        {
-          name: 'Code Review',
-          tags: ['code', 'review', 'quality'],
-          pricing: { model: 'per_request', amount: '0.01', currency: 'USDC' },
-        },
-        {
-          name: 'Security Audit',
-          tags: ['security', 'audit'],
-          pricing: { model: 'per_request', amount: '0.05', currency: 'USDC' },
-        },
+      capabilities: [
+        { id: 'code-review', name: 'Code Review', description: 'Review code for bugs' },
+        { id: 'security-audit', name: 'Security Audit', description: 'Find security issues' },
       ],
-      capabilities: {
-        streaming: true,
-        x402Payments: true,
+      'x-agoramesh': {
+        did: 'did:agoramesh:base:abc123',
+        trust_score: 0.85,
+        stake: 5000_000_000,
+        pricing: { base_price: 500_000, currency: 'USDC', model: 'per_request' },
+        payment_methods: ['x402', 'escrow'],
       },
     });
 
@@ -58,17 +51,13 @@ describe('get_agent tool', () => {
     expect(text).toContain('# CodeReviewer');
     expect(text).toContain('did:agoramesh:base:abc123');
     expect(text).toContain('Reviews code for quality and security');
-    expect(text).toContain('1.0.0');
     expect(text).toContain('https://agent.example.com');
     expect(text).toContain('0.85');
-    expect(text).toContain('verified');
     expect(text).toContain('Code Review');
     expect(text).toContain('Security Audit');
-    expect(text).toContain('code, review, quality');
-    expect(text).toContain('$0.01/request');
-    expect(text).toContain('$0.05/request');
-    expect(text).toContain('Streaming');
-    expect(text).toContain('x402 Payments');
+    expect(text).toContain('5000.00 USDC');
+    expect(text).toContain('$0.50 USDC/request');
+    expect(text).toContain('x402, escrow');
   });
 
   it('returns error message when agent not found', async () => {
