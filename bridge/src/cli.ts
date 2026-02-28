@@ -6,7 +6,7 @@ import { EscrowClient, didToHash } from './escrow.js';
 import { loadAgentCardConfig } from './config.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { X402Config } from './middleware/x402.js';
-import { validateBridgeConfig } from './validate-config.js';
+import { validateBridgeConfig, parseBool } from './validate-config.js';
 
 function loadConfig(): AgentConfig {
   const required = (key: string): string => {
@@ -29,11 +29,6 @@ function loadConfig(): AgentConfig {
     allowedCommands: (process.env.ALLOWED_COMMANDS || 'claude,git,npm,node').split(','),
     taskTimeout: parseInt(process.env.TASK_TIMEOUT || '300', 10),
   };
-}
-
-function parseBool(value?: string): boolean {
-  if (!value) return false;
-  return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes';
 }
 
 async function main() {

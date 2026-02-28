@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IStreamingPayments.sol";
-import "./TrustRegistry.sol";
+import "./interfaces/ITrustRegistry.sol";
 
 /// @title StreamingPayments - Continuous Payment Streams for AgoraMesh
 /// @notice Enables time-based streaming of payments from clients to agent providers
@@ -23,7 +23,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     // ============ State Variables ============
 
     /// @notice Reference to the TrustRegistry for agent verification
-    TrustRegistry public immutable trustRegistry;
+    ITrustRegistry public immutable trustRegistry;
 
     /// @notice Counter for stream IDs
     uint256 private _nextStreamId;
@@ -68,16 +68,36 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @notice Facilitator share of protocol fee (70%)
     uint256 public constant FACILITATOR_SHARE_BP = 7_000;
 
+    // ============ Errors ============
+
+    error InvalidAdmin();
+    error InvalidRegistry();
+    error InvalidDuration();
+    error StartTimeInPast();
+    error EndBeforeStart();
+    error InvalidDepositAmount();
+    error InvalidRecipient();
+    error SenderNotRegistered();
+    error NotRecipient();
+    error ExceedsWithdrawable();
+    error NotSender();
+    error StreamNotActive();
+    error NotActive();
+    error NotPaused();
+    error NotCancelable();
+    error InvalidTreasury();
+    error FeeTooHigh();
+
     // ============ Constructor ============
 
     /// @notice Deploy the StreamingPayments contract
     /// @param admin The admin address
     /// @param registry The TrustRegistry address
     constructor(address admin, address registry) {
-        require(admin != address(0), "Invalid admin");
-        require(registry != address(0), "Invalid registry");
+        if (admin == address(0)) revert InvalidAdmin();
+        if (registry == address(0)) revert InvalidRegistry();
 
-        trustRegistry = TrustRegistry(registry);
+        trustRegistry = ITrustRegistry(registry);
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _nextStreamId = 1;
     }
@@ -95,7 +115,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         bool cancelableByRecipient,
         address facilitator
     ) external nonReentrant returns (uint256 streamId) {
-        require(duration > 0, "Duration must be > 0");
+        if (duration == 0) revert InvalidDuration();
         return _createStreamInternal(
             recipientDid,
             recipient,
@@ -121,8 +141,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         bool cancelableByRecipient,
         address facilitator
     ) external nonReentrant returns (uint256 streamId) {
-        require(startTime >= block.timestamp, "Start time in past");
-        require(endTime > startTime, "End before start");
+        if (startTime < block.timestamp) revert StartTimeInPast();
+        if (endTime <= startTime) revert EndBeforeStart();
         return _createStreamInternal(
             recipientDid, recipient, token, depositAmount, startTime, endTime, cancelableBySender, cancelableByRecipient, facilitator
         );
@@ -140,12 +160,12 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         bool cancelableByRecipient,
         address facilitator
     ) internal returns (uint256 streamId) {
-        require(depositAmount > 0, "Amount must be > 0");
-        require(recipient != address(0), "Invalid recipient");
+        if (depositAmount == 0) revert InvalidDepositAmount();
+        if (recipient == address(0)) revert InvalidRecipient();
 
         // Get sender's DID
         bytes32 senderDid = _getSenderDid(msg.sender);
-        require(senderDid != bytes32(0), "Sender not registered");
+        if (senderDid == bytes32(0)) revert SenderNotRegistered();
 
         // Calculate rate per second with PRECISION to prevent precision loss
         uint256 duration = endTime - startTime;
@@ -192,11 +212,11 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @inheritdoc IStreamingPayments
     function withdraw(uint256 streamId, uint256 amount) external nonReentrant {
         Stream storage stream = _streams[streamId];
-        require(msg.sender == stream.recipient, "Not recipient");
-        require(amount > 0, "Amount must be > 0");
+        if (msg.sender != stream.recipient) revert NotRecipient();
+        if (amount == 0) revert InvalidDepositAmount();
 
         uint256 withdrawable = withdrawableAmountOf(streamId);
-        require(amount <= withdrawable, "Exceeds withdrawable");
+        if (amount > withdrawable) revert ExceedsWithdrawable();
 
         stream.withdrawnAmount += amount;
 
@@ -214,7 +234,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @inheritdoc IStreamingPayments
     function withdrawMax(uint256 streamId) external nonReentrant returns (uint256 withdrawn) {
         Stream storage stream = _streams[streamId];
-        require(msg.sender == stream.recipient, "Not recipient");
+        if (msg.sender != stream.recipient) revert NotRecipient();
 
         withdrawn = withdrawableAmountOf(streamId);
         if (withdrawn == 0) return 0;
@@ -237,9 +257,9 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @inheritdoc IStreamingPayments
     function topUp(uint256 streamId, uint256 amount) external nonReentrant {
         Stream storage stream = _streams[streamId];
-        require(msg.sender == stream.sender, "Not sender");
-        require(stream.status == StreamStatus.ACTIVE || stream.status == StreamStatus.PAUSED, "Stream not active");
-        require(amount > 0, "Amount must be > 0");
+        if (msg.sender != stream.sender) revert NotSender();
+        if (stream.status != StreamStatus.ACTIVE && stream.status != StreamStatus.PAUSED) revert StreamNotActive();
+        if (amount == 0) revert InvalidDepositAmount();
 
         // Transfer additional tokens
         IERC20(stream.token).safeTransferFrom(msg.sender, address(this), amount);
@@ -261,8 +281,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @inheritdoc IStreamingPayments
     function pause(uint256 streamId) external {
         Stream storage stream = _streams[streamId];
-        require(msg.sender == stream.sender, "Not sender");
-        require(stream.status == StreamStatus.ACTIVE, "Not active");
+        if (msg.sender != stream.sender) revert NotSender();
+        if (stream.status != StreamStatus.ACTIVE) revert NotActive();
 
         stream.status = StreamStatus.PAUSED;
         _pauseStartTimes[streamId] = block.timestamp;
@@ -273,8 +293,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @inheritdoc IStreamingPayments
     function resume(uint256 streamId) external {
         Stream storage stream = _streams[streamId];
-        require(msg.sender == stream.sender, "Not sender");
-        require(stream.status == StreamStatus.PAUSED, "Not paused");
+        if (msg.sender != stream.sender) revert NotSender();
+        if (stream.status != StreamStatus.PAUSED) revert NotPaused();
 
         // Calculate pause duration and adjust
         uint256 pauseDuration = block.timestamp - _pauseStartTimes[streamId];
@@ -292,7 +312,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @inheritdoc IStreamingPayments
     function cancel(uint256 streamId) external nonReentrant {
         Stream storage stream = _streams[streamId];
-        require(stream.status == StreamStatus.ACTIVE || stream.status == StreamStatus.PAUSED, "Stream not active");
+        if (stream.status != StreamStatus.ACTIVE && stream.status != StreamStatus.PAUSED) revert StreamNotActive();
 
         // Check cancelability
         bool canCancel = false;
@@ -301,7 +321,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         } else if (msg.sender == stream.recipient && stream.cancelableByRecipient) {
             canCancel = true;
         }
-        require(canCancel, "Not cancelable");
+        if (!canCancel) revert NotCancelable();
 
         // Calculate amounts
         uint256 streamedAmount = streamedAmountOf(streamId);
@@ -409,7 +429,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @notice Set the treasury address
     /// @param _treasury New treasury address
     function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_treasury != address(0), "Invalid treasury");
+        if (_treasury == address(0)) revert InvalidTreasury();
         treasury = _treasury;
         emit TreasuryUpdated(_treasury);
     }
@@ -417,7 +437,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @notice Set the protocol fee in basis points
     /// @param _feeBp New fee in basis points (max 500 = 5%)
     function setProtocolFeeBp(uint256 _feeBp) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_feeBp <= MAX_FEE_BP, "Fee too high");
+        if (_feeBp > MAX_FEE_BP) revert FeeTooHigh();
         protocolFeeBp = _feeBp;
         emit ProtocolFeeUpdated(_feeBp);
     }

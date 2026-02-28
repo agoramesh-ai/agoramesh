@@ -113,19 +113,19 @@ contract StreamingPaymentsTest is Test {
 
     function test_createStream_revertIfZeroAmount() public {
         vm.prank(client);
-        vm.expectRevert("Amount must be > 0");
+        vm.expectRevert(StreamingPayments.InvalidDepositAmount.selector);
         streaming.createStream(providerDid, provider, address(usdc), 0, STREAM_DURATION, true, false, address(0));
     }
 
     function test_createStream_revertIfZeroDuration() public {
         vm.prank(client);
-        vm.expectRevert("Duration must be > 0");
+        vm.expectRevert(StreamingPayments.InvalidDuration.selector);
         streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, 0, true, false, address(0));
     }
 
     function test_createStream_revertIfZeroRecipient() public {
         vm.prank(client);
-        vm.expectRevert("Invalid recipient");
+        vm.expectRevert(StreamingPayments.InvalidRecipient.selector);
         streaming.createStream(providerDid, address(0), address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
     }
 
@@ -135,7 +135,7 @@ contract StreamingPaymentsTest is Test {
 
         vm.startPrank(unregistered);
         usdc.approve(address(streaming), DEPOSIT_AMOUNT);
-        vm.expectRevert("Sender not registered");
+        vm.expectRevert(StreamingPayments.SenderNotRegistered.selector);
         streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
         vm.stopPrank();
     }
@@ -159,7 +159,7 @@ contract StreamingPaymentsTest is Test {
         uint256 endTime = block.timestamp + STREAM_DURATION;
 
         vm.prank(client);
-        vm.expectRevert("Start time in past");
+        vm.expectRevert(StreamingPayments.StartTimeInPast.selector);
         streaming.createStreamWithTimestamps(
             providerDid, provider, address(usdc), DEPOSIT_AMOUNT, startTime, endTime, true, false, address(0)
         );
@@ -170,7 +170,7 @@ contract StreamingPaymentsTest is Test {
         uint256 endTime = startTime - 1;
 
         vm.prank(client);
-        vm.expectRevert("End before start");
+        vm.expectRevert(StreamingPayments.EndBeforeStart.selector);
         streaming.createStreamWithTimestamps(
             providerDid, provider, address(usdc), DEPOSIT_AMOUNT, startTime, endTime, true, false, address(0)
         );
@@ -253,7 +253,7 @@ contract StreamingPaymentsTest is Test {
         vm.warp(block.timestamp + STREAM_DURATION / 2);
 
         vm.prank(client); // Wrong person trying to withdraw
-        vm.expectRevert("Not recipient");
+        vm.expectRevert(StreamingPayments.NotRecipient.selector);
         streaming.withdraw(streamId, 100e6);
     }
 
@@ -266,7 +266,7 @@ contract StreamingPaymentsTest is Test {
         uint256 withdrawable = streaming.withdrawableAmountOf(streamId);
 
         vm.prank(provider);
-        vm.expectRevert("Exceeds withdrawable");
+        vm.expectRevert(StreamingPayments.ExceedsWithdrawable.selector);
         streaming.withdraw(streamId, withdrawable + 1);
     }
 
@@ -308,7 +308,7 @@ contract StreamingPaymentsTest is Test {
             streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
 
         vm.prank(provider);
-        vm.expectRevert("Not sender");
+        vm.expectRevert(StreamingPayments.NotSender.selector);
         streaming.topUp(streamId, DEPOSIT_AMOUNT);
     }
 
@@ -322,7 +322,7 @@ contract StreamingPaymentsTest is Test {
         streaming.cancel(streamId);
 
         vm.prank(client);
-        vm.expectRevert("Stream not active");
+        vm.expectRevert(StreamingPayments.StreamNotActive.selector);
         streaming.topUp(streamId, DEPOSIT_AMOUNT);
     }
 
@@ -346,7 +346,7 @@ contract StreamingPaymentsTest is Test {
             streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
 
         vm.prank(provider);
-        vm.expectRevert("Not sender");
+        vm.expectRevert(StreamingPayments.NotSender.selector);
         streaming.pause(streamId);
     }
 
@@ -371,7 +371,7 @@ contract StreamingPaymentsTest is Test {
             streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
 
         vm.prank(client);
-        vm.expectRevert("Not paused");
+        vm.expectRevert(StreamingPayments.NotPaused.selector);
         streaming.resume(streamId);
     }
 
@@ -416,7 +416,7 @@ contract StreamingPaymentsTest is Test {
         );
 
         vm.prank(client);
-        vm.expectRevert("Not cancelable");
+        vm.expectRevert(StreamingPayments.NotCancelable.selector);
         streaming.cancel(streamId);
     }
 
@@ -456,7 +456,7 @@ contract StreamingPaymentsTest is Test {
         );
 
         vm.prank(provider);
-        vm.expectRevert("Not cancelable");
+        vm.expectRevert(StreamingPayments.NotCancelable.selector);
         streaming.cancel(streamId);
     }
 

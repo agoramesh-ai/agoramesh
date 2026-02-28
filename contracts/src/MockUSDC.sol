@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title MockUSDC - Test-only ERC20 with public mint
 /// @notice Used for local Anvil development. DO NOT deploy to mainnet.

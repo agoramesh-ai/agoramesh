@@ -191,6 +191,7 @@ function isValidPrivateKey(value: string): boolean {
   return /^0x[0-9a-fA-F]{64}$/.test(value);
 }
 
-function parseBool(value: string): boolean {
+export function parseBool(value: string | undefined): boolean {
+  if (!value) return false;
   return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes';
 }

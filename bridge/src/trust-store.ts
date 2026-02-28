@@ -82,7 +82,7 @@ export class TrustStore {
    * Record a successful task completion for a DID.
    */
   recordCompletion(did: string): void {
-    const profile = this.getOrCreateProfile(did);
+    const profile = this.getProfile(did);
     profile.completedTasks++;
     profile.lastActivity = Date.now();
     profile.tier = this.evaluateTier(profile);
@@ -92,7 +92,7 @@ export class TrustStore {
    * Record a failed task for a DID.
    */
   recordFailure(did: string): void {
-    const profile = this.getOrCreateProfile(did);
+    const profile = this.getProfile(did);
     profile.failedTasks++;
     profile.lastActivity = Date.now();
     profile.tier = this.evaluateTier(profile);
@@ -120,22 +120,6 @@ export class TrustStore {
     } catch (err) {
       console.error(`[TrustStore] Failed to save: ${err}`);
     }
-  }
-
-  private getOrCreateProfile(did: string): TrustProfile {
-    let profile = this.profiles.get(did);
-    if (!profile) {
-      profile = {
-        did,
-        tier: TrustTier.NEW,
-        firstSeen: Date.now(),
-        completedTasks: 0,
-        failedTasks: 0,
-        lastActivity: Date.now(),
-      };
-      this.profiles.set(did, profile);
-    }
-    return profile;
   }
 
   /**

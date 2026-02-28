@@ -97,6 +97,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     error NoFeesToWithdraw();
     error QuorumNotMet();
     error ArbiterAlreadyRegistered();
+    error InvalidArbiterAddress();
     error EscrowNotInDisputedState();
 
     // ============ Constructor ============
@@ -585,7 +586,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         // Select arbiters from the eligible pool
         // In production: weighted random selection from TrustRegistry with Chainlink VRF
         // For now: select first N eligible arbiters who are not parties
-        uint256 poolSize = _eligibleArbitersCount;
+        uint256 poolSize = _eligibleArbiters.length;
         uint256 selected = 0;
 
         for (uint256 i = 0; i < poolSize && selected < count; i++) {
@@ -629,23 +630,21 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     /// @notice Pool of eligible arbiters (for testing/simple implementation)
     /// @dev In production, this would query TrustRegistry for qualified arbiters
     address[] private _eligibleArbiters;
-    uint256 private _eligibleArbitersCount;
 
     /// @notice Register an address as an eligible arbiter
     /// @dev In production, eligibility would be determined by TrustRegistry
     /// @param arbiter The address to register
     function registerArbiter(address arbiter) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(arbiter != address(0), "Invalid arbiter address");
+        if (arbiter == address(0)) revert InvalidArbiterAddress();
 
         // Check not already registered
-        for (uint256 i = 0; i < _eligibleArbitersCount; i++) {
+        for (uint256 i = 0; i < _eligibleArbiters.length; i++) {
             if (_eligibleArbiters[i] == arbiter) {
                 revert ArbiterAlreadyRegistered();
             }
         }
 
         _eligibleArbiters.push(arbiter);
-        _eligibleArbitersCount++;
 
         emit ArbiterRegistered(arbiter);
     }
@@ -653,12 +652,11 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     /// @notice Remove an address from the eligible arbiter pool
     /// @param arbiter The address to remove
     function unregisterArbiter(address arbiter) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < _eligibleArbitersCount; i++) {
+        for (uint256 i = 0; i < _eligibleArbiters.length; i++) {
             if (_eligibleArbiters[i] == arbiter) {
                 // Swap with last element and pop
-                _eligibleArbiters[i] = _eligibleArbiters[_eligibleArbitersCount - 1];
+                _eligibleArbiters[i] = _eligibleArbiters[_eligibleArbiters.length - 1];
                 _eligibleArbiters.pop();
-                _eligibleArbitersCount--;
                 emit ArbiterUnregistered(arbiter);
                 return;
             }

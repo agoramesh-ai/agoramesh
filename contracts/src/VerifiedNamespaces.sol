@@ -313,33 +313,30 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
             revert InvalidNamespaceName();
         }
 
-        // Normalize to lowercase and hash
+        // Normalize to lowercase, validate characters, and hash in a single pass
         bytes memory normalized = new bytes(len);
         for (uint256 i = 0; i < len; i++) {
             bytes1 char = nameBytes[i];
             // Convert uppercase to lowercase
             if (char >= 0x41 && char <= 0x5A) {
-                normalized[i] = bytes1(uint8(char) + 32);
-            } else {
-                normalized[i] = char;
+                char = bytes1(uint8(char) + 32);
             }
-        }
-
-        // Validate that each byte is in [a-z0-9-]
-        for (uint256 i = 0; i < len; i++) {
-            bytes1 c = normalized[i];
-            bool isLowerAlpha = (c >= 0x61 && c <= 0x7A); // a-z
-            bool isDigit = (c >= 0x30 && c <= 0x39); // 0-9
-            bool isHyphen = (c == 0x2D); // -
+            // Validate: must be [a-z0-9-]
+            bool isLowerAlpha = (char >= 0x61 && char <= 0x7A);
+            bool isDigit = (char >= 0x30 && char <= 0x39);
+            bool isHyphen = (char == 0x2D);
             if (!isLowerAlpha && !isDigit && !isHyphen) {
                 revert InvalidNameCharacter();
             }
+            normalized[i] = char;
         }
 
         return keccak256(normalized);
     }
 
-    /// @notice Convert string to lowercase
+    /// @notice Normalize a string to lowercase
+    /// @dev Delegates to _validateAndHashName for validation, then builds the lowercase result.
+    ///      We keep this as a separate function since _validateAndHashName returns a hash, not the string.
     /// @param str The input string
     /// @return The lowercase string
     function _toLowercase(string calldata str) internal pure returns (string memory) {

@@ -784,25 +784,7 @@ export class BridgeServer {
 
           // Confirm delivery on-chain if escrow was used (with retry)
           if (task.escrowId && this.escrowClient && result.status === 'completed') {
-            const escrowClient = this.escrowClient;
-            const escrowId = BigInt(task.escrowId);
-            const output = result.output || '';
-            try {
-              const txHash = await retryWithBackoff(
-                () => escrowClient.confirmDelivery(escrowId, output),
-                {
-                  maxAttempts: 5,
-                  baseDelayMs: 1000,
-                  onRetry: (attempt, err) => {
-                    console.warn(`[Bridge] Escrow ${task.escrowId} confirmDelivery retry ${attempt}/4: ${err.message}`);
-                  },
-                },
-              );
-              console.log(`[Bridge] Delivery confirmed on-chain: ${txHash}`);
-            } catch (error) {
-              console.error(`[Bridge] Failed to confirm delivery on-chain after 5 attempts:`, error);
-              // Don't fail the task - the work was completed, just the on-chain confirmation failed
-            }
+            await this.confirmEscrowDelivery(task.escrowId, result.output || '', 'REST');
           }
 
           // Broadcast result via WebSocket or webhook
@@ -860,15 +842,9 @@ export class BridgeServer {
             };
 
             // Include free tier info when authenticated via DID:key
-            const didIdForResponse = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
-            if (didIdForResponse) {
-              const tLimits = this.trustStore.getLimitsForDID(didIdForResponse.did);
-              const tProfile = this.trustStore.getProfile(didIdForResponse.did);
-              syncResponse.freeTier = {
-                tier: tProfile.tier,
-                remaining: this.freeTierLimiter.getRemainingQuota(didIdForResponse.did, tLimits.dailyLimit),
-                dailyLimit: tLimits.dailyLimit,
-              };
+            const freeTierInfo = this.buildFreeTierInfo((req as DIDRequest).didIdentity);
+            if (freeTierInfo) {
+              syncResponse.freeTier = freeTierInfo;
             }
 
             return res.status(200).json(syncResponse);
@@ -884,15 +860,9 @@ export class BridgeServer {
         };
 
         // Include free tier info when authenticated via DID:key
-        const didIdForResponse = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
-        if (didIdForResponse) {
-          const tLimits = this.trustStore.getLimitsForDID(didIdForResponse.did);
-          const tProfile = this.trustStore.getProfile(didIdForResponse.did);
-          response.freeTier = {
-            tier: tProfile.tier,
-            remaining: this.freeTierLimiter.getRemainingQuota(didIdForResponse.did, tLimits.dailyLimit),
-            dailyLimit: tLimits.dailyLimit,
-          };
+        const freeTierInfo = this.buildFreeTierInfo((req as DIDRequest).didIdentity);
+        if (freeTierInfo) {
+          response.freeTier = freeTierInfo;
         }
 
         res.status(202)
@@ -1070,24 +1040,7 @@ export class BridgeServer {
 
             // Confirm delivery on-chain if escrow was used (with retry)
             if (task.escrowId && this.escrowClient && result.status === 'completed') {
-              const escrowClient = this.escrowClient;
-              const escrowId = BigInt(task.escrowId);
-              const output = result.output || '';
-              try {
-                const txHash = await retryWithBackoff(
-                  () => escrowClient.confirmDelivery(escrowId, output),
-                  {
-                    maxAttempts: 5,
-                    baseDelayMs: 1000,
-                    onRetry: (attempt, err) => {
-                      console.warn(`[Bridge] WS escrow ${task.escrowId} confirmDelivery retry ${attempt}/4: ${err.message}`);
-                    },
-                  },
-                );
-                console.log(`[Bridge] WS delivery confirmed on-chain: ${txHash}`);
-              } catch (error) {
-                console.error(`[Bridge] WS failed to confirm delivery on-chain after 5 attempts:`, error);
-              }
+              await this.confirmEscrowDelivery(task.escrowId, result.output || '', 'WS');
             }
 
             ws.send(JSON.stringify({ type: 'result', payload: result }));
@@ -1159,6 +1112,44 @@ export class BridgeServer {
       this.pendingTasks.delete(taskId);
     }
     return cancelled;
+  }
+
+  /**
+   * Confirm escrow delivery on-chain with retry.
+   * Logs success/failure but never throws -- task completion is not dependent on this.
+   */
+  private async confirmEscrowDelivery(escrowId: string, output: string, label: string): Promise<void> {
+    if (!this.escrowClient) return;
+    try {
+      const txHash = await retryWithBackoff(
+        () => this.escrowClient!.confirmDelivery(BigInt(escrowId), output),
+        {
+          maxAttempts: 5,
+          baseDelayMs: 1000,
+          onRetry: (attempt, err) => {
+            console.warn(`[Bridge] ${label} escrow ${escrowId} confirmDelivery retry ${attempt}/4: ${err.message}`);
+          },
+        },
+      );
+      console.log(`[Bridge] ${label} delivery confirmed on-chain: ${txHash}`);
+    } catch (error) {
+      console.error(`[Bridge] ${label} failed to confirm delivery on-chain after 5 attempts:`, error);
+    }
+  }
+
+  /**
+   * Build free tier metadata for inclusion in task responses.
+   * Returns undefined if the request is not free-tier authenticated.
+   */
+  private buildFreeTierInfo(identity: DIDIdentity | undefined): Record<string, unknown> | undefined {
+    if (!identity) return undefined;
+    const limits = this.trustStore.getLimitsForDID(identity.did);
+    const profile = this.trustStore.getProfile(identity.did);
+    return {
+      tier: profile.tier,
+      remaining: this.freeTierLimiter.getRemainingQuota(identity.did, limits.dailyLimit),
+      dailyLimit: limits.dailyLimit,
+    };
   }
 
   /**

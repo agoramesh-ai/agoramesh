@@ -857,7 +857,7 @@ contract DisputeResolutionTest is Test {
 
     function test_registerArbiter_revertsIfZeroAddress() public {
         vm.prank(admin);
-        vm.expectRevert("Invalid arbiter address");
+        vm.expectRevert(TieredDisputeResolution.InvalidArbiterAddress.selector);
         disputeResolution.registerArbiter(address(0));
     }
 

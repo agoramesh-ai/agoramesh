@@ -44,29 +44,25 @@ export class RateLimitStore {
       const data: StoreData = JSON.parse(raw);
       const now = Date.now();
 
-      // Load DID entries (skip expired)
-      if (data.did && typeof data.did === 'object') {
-        for (const [key, entry] of Object.entries(data.did)) {
-          if (entry && typeof entry.count === 'number' && typeof entry.resetAt === 'number') {
-            if (entry.resetAt > now) {
-              this.didEntries.set(key, entry);
-            }
-          }
-        }
-      }
-
-      // Load IP entries (skip expired)
-      if (data.ip && typeof data.ip === 'object') {
-        for (const [key, entry] of Object.entries(data.ip)) {
-          if (entry && typeof entry.count === 'number' && typeof entry.resetAt === 'number') {
-            if (entry.resetAt > now) {
-              this.ipEntries.set(key, entry);
-            }
-          }
-        }
-      }
+      this.loadEntries(data.did, this.didEntries, now);
+      this.loadEntries(data.ip, this.ipEntries, now);
     } catch {
       // File doesn't exist or is corrupted — start fresh
+    }
+  }
+
+  private loadEntries(
+    source: Record<string, StoredEntry> | undefined,
+    target: Map<string, StoredEntry>,
+    now: number,
+  ): void {
+    if (!source || typeof source !== 'object') return;
+    for (const [key, entry] of Object.entries(source)) {
+      if (entry && typeof entry.count === 'number' && typeof entry.resetAt === 'number') {
+        if (entry.resetAt > now) {
+          target.set(key, entry);
+        }
+      }
     }
   }
 

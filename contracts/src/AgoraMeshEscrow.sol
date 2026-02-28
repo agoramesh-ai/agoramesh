@@ -283,16 +283,9 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         // Calculate client share
         uint256 clientShare = e.amount - providerShare;
 
-        // Update state based on resolution
-        State newState;
-        if (releaseToProvider && providerShare == e.amount) {
-            newState = State.RELEASED;
-        } else if (!releaseToProvider && providerShare == 0) {
-            newState = State.REFUNDED;
-        } else {
-            // Split scenario - use RELEASED as final state
-            newState = State.RELEASED;
-        }
+        // Update state based on resolution:
+        // REFUNDED only when provider gets nothing; RELEASED for full or partial payouts
+        State newState = (!releaseToProvider && providerShare == 0) ? State.REFUNDED : State.RELEASED;
         e.state = newState;
 
         _emitStateTransition(escrowId, State.DISPUTED, newState);

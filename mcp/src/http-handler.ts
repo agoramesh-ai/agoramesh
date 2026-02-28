@@ -3,7 +3,7 @@
  * Extracts the request handler logic from http.ts for testability.
  */
 
-import { createServer as createHttpServer, IncomingMessage, ServerResponse } from 'node:http';
+import { IncomingMessage, ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from './index.js';

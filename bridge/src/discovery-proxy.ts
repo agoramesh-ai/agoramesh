@@ -20,6 +20,18 @@ const SearchBodySchema = z.object({
 export function createDiscoveryProxy(nodeUrl?: string): Router {
   const router = Router();
 
+  function requireNodeUrl(res: Response): boolean {
+    if (nodeUrl) return true;
+    res.status(503).json({
+      error: 'Discovery service not configured',
+      code: 'SERVICE_UNAVAILABLE',
+      help: {
+        message: 'P2P node URL is not configured. Set AGORAMESH_NODE_URL environment variable.',
+      },
+    });
+    return false;
+  }
+
   function buildQueryString(params: Record<string, string | undefined>): string {
     const entries = Object.entries(params).filter(
       (entry): entry is [string, string] => entry[1] !== undefined,
@@ -45,16 +57,13 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
     return { status: 200, data: await response.json() };
   }
 
+  function sendAgentList(res: Response, data: unknown): void {
+    const agents = Array.isArray(data) ? data : [];
+    res.json({ agents, total: agents.length, source: 'network' });
+  }
+
   router.get('/discovery/agents', async (req: Request, res: Response) => {
-    if (!nodeUrl) {
-      return res.status(503).json({
-        error: 'Discovery service not configured',
-        code: 'SERVICE_UNAVAILABLE',
-        help: {
-          message: 'P2P node URL is not configured. Set AGORAMESH_NODE_URL environment variable.',
-        },
-      });
-    }
+    if (!requireNodeUrl(res)) return;
 
     try {
       const qs = buildQueryString({
@@ -68,28 +77,14 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
       });
 
       const result = await proxyGet(`${nodeUrl}/agents/semantic?${qs}`);
-      const agents = Array.isArray(result.data) ? result.data : [];
-
-      res.json({
-        agents,
-        total: agents.length,
-        source: 'network',
-      });
+      sendAgentList(res, result.data);
     } catch (error) {
       handleProxyError(res, error);
     }
   });
 
   router.get('/discovery/agents/:did(*)', async (req: Request, res: Response) => {
-    if (!nodeUrl) {
-      return res.status(503).json({
-        error: 'Discovery service not configured',
-        code: 'SERVICE_UNAVAILABLE',
-        help: {
-          message: 'P2P node URL is not configured. Set AGORAMESH_NODE_URL environment variable.',
-        },
-      });
-    }
+    if (!requireNodeUrl(res)) return;
 
     try {
       const result = await proxyGet(`${nodeUrl}/agents/${req.params.did}`);
@@ -108,15 +103,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
   });
 
   router.post('/discovery/search', async (req: Request, res: Response) => {
-    if (!nodeUrl) {
-      return res.status(503).json({
-        error: 'Discovery service not configured',
-        code: 'SERVICE_UNAVAILABLE',
-        help: {
-          message: 'P2P node URL is not configured. Set AGORAMESH_NODE_URL environment variable.',
-        },
-      });
-    }
+    if (!requireNodeUrl(res)) return;
 
     const parsed = SearchBodySchema.safeParse(req.body);
     if (!parsed.success) {
@@ -139,13 +126,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
       });
 
       const result = await proxyGet(`${nodeUrl}/agents/semantic?${qs}`);
-      const agents = Array.isArray(result.data) ? result.data : [];
-
-      res.json({
-        agents,
-        total: agents.length,
-        source: 'network',
-      });
+      sendAgentList(res, result.data);
     } catch (error) {
       handleProxyError(res, error);
     }

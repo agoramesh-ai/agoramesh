@@ -77,3 +77,32 @@ export function formatAgentList(agents: unknown[], heading: string): string {
   const body = agents.map(formatAgent).join('\n\n');
   return `${header}\n${body}`;
 }
+
+/** Shared task result formatting for hire_agent and check_task tools. */
+export interface TaskResultData {
+  taskId: string;
+  status: string;
+  output?: string;
+  error?: string;
+  duration?: number;
+}
+
+export function formatTaskResult(result: TaskResultData, heading: string): string {
+  const lines = [
+    `# ${heading}`,
+    '',
+    `- **Task ID**: ${result.taskId}`,
+    `- **Status**: ${result.status}`,
+  ];
+
+  if (result.status === 'failed') {
+    lines.push(`- **Error**: ${result.error ?? 'Unknown error'}`);
+  } else {
+    if (result.duration !== undefined) lines.push(`- **Duration**: ${result.duration}s`);
+    if (result.output) {
+      lines.push('', '## Output', '', result.output);
+    }
+  }
+
+  return lines.join('\n');
+}

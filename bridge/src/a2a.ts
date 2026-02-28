@@ -103,11 +103,7 @@ function jsonRpcError(
 }
 
 function taskResultToA2ATask(taskId: string, result: TaskResult): A2ATask {
-  const state: A2ATaskState = result.status === 'completed'
-    ? 'completed'
-    : result.status === 'timeout'
-      ? 'failed'
-      : 'failed';
+  const state: A2ATaskState = result.status === 'completed' ? 'completed' : 'failed';
 
   const task: A2ATask = {
     id: taskId,
