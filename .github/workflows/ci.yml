@@ -217,3 +217,36 @@ jobs:
       - name: Test
         working-directory: bridge
         run: npm test
+
+  # ==========================================================================
+  # MCP Server
+  # ==========================================================================
+  mcp:
+    name: MCP Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mcp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: mcp
+        run: npm ci
+
+      - name: Lint
+        working-directory: mcp
+        run: npm run lint
+
+      - name: Build
+        working-directory: mcp
+        run: npm run build
+
+      - name: Test
+        working-directory: mcp
+        run: npm test

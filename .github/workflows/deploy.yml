@@ -31,6 +31,10 @@ jobs:
             context: .
             dockerfile: bridge/Dockerfile
             image: ghcr.io/agoramesh-ai/agoramesh-bridge
+          - component: mcp
+            context: ./mcp
+            dockerfile: mcp/Dockerfile
+            image: ghcr.io/agoramesh-ai/agoramesh-mcp
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 

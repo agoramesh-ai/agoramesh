@@ -6,12 +6,15 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agoramesh-mcp": "./dist/cli.js"
+    "agoramesh-mcp": "./dist/cli.js",
+    "agoramesh-mcp-http": "./dist/http.js"
   },
   "scripts": {
     "build": "tsc",
     "start": "node dist/cli.js",
+    "start:http": "node dist/http.js",
     "dev": "tsx src/cli.ts",
+    "dev:http": "tsx src/http.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src"

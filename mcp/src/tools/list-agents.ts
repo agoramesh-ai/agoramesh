@@ -13,6 +13,11 @@ export function registerListAgents(server: McpServer, nodeClient: NodeClient): v
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).optional().describe('Maximum number of agents to return'),
       }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args) => {
       try {

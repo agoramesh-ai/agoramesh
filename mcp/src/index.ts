@@ -1,6 +1,6 @@
 /**
  * AgoraMesh MCP Server — factory function.
- * Creates an MCP server with all discovery and trust tools registered.
+ * Creates an MCP server with all discovery, trust, and task tools registered.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -9,9 +9,16 @@ import { registerSearchAgents } from './tools/search-agents.js';
 import { registerGetAgent } from './tools/get-agent.js';
 import { registerCheckTrust } from './tools/check-trust.js';
 import { registerListAgents } from './tools/list-agents.js';
+import { registerHireAgent } from './tools/hire-agent.js';
+import { registerCheckTask } from './tools/check-task.js';
 
-export function createServer(nodeUrl: string): McpServer {
-  const client = new NodeClient(nodeUrl);
+export interface CreateServerOptions {
+  nodeUrl: string;
+  bridgeUrl?: string;
+}
+
+export function createServer(options: CreateServerOptions): McpServer {
+  const client = new NodeClient(options.nodeUrl, { bridgeUrl: options.bridgeUrl });
 
   const server = new McpServer({
     name: 'agoramesh',
@@ -22,6 +29,8 @@ export function createServer(nodeUrl: string): McpServer {
   registerGetAgent(server, client);
   registerCheckTrust(server, client);
   registerListAgents(server, client);
+  registerHireAgent(server, client);
+  registerCheckTask(server, client);
 
   return server;
 }

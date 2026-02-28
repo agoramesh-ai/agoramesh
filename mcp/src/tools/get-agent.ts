@@ -100,6 +100,11 @@ export function registerGetAgent(server: McpServer, client: NodeClient): void {
       inputSchema: z.object({
         did: z.string().describe('The DID of the agent to look up'),
       }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ did }) => {
       try {

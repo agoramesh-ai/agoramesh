@@ -13,7 +13,10 @@ describe('AgoraMesh MCP Server (integration)', () => {
   let client: Client;
 
   beforeAll(async () => {
-    server = createServer('https://api.agoramesh.ai');
+    server = createServer({
+      nodeUrl: 'https://api.agoramesh.ai',
+      bridgeUrl: 'https://bridge.agoramesh.ai',
+    });
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
@@ -28,10 +31,35 @@ describe('AgoraMesh MCP Server (integration)', () => {
     vi.restoreAllMocks();
   });
 
-  it('lists all 4 tools', async () => {
+  it('lists all 6 tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(['check_trust', 'get_agent', 'list_agents', 'search_agents']);
+    expect(names).toEqual([
+      'check_task', 'check_trust', 'get_agent', 'hire_agent', 'list_agents', 'search_agents',
+    ]);
+  });
+
+  it('read-only tools have readOnlyHint annotation', async () => {
+    const { tools } = await client.listTools();
+    const readOnlyTools = ['search_agents', 'get_agent', 'check_trust', 'list_agents', 'check_task'];
+    for (const name of readOnlyTools) {
+      const tool = tools.find((t) => t.name === name);
+      expect(tool?.annotations?.readOnlyHint, `${name} should have readOnlyHint`).toBe(true);
+    }
+  });
+
+  it('hire_agent has destructiveHint annotation', async () => {
+    const { tools } = await client.listTools();
+    const hireTool = tools.find((t) => t.name === 'hire_agent');
+    expect(hireTool?.annotations?.destructiveHint).toBe(true);
+    expect(hireTool?.annotations?.readOnlyHint).toBeUndefined();
+  });
+
+  it('all tools have openWorldHint annotation', async () => {
+    const { tools } = await client.listTools();
+    for (const tool of tools) {
+      expect(tool.annotations?.openWorldHint, `${tool.name} should have openWorldHint`).toBe(true);
+    }
   });
 
   it('search_agents returns formatted results', async () => {
@@ -141,5 +169,47 @@ describe('AgoraMesh MCP Server (integration)', () => {
     const text = (result.content as Array<{ type: string; text: string }>)[0]?.text;
     expect(text).toContain('Agent1');
     expect(text).toContain('Agent2');
+  });
+
+  it('hire_agent submits task to bridge', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        taskId: 'task-int-001',
+        status: 'completed',
+        output: 'Task done!',
+        duration: 3.0,
+      }),
+    });
+
+    const result = await client.callTool({
+      name: 'hire_agent',
+      arguments: { agent_did: 'did:agoramesh:base:abc', prompt: 'Do something' },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const text = (result.content as Array<{ type: string; text: string }>)[0]?.text;
+    expect(text).toContain('completed');
+    expect(text).toContain('Task done!');
+  });
+
+  it('check_task returns task status', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        taskId: 'task-int-002',
+        status: 'running',
+      }),
+    });
+
+    const result = await client.callTool({
+      name: 'check_task',
+      arguments: { task_id: 'task-int-002' },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const text = (result.content as Array<{ type: string; text: string }>)[0]?.text;
+    expect(text).toContain('running');
+    expect(text).toContain('task-int-002');
   });
 });

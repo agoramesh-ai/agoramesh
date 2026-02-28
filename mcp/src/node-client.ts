@@ -4,6 +4,7 @@
  */
 
 const DEFAULT_TIMEOUT = 5000;
+const BRIDGE_TIMEOUT = 65000; // Bridge sync timeout is 60s, give 5s buffer
 
 export class NodeClientError extends Error {
   constructor(public statusCode: number, public body: string) {
@@ -17,8 +18,34 @@ export interface SearchOptions {
   minTrust?: number;
 }
 
+export interface NodeClientOptions {
+  bridgeUrl?: string;
+  bridgeAuth?: string;
+}
+
+export interface TaskInput {
+  agentDid: string;
+  prompt: string;
+  type?: string;
+  timeout?: number;
+}
+
+export interface TaskResult {
+  taskId: string;
+  status: string;
+  output?: string;
+  error?: string;
+  duration?: number;
+}
+
 export class NodeClient {
-  constructor(private nodeUrl: string) {}
+  private bridgeUrl?: string;
+  private bridgeAuth: string;
+
+  constructor(private nodeUrl: string, options?: NodeClientOptions) {
+    this.bridgeUrl = options?.bridgeUrl;
+    this.bridgeAuth = options?.bridgeAuth ?? 'FreeTier mcp-server';
+  }
 
   async searchAgents(query?: string, options?: SearchOptions): Promise<unknown[]> {
     const params = new URLSearchParams();
@@ -58,6 +85,55 @@ export class NodeClient {
   async getTrust(did: string): Promise<unknown | null> {
     const url = `${this.nodeUrl}/trust/${did}`;
     return this.getOrNull(url);
+  }
+
+  async submitTask(input: TaskInput): Promise<TaskResult> {
+    if (!this.bridgeUrl) throw new Error('Bridge URL not configured');
+
+    const url = `${this.bridgeUrl}/task?wait=true`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': this.bridgeAuth,
+      },
+      body: JSON.stringify({
+        agentDid: input.agentDid,
+        prompt: input.prompt,
+        ...(input.type && { type: input.type }),
+        ...(input.timeout && { timeout: input.timeout }),
+      }),
+      signal: AbortSignal.timeout(BRIDGE_TIMEOUT),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new NodeClientError(response.status, text);
+    }
+
+    return response.json() as Promise<TaskResult>;
+  }
+
+  async getTask(taskId: string): Promise<TaskResult> {
+    if (!this.bridgeUrl) throw new Error('Bridge URL not configured');
+
+    const url = `${this.bridgeUrl}/task/${taskId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': this.bridgeAuth,
+      },
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new NodeClientError(response.status, text);
+    }
+
+    return response.json() as Promise<TaskResult>;
   }
 
   private async get(url: string): Promise<unknown> {

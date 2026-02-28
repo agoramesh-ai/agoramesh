@@ -15,6 +15,11 @@ export function registerSearchAgents(server: McpServer, nodeClient: NodeClient):
         min_trust: z.number().min(0).max(1).optional().describe('Minimum trust score (0-1) to filter results'),
         limit: z.number().int().min(1).max(50).optional().describe('Maximum number of results to return'),
       }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (args) => {
       try {

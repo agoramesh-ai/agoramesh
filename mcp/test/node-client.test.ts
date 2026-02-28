@@ -169,6 +169,155 @@ describe('NodeClient', () => {
     });
   });
 
+  // ─── bridge methods ───────────────────────────────────────────
+
+  describe('submitTask', () => {
+    let bridgeClient: NodeClient;
+
+    beforeEach(() => {
+      bridgeClient = new NodeClient(NODE_URL, { bridgeUrl: 'https://bridge.agoramesh.ai' });
+    });
+
+    it('POSTs task to bridge with wait=true', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          taskId: 'task-123',
+          status: 'completed',
+          output: 'Hello world',
+        }),
+      });
+
+      const result = await bridgeClient.submitTask({
+        agentDid: 'did:agoramesh:base:abc',
+        prompt: 'Write hello world',
+      });
+
+      expect(result.taskId).toBe('task-123');
+      expect(result.status).toBe('completed');
+      expect(result.output).toBe('Hello world');
+
+      const [url, options] = mockFetch.mock.calls[0];
+      expect(url).toContain('bridge.agoramesh.ai');
+      expect(url).toContain('/task?wait=true');
+      expect(options.method).toBe('POST');
+      expect(options.headers['Authorization']).toBe('FreeTier mcp-server');
+      const body = JSON.parse(options.body);
+      expect(body.agentDid).toBe('did:agoramesh:base:abc');
+      expect(body.prompt).toBe('Write hello world');
+    });
+
+    it('throws when bridge not configured', async () => {
+      const noBridge = new NodeClient(NODE_URL);
+      await expect(
+        noBridge.submitTask({ agentDid: 'did:agoramesh:base:abc', prompt: 'test' })
+      ).rejects.toThrow('Bridge URL not configured');
+    });
+
+    it('passes task type and timeout options', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ taskId: 'task-456', status: 'completed', output: 'Done' }),
+      });
+
+      await bridgeClient.submitTask({
+        agentDid: 'did:agoramesh:base:abc',
+        prompt: 'Fix the bug',
+        type: 'code-review',
+        timeout: 30,
+      });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.type).toBe('code-review');
+      expect(body.timeout).toBe(30);
+    });
+
+    it('throws NodeClientError on bridge 500', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => 'Internal Server Error',
+      });
+
+      await expect(
+        bridgeClient.submitTask({ agentDid: 'did:agoramesh:base:abc', prompt: 'test' })
+      ).rejects.toThrow(NodeClientError);
+    });
+
+    it('uses 65s timeout for submitTask', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ taskId: 'task-789', status: 'completed', output: 'Done' }),
+      });
+
+      await bridgeClient.submitTask({
+        agentDid: 'did:agoramesh:base:abc',
+        prompt: 'test',
+      });
+
+      const options = mockFetch.mock.calls[0][1];
+      expect(options.signal).toBeDefined();
+    });
+  });
+
+  describe('getTask', () => {
+    let bridgeClient: NodeClient;
+
+    beforeEach(() => {
+      bridgeClient = new NodeClient(NODE_URL, { bridgeUrl: 'https://bridge.agoramesh.ai' });
+    });
+
+    it('GETs task status from bridge', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ taskId: 'task-123', status: 'running' }),
+      });
+
+      const result = await bridgeClient.getTask('task-123');
+
+      expect(result.status).toBe('running');
+      expect(result.taskId).toBe('task-123');
+
+      const [url, options] = mockFetch.mock.calls[0];
+      expect(url).toContain('/task/task-123');
+      expect(options.method).toBe('GET');
+      expect(options.headers['Authorization']).toBe('FreeTier mcp-server');
+    });
+
+    it('returns completed result with output', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          taskId: 'task-123',
+          status: 'completed',
+          output: 'Result here',
+          duration: 5.2,
+        }),
+      });
+
+      const result = await bridgeClient.getTask('task-123');
+
+      expect(result.status).toBe('completed');
+      expect(result.output).toBe('Result here');
+      expect(result.duration).toBe(5.2);
+    });
+
+    it('throws when bridge not configured', async () => {
+      const noBridge = new NodeClient(NODE_URL);
+      await expect(noBridge.getTask('task-123')).rejects.toThrow('Bridge URL not configured');
+    });
+
+    it('throws NodeClientError on 404', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () => 'Not Found',
+      });
+
+      await expect(bridgeClient.getTask('task-nonexistent')).rejects.toThrow(NodeClientError);
+    });
+  });
+
   // ─── getTrust ──────────────────────────────────────────────────
 
   describe('getTrust', () => {

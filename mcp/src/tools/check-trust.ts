@@ -84,6 +84,11 @@ export function registerCheckTrust(server: McpServer, client: NodeClient): void 
       inputSchema: z.object({
         did: z.string().describe('The DID of the agent to check trust for'),
       }),
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async ({ did }) => {
       try {
