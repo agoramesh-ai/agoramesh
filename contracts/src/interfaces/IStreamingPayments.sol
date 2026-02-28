@@ -34,6 +34,7 @@ interface IStreamingPayments {
         StreamStatus status;
         bool cancelableBySender;
         bool cancelableByRecipient;
+        address facilitator;
     }
 
     // ============ Events ============
@@ -67,6 +68,21 @@ interface IStreamingPayments {
     /// @notice Emitted when a stream completes naturally
     event StreamCompleted(uint256 indexed streamId);
 
+    /// @notice Emitted when protocol fee is collected
+    event ProtocolFeeCollected(
+        uint256 indexed streamId,
+        uint256 totalFee,
+        address indexed facilitator,
+        uint256 facilitatorShare,
+        uint256 treasuryShare
+    );
+
+    /// @notice Emitted when the treasury address is updated
+    event TreasuryUpdated(address indexed newTreasury);
+
+    /// @notice Emitted when the protocol fee basis points are updated
+    event ProtocolFeeUpdated(uint256 newFeeBp);
+
     // ============ Stream Lifecycle ============
 
     /// @notice Create a new payment stream
@@ -77,6 +93,7 @@ interface IStreamingPayments {
     /// @param duration Stream duration in seconds
     /// @param cancelableBySender Whether sender can cancel
     /// @param cancelableByRecipient Whether recipient can cancel
+    /// @param facilitator Address of the facilitator for fee splitting (address(0) if none)
     /// @return streamId The new stream ID
     function createStream(
         bytes32 recipientDid,
@@ -85,7 +102,8 @@ interface IStreamingPayments {
         uint256 depositAmount,
         uint256 duration,
         bool cancelableBySender,
-        bool cancelableByRecipient
+        bool cancelableByRecipient,
+        address facilitator
     ) external returns (uint256 streamId);
 
     /// @notice Create a stream with specific start/end times
@@ -97,6 +115,7 @@ interface IStreamingPayments {
     /// @param endTime When streaming ends
     /// @param cancelableBySender Whether sender can cancel
     /// @param cancelableByRecipient Whether recipient can cancel
+    /// @param facilitator Address of the facilitator for fee splitting (address(0) if none)
     /// @return streamId The new stream ID
     function createStreamWithTimestamps(
         bytes32 recipientDid,
@@ -106,7 +125,8 @@ interface IStreamingPayments {
         uint256 startTime,
         uint256 endTime,
         bool cancelableBySender,
-        bool cancelableByRecipient
+        bool cancelableByRecipient,
+        address facilitator
     ) external returns (uint256 streamId);
 
     /// @notice Withdraw available funds from a stream
