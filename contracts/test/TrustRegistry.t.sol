@@ -746,4 +746,107 @@ contract TrustRegistryTest is Test {
         uint256 score = registry.getTrustScore(aliceDid);
         assertTrue(score <= 10000, "Trust score should not exceed 10000");
     }
+
+    // ============ Endorsement Cooldown Tests ============
+
+    function test_Endorse_CooldownConstant() public {
+        assertEq(registry.ENDORSEMENT_COOLDOWN(), 24 hours);
+    }
+
+    function test_Endorse_RevertsIfCooldownActive() public {
+        // Register all agents
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+        vm.prank(bob);
+        registry.registerAgent(bobDid, bobCID);
+        vm.prank(charlie);
+        registry.registerAgent(charlieDid, charlieCID);
+
+        // Alice endorses bob
+        vm.prank(alice);
+        registry.endorse(bobDid, "Great!");
+
+        // Alice revokes endorsement of bob
+        vm.prank(alice);
+        registry.revokeEndorsement(bobDid);
+
+        // Alice tries to re-endorse bob immediately - should fail due to cooldown
+        // All operations happen in the same block, so remaining time = 24 hours
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(TrustRegistry.EndorsementCooldownActive.selector, 24 hours)
+        );
+        registry.endorse(bobDid, "Great again!");
+    }
+
+    function test_Endorse_SucceedsAfterCooldown() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+        vm.prank(bob);
+        registry.registerAgent(bobDid, bobCID);
+
+        // Alice endorses bob
+        vm.prank(alice);
+        registry.endorse(bobDid, "Great!");
+
+        // Alice revokes endorsement
+        vm.prank(alice);
+        registry.revokeEndorsement(bobDid);
+
+        // Warp past cooldown
+        vm.warp(block.timestamp + 24 hours + 1);
+
+        // Alice can now re-endorse bob
+        vm.prank(alice);
+        registry.endorse(bobDid, "Still great!");
+
+        ITrustRegistry.Endorsement[] memory endorsements = registry.getEndorsements(bobDid);
+        assertEq(endorsements.length, 1);
+        assertEq(endorsements[0].message, "Still great!");
+    }
+
+    function test_Endorse_CooldownDoesNotAffectDifferentEndorsees() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+        vm.prank(bob);
+        registry.registerAgent(bobDid, bobCID);
+        vm.prank(charlie);
+        registry.registerAgent(charlieDid, charlieCID);
+
+        // Alice endorses bob (starts cooldown for alice->bob pair)
+        vm.prank(alice);
+        registry.endorse(bobDid, "Great!");
+
+        // Alice can still endorse charlie (different endorsee)
+        vm.prank(alice);
+        registry.endorse(charlieDid, "Also great!");
+
+        ITrustRegistry.Endorsement[] memory endorsements = registry.getEndorsements(charlieDid);
+        assertEq(endorsements.length, 1);
+    }
+
+    function test_Endorse_CooldownPartialTime() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+        vm.prank(bob);
+        registry.registerAgent(bobDid, bobCID);
+
+        // Alice endorses bob
+        vm.prank(alice);
+        registry.endorse(bobDid, "Great!");
+
+        // Alice revokes endorsement
+        vm.prank(alice);
+        registry.revokeEndorsement(bobDid);
+
+        // Warp only halfway through cooldown
+        vm.warp(block.timestamp + 12 hours);
+
+        // Should still fail - cooldown not yet passed
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(TrustRegistry.EndorsementCooldownActive.selector, 12 hours)
+        );
+        registry.endorse(bobDid, "Too early!");
+    }
 }

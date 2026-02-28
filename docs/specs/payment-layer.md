@@ -3,7 +3,7 @@
 **Version:** 1.0.0
 **Status:** Draft
 **x402 Compatible:** Yes
-**AP2 Compatible:** Yes
+**A2A Compatible:** Yes
 
 ---
 

@@ -1,6 +1,8 @@
 // Public API
 export { BridgeServer } from './server.js';
 export type { BridgeServerConfig } from './server.js';
+export { GracefulShutdown } from './graceful-shutdown.js';
+export type { ShutdownMetrics, ShutdownOptions } from './graceful-shutdown.js';
 export { ClaudeExecutor } from './executor.js';
 export { AgoraMeshIntegration } from './integration.js';
 export { IPFSService } from './ipfs.js';

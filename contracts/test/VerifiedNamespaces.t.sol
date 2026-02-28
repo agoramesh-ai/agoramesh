@@ -459,4 +459,84 @@ contract VerifiedNamespacesTest is Test {
         vm.expectRevert(VerifiedNamespaces.NamespaceReserved.selector);
         namespaces.registerNamespace(NS_GOOGLE);
     }
+
+    // ============ Metadata Size Limit Tests ============
+
+    function test_SetMetadata_RevertsIfKeyTooLong() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Create a key that exceeds 64 bytes
+        bytes memory longKeyBytes = new bytes(65);
+        for (uint256 i = 0; i < 65; i++) {
+            longKeyBytes[i] = "a";
+        }
+        string memory longKey = string(longKeyBytes);
+
+        vm.prank(user1);
+        vm.expectRevert(VerifiedNamespaces.MetadataKeyTooLong.selector);
+        namespaces.setMetadata(NS_OPENAI, longKey, "value");
+    }
+
+    function test_SetMetadata_RevertsIfValueTooLong() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Create a value that exceeds 1024 bytes
+        bytes memory longValueBytes = new bytes(1025);
+        for (uint256 i = 0; i < 1025; i++) {
+            longValueBytes[i] = "a";
+        }
+        string memory longValue = string(longValueBytes);
+
+        vm.prank(user1);
+        vm.expectRevert(VerifiedNamespaces.MetadataValueTooLong.selector);
+        namespaces.setMetadata(NS_OPENAI, "website", longValue);
+    }
+
+    function test_SetMetadata_AcceptsMaxKeyLength() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Create a key that is exactly 64 bytes (should succeed)
+        bytes memory maxKeyBytes = new bytes(64);
+        for (uint256 i = 0; i < 64; i++) {
+            maxKeyBytes[i] = "a";
+        }
+        string memory maxKey = string(maxKeyBytes);
+
+        vm.prank(user1);
+        namespaces.setMetadata(NS_OPENAI, maxKey, "value");
+        assertEq(namespaces.getMetadata(NS_OPENAI, maxKey), "value");
+    }
+
+    function test_SetMetadata_AcceptsMaxValueLength() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Create a value that is exactly 1024 bytes (should succeed)
+        bytes memory maxValueBytes = new bytes(1024);
+        for (uint256 i = 0; i < 1024; i++) {
+            maxValueBytes[i] = "a";
+        }
+        string memory maxValue = string(maxValueBytes);
+
+        vm.prank(user1);
+        namespaces.setMetadata(NS_OPENAI, "description", maxValue);
+        assertEq(namespaces.getMetadata(NS_OPENAI, "description"), maxValue);
+    }
+
+    function test_SetMetadata_AcceptsEmptyValue() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.prank(user1);
+        namespaces.setMetadata(NS_OPENAI, "key", "");
+        assertEq(namespaces.getMetadata(NS_OPENAI, "key"), "");
+    }
+
+    function test_MetadataConstants() public {
+        assertEq(namespaces.MAX_METADATA_KEY_LENGTH(), 64);
+        assertEq(namespaces.MAX_METADATA_VALUE_LENGTH(), 1024);
+    }
 }

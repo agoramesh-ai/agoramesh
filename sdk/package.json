@@ -43,7 +43,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agoramesh-ai/agoramesh"
+    "url": "https://github.com/agoramesh-ai/agoramesh",
+    "directory": "sdk"
   },
   "dependencies": {
     "@coinbase/x402": "^2.1.0",

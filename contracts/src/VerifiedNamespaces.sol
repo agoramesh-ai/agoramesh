@@ -19,6 +19,12 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
     /// @notice Maximum namespace name length
     uint256 public constant MAX_NAME_LENGTH = 32;
 
+    /// @notice Maximum metadata key length (bytes)
+    uint256 public constant MAX_METADATA_KEY_LENGTH = 64;
+
+    /// @notice Maximum metadata value length (bytes)
+    uint256 public constant MAX_METADATA_VALUE_LENGTH = 1024;
+
     // ============ State Variables ============
 
     /// @notice Mapping from namespace hash to namespace info
@@ -64,6 +70,8 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
     error AgentNotLinked();
     error NamespaceNotActive();
     error InvalidNameCharacter();
+    error MetadataKeyTooLong();
+    error MetadataValueTooLong();
 
     // ============ Constructor ============
 
@@ -208,6 +216,9 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
 
     /// @inheritdoc IVerifiedNamespaces
     function setMetadata(string calldata name, string calldata key, string calldata value) external override {
+        if (bytes(key).length > MAX_METADATA_KEY_LENGTH) revert MetadataKeyTooLong();
+        if (bytes(value).length > MAX_METADATA_VALUE_LENGTH) revert MetadataValueTooLong();
+
         bytes32 nsHash = _validateAndHashName(name);
         NamespaceInfo storage ns = _getNamespace(nsHash);
 

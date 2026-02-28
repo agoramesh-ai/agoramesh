@@ -1809,4 +1809,287 @@ contract DisputeResolutionTest is Test {
             "$1M should be Tier 3"
         );
     }
+
+    // ============ Additional Edge Case Tests for Coverage ============
+
+    function test_executeAutoResolution_providerGetsAll_noClientEvidence() public {
+        uint256 escrowId = _createFundedEscrow(5 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        // Provider creates dispute (provider evidence, no client evidence)
+        vm.prank(provider);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("provider-only"));
+
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+
+        uint256 providerBalanceBefore = usdc.balanceOf(provider);
+
+        vm.prank(provider);
+        disputeResolution.executeAutoResolution(disputeId);
+
+        IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
+        assertEq(d.providerShare, 10000, "Provider should get 100% when no client evidence");
+        assertEq(d.clientShare, 0, "Client should get 0% when no client evidence");
+
+        // Provider should have received the funds
+        uint256 providerBalanceAfter = usdc.balanceOf(provider);
+        assertEq(providerBalanceAfter - providerBalanceBefore, 5 * 1e6, "Provider should receive full amount");
+    }
+
+    function test_executeAutoResolution_50_50Split_bothEvidence() public {
+        uint256 escrowId = _createFundedEscrow(5 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        // Client creates dispute with evidence
+        vm.prank(client);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("client-evidence"));
+
+        // Provider submits evidence too
+        vm.prank(provider);
+        disputeResolution.submitEvidence(disputeId, keccak256("provider-evidence"));
+
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+
+        uint256 clientBalanceBefore = usdc.balanceOf(client);
+        uint256 providerBalanceBefore = usdc.balanceOf(provider);
+
+        vm.prank(client);
+        disputeResolution.executeAutoResolution(disputeId);
+
+        IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
+        assertEq(d.clientShare, 5000, "Should be 50/50 split");
+        assertEq(d.providerShare, 5000, "Should be 50/50 split");
+
+        // Both should receive half
+        uint256 clientBalanceAfter = usdc.balanceOf(client);
+        uint256 providerBalanceAfter = usdc.balanceOf(provider);
+        // 5M / 2 = 2.5M each
+        assertEq(clientBalanceAfter - clientBalanceBefore, 2500000, "Client should receive 50%");
+        assertEq(providerBalanceAfter - providerBalanceBefore, 2500000, "Provider should receive 50%");
+    }
+
+    function test_appeal_maxAppealsReached() public {
+        // Register 50 extra arbiters for community rounds that need up to 47 arbiters
+        for (uint256 i = 0; i < 50; i++) {
+            address a = address(uint160(1000 + i));
+            bytes32 aDid = keccak256(abi.encodePacked("did:agoramesh:base:arbpool-", i));
+            vm.prank(a);
+            trustRegistry.registerAgent(aDid, "ipfs://capability-card");
+            vm.prank(admin);
+            disputeResolution.registerArbiter(a);
+        }
+
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 100 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        // Do 5 rounds: initial AI analysis + 4 appeals to reach appealRound == 4
+        for (uint256 round = 0; round < 5; round++) {
+            vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+            vm.prank(oracle);
+            disputeResolution.submitAIAnalysis(disputeId, keccak256(abi.encodePacked("analysis", round)), 5000);
+
+            // Vote with enough arbiters for quorum
+            address[] memory selectedArbiters = disputeResolution.getArbiters(disputeId);
+            IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
+            uint256 requiredCount = disputeResolution.getArbiterCount(d.tier, d.appealRound);
+            uint256 minQuorum = (requiredCount * 2 + 2) / 3;
+            uint256 votesToCast = minQuorum < selectedArbiters.length ? minQuorum : selectedArbiters.length;
+
+            for (uint256 v = 0; v < votesToCast; v++) {
+                vm.prank(selectedArbiters[v]);
+                disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+            }
+
+            vm.warp(block.timestamp + VOTING_PERIOD + 1);
+            disputeResolution.finalizeRuling(disputeId);
+
+            if (round < 4) {
+                uint256 appealFee = disputeResolution.calculateFee(IDisputeResolution.Tier.COMMUNITY, 100 * 1e6);
+                vm.startPrank(provider);
+                usdc.mint(provider, appealFee);
+                usdc.approve(address(disputeResolution), appealFee);
+                disputeResolution.appeal(disputeId);
+                vm.stopPrank();
+            }
+        }
+
+        // Now appealRound == 4 - 5th appeal should be rejected
+        IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
+        assertEq(d.appealRound, 4, "Should be on round 4");
+
+        uint256 appealFee = disputeResolution.calculateFee(IDisputeResolution.Tier.COMMUNITY, 100 * 1e6);
+        vm.startPrank(provider);
+        usdc.mint(provider, appealFee);
+        usdc.approve(address(disputeResolution), appealFee);
+        vm.expectRevert(TieredDisputeResolution.MaxAppealsReached.selector);
+        disputeResolution.appeal(disputeId);
+        vm.stopPrank();
+    }
+
+    function test_submitEvidence_revertsIfNotInEvidenceState() public {
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        // Move to voting state
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+        vm.prank(oracle);
+        disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+
+        // Try to submit evidence while in VOTING state
+        vm.prank(client);
+        vm.expectRevert(TieredDisputeResolution.InvalidState.selector);
+        disputeResolution.submitEvidence(disputeId, keccak256("late-evidence"));
+    }
+
+    function test_castVote_revertsIfNotInVotingState() public {
+        uint256 escrowId = _createFundedEscrow(5 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.prank(client);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+
+        // Still in EVIDENCE_PERIOD
+        vm.prank(arbiter1);
+        vm.expectRevert(TieredDisputeResolution.InvalidState.selector);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+    }
+
+    function test_constructor_revertsIfZeroEscrow() public {
+        vm.prank(admin);
+        vm.expectRevert(TieredDisputeResolution.InvalidEscrow.selector);
+        new TieredDisputeResolution(address(0), address(trustRegistry), address(usdc), admin);
+    }
+
+    function test_constructor_revertsIfZeroTrustRegistry() public {
+        vm.prank(admin);
+        vm.expectRevert(TieredDisputeResolution.InvalidTrustRegistry.selector);
+        new TieredDisputeResolution(address(escrow), address(0), address(usdc), admin);
+    }
+
+    function test_constructor_revertsIfZeroPaymentToken() public {
+        vm.prank(admin);
+        vm.expectRevert(TieredDisputeResolution.InvalidPaymentToken.selector);
+        new TieredDisputeResolution(address(escrow), address(trustRegistry), address(0), admin);
+    }
+
+    function test_constructor_revertsIfZeroAdmin() public {
+        vm.prank(admin);
+        vm.expectRevert(TieredDisputeResolution.InvalidAdmin.selector);
+        new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), address(0));
+    }
+
+    function test_getDispute_revertsForNonExistentInternally() public {
+        // Calling functions that use _getDispute internally
+        vm.prank(client);
+        vm.expectRevert(TieredDisputeResolution.DisputeNotFound.selector);
+        disputeResolution.submitEvidence(999, keccak256("evidence"));
+    }
+
+    function test_castVote_favorProvider_setsZeroClientShare() public {
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+        vm.prank(oracle);
+        disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+
+        // Vote FAVOR_PROVIDER - should store 0 for clientShareProposal
+        vm.prank(arbiter1);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_PROVIDER, 5000, "");
+
+        IDisputeResolution.ArbiterVote[] memory votes = disputeResolution.getVotes(disputeId);
+        assertEq(votes[0].clientShareProposal, 0, "Non-SPLIT vote should have 0 clientShareProposal");
+    }
+
+    function test_executeSettlement_fullRefundToClient() public {
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+        vm.prank(oracle);
+        disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 10000);
+
+        // All vote for client
+        vm.prank(arbiter1);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+        vm.prank(arbiter2);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+        vm.prank(arbiter3);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+
+        vm.warp(block.timestamp + VOTING_PERIOD + 1);
+        disputeResolution.finalizeRuling(disputeId);
+
+        vm.warp(block.timestamp + APPEAL_PERIOD + 1);
+
+        uint256 clientBefore = usdc.balanceOf(client);
+        disputeResolution.executeSettlement(disputeId);
+
+        uint256 clientAfter = usdc.balanceOf(client);
+        assertEq(clientAfter - clientBefore, 100 * 1e6, "Client should receive full refund");
+
+        IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
+        assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.SETTLED));
+    }
+
+    function test_executeSettlement_fullToProvider() public {
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+        vm.prank(oracle);
+        disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+
+        // All vote for provider
+        vm.prank(arbiter1);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_PROVIDER, 0, "");
+        vm.prank(arbiter2);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_PROVIDER, 0, "");
+        vm.prank(arbiter3);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_PROVIDER, 0, "");
+
+        vm.warp(block.timestamp + VOTING_PERIOD + 1);
+        disputeResolution.finalizeRuling(disputeId);
+
+        vm.warp(block.timestamp + APPEAL_PERIOD + 1);
+
+        uint256 providerBefore = usdc.balanceOf(provider);
+        disputeResolution.executeSettlement(disputeId);
+
+        uint256 providerAfter = usdc.balanceOf(provider);
+        assertEq(providerAfter - providerBefore, 100 * 1e6, "Provider should receive full amount");
+    }
 }

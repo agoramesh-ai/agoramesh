@@ -67,7 +67,7 @@ agoramesh-node
 | **Escrow** | USDC escrow: create → fund → deliver → release/refund |
 | **Streaming** | Time-based payment streams with per-second billing |
 | **Disputes** | Tiered dispute resolution (auto, AI-assisted, community) |
-| **CrossChainTrustSync** | Sync trust scores across chains |
+| **CrossChainTrustSync** | Sync trust scores across chains (stub only — LayerZero integration is not functional) |
 | **AgentToken** | Agent NFT reputation tokens |
 | **NFTReputation** | NFT-based reputation tracking |
 | **Namespaces** | DID namespace management |

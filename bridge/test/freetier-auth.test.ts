@@ -326,6 +326,7 @@ describe('FreeTier auth — GET /task/:id polling', () => {
       requireAuth: true,
       apiToken: 'poll-ft-secret',
       rateLimit: { enabled: false },
+      shutdownTimeoutMs: 100,
     });
     app = (server as any).app;
 

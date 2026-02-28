@@ -69,6 +69,17 @@ export interface A2ABridge {
   getCompletedTask(taskId: string): TaskResult | undefined;
   submitTask(task: ResolvedTaskInput): Promise<TaskResult>;
   cancelTask(taskId: string): boolean;
+  /** Return the agent's capability card (for agent/describe) */
+  getCapabilityCard(): Record<string, unknown>;
+  /** Return agent status info (for agent/status) */
+  getStatus(): AgentStatus;
+}
+
+export interface AgentStatus {
+  state: 'operational' | 'degraded' | 'offline';
+  uptimeSeconds: number;
+  activeTasks: number;
+  protocols: string[];
 }
 
 // =============================================================================
@@ -255,6 +266,12 @@ export async function handleA2ARequest(
 
     case 'tasks/cancel':
       return handleTasksCancel(params, bridge, id);
+
+    case 'agent/describe':
+      return jsonRpcSuccess(id, bridge.getCapabilityCard());
+
+    case 'agent/status':
+      return jsonRpcSuccess(id, bridge.getStatus());
 
     default:
       return jsonRpcError(id, A2A_ERRORS.METHOD_NOT_FOUND, `Unknown method: ${req.method}`);

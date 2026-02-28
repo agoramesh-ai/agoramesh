@@ -17,6 +17,8 @@ import { FreeTierLimiter } from './free-tier-limiter.js';
 import { TrustStore } from './trust-store.js';
 import { createDiscoveryProxy } from './discovery-proxy.js';
 import { createTrustEndpoint } from './trust-endpoint.js';
+import { GracefulShutdown, type ShutdownMetrics } from './graceful-shutdown.js';
+import { retryWithBackoff } from './retry.js';
 
 /** Express request with optional DID identity attached by auth middleware */
 interface DIDRequest extends Request {
@@ -186,6 +188,8 @@ export interface BridgeServerConfig extends RichAgentConfig {
   allowedOrigins?: string[];
   /** P2P node URL for discovery proxy (e.g. https://api.agoramesh.ai) */
   nodeUrl?: string;
+  /** Graceful shutdown timeout in milliseconds (default: 30000) */
+  shutdownTimeoutMs?: number;
 }
 
 /**
@@ -211,6 +215,8 @@ export class BridgeServer {
   private x402Config?: X402Config;
   private freeTierLimiter: FreeTierLimiter = new FreeTierLimiter();
   private trustStore: TrustStore;
+  private gracefulShutdown: GracefulShutdown;
+  private readonly startedAt: number = Date.now();
 
   constructor(config: BridgeServerConfig) {
     this.config = config;
@@ -221,6 +227,13 @@ export class BridgeServer {
     const homedir = process.env.HOME || process.env.USERPROFILE || '/tmp';
     this.trustStore = new TrustStore(`${homedir}/.agoramesh/trust-store.json`);
     this.requireAuth = config.requireAuth ?? process.env.NODE_ENV === 'production';
+    this.gracefulShutdown = new GracefulShutdown({
+      timeoutMs: config.shutdownTimeoutMs ?? 30_000,
+      onCancel: (taskId) => {
+        this.executor.cancelTask(taskId);
+        this.pendingTasks.delete(taskId);
+      },
+    });
 
     if (this.requireAuth && !this.apiToken && !this.x402Config) {
       throw new Error('Bridge auth required: set BRIDGE_API_TOKEN or x402 config');
@@ -679,6 +692,13 @@ export class BridgeServer {
           return result;
         },
         cancelTask: (taskId) => this.cancelTaskById(taskId),
+        getCapabilityCard: () => this.buildCapabilityCard(),
+        getStatus: () => ({
+          state: 'operational' as const,
+          uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
+          activeTasks: this.pendingTasks.size,
+          protocols: ['a2a', 'rest', 'websocket'],
+        }),
       };
       const response = await handleA2ARequest(req.body, bridge);
       res.json(response);
@@ -691,6 +711,13 @@ export class BridgeServer {
     this.app.post('/a2a', taskAuthMiddleware, a2aHandler);
 
     this.app.post('/task', taskAuthMiddleware, async (req: Request, res: Response) => {
+      if (this.gracefulShutdown.isShuttingDown()) {
+        return res.status(503).json({
+          error: 'Service Unavailable',
+          message: 'Server is shutting down, not accepting new tasks',
+        });
+      }
+
       try {
         const parsed = TaskInputSchema.parse(req.body);
 
@@ -727,11 +754,13 @@ export class BridgeServer {
 
         this.pendingTasks.set(task.taskId, task);
         this.taskOwners.set(task.taskId, task.clientDid);
+        this.gracefulShutdown.registerTask(task.taskId);
 
         // Execute async, return acknowledgement
         const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
         this.executeTask(task).then(async (result) => {
           this.pendingTasks.delete(task.taskId);
+          this.gracefulShutdown.completeTask(task.taskId);
 
           // Store completed result with TTL for polling
           this.completedTasks.set(task.taskId, {
@@ -753,15 +782,25 @@ export class BridgeServer {
             this.recordTrust(didIdentity.did, result);
           }
 
-          // Confirm delivery on-chain if escrow was used
+          // Confirm delivery on-chain if escrow was used (with retry)
           if (task.escrowId && this.escrowClient && result.status === 'completed') {
+            const escrowClient = this.escrowClient;
+            const escrowId = BigInt(task.escrowId);
+            const output = result.output || '';
             try {
-              const escrowId = BigInt(task.escrowId);
-              const output = result.output || '';
-              const txHash = await this.escrowClient.confirmDelivery(escrowId, output);
+              const txHash = await retryWithBackoff(
+                () => escrowClient.confirmDelivery(escrowId, output),
+                {
+                  maxAttempts: 5,
+                  baseDelayMs: 1000,
+                  onRetry: (attempt, err) => {
+                    console.warn(`[Bridge] Escrow ${task.escrowId} confirmDelivery retry ${attempt}/4: ${err.message}`);
+                  },
+                },
+              );
               console.log(`[Bridge] Delivery confirmed on-chain: ${txHash}`);
             } catch (error) {
-              console.error(`[Bridge] Failed to confirm delivery on-chain:`, error);
+              console.error(`[Bridge] Failed to confirm delivery on-chain after 5 attempts:`, error);
               // Don't fail the task - the work was completed, just the on-chain confirmation failed
             }
           }
@@ -771,6 +810,7 @@ export class BridgeServer {
         }).catch((error) => {
           console.error(`[Bridge] Unhandled error in task ${task.taskId}:`, error);
           this.pendingTasks.delete(task.taskId);
+          this.gracefulShutdown.completeTask(task.taskId);
         });
 
         // Sync mode: wait for result if ?wait=true
@@ -978,6 +1018,15 @@ export class BridgeServer {
           const message = JSON.parse(data.toString());
 
           if (message.type === 'task') {
+            if (this.gracefulShutdown.isShuttingDown()) {
+              ws.send(JSON.stringify({
+                type: 'error',
+                code: 'SERVICE_UNAVAILABLE',
+                message: 'Server is shutting down, not accepting new tasks',
+              }));
+              return;
+            }
+
             const wsParsed = TaskInputSchema.parse(message.payload);
 
             // Auto-generate taskId if not provided
@@ -1014,18 +1063,30 @@ export class BridgeServer {
 
             this.pendingTasks.set(task.taskId, task);
             this.taskWebSockets.set(task.taskId, ws);
+            this.gracefulShutdown.registerTask(task.taskId);
             const result = await this.executeTask(task);
             this.pendingTasks.delete(task.taskId);
+            this.gracefulShutdown.completeTask(task.taskId);
 
-            // Confirm delivery on-chain if escrow was used
+            // Confirm delivery on-chain if escrow was used (with retry)
             if (task.escrowId && this.escrowClient && result.status === 'completed') {
+              const escrowClient = this.escrowClient;
+              const escrowId = BigInt(task.escrowId);
+              const output = result.output || '';
               try {
-                const escrowId = BigInt(task.escrowId);
-                const output = result.output || '';
-                const txHash = await this.escrowClient.confirmDelivery(escrowId, output);
+                const txHash = await retryWithBackoff(
+                  () => escrowClient.confirmDelivery(escrowId, output),
+                  {
+                    maxAttempts: 5,
+                    baseDelayMs: 1000,
+                    onRetry: (attempt, err) => {
+                      console.warn(`[Bridge] WS escrow ${task.escrowId} confirmDelivery retry ${attempt}/4: ${err.message}`);
+                    },
+                  },
+                );
                 console.log(`[Bridge] WS delivery confirmed on-chain: ${txHash}`);
               } catch (error) {
-                console.error(`[Bridge] WS failed to confirm delivery on-chain:`, error);
+                console.error(`[Bridge] WS failed to confirm delivery on-chain after 5 attempts:`, error);
               }
             }
 
@@ -1075,13 +1136,19 @@ export class BridgeServer {
   }
 
   async submitTask(task: ResolvedTaskInput): Promise<TaskResult> {
+    if (this.gracefulShutdown.isShuttingDown()) {
+      throw new Error('Server is shutting down, not accepting new tasks');
+    }
     this.pendingTasks.set(task.taskId, task);
+    this.gracefulShutdown.registerTask(task.taskId);
     try {
       const result = await this.executeTask(task);
       this.pendingTasks.delete(task.taskId);
+      this.gracefulShutdown.completeTask(task.taskId);
       return result;
     } catch (error) {
       this.pendingTasks.delete(task.taskId);
+      this.gracefulShutdown.completeTask(task.taskId);
       throw error;
     }
   }
@@ -1297,13 +1364,31 @@ Optional: \`taskId\` (auto-generated), \`clientDid\` (auto-filled from auth), \`
     return address?.port ?? 0;
   }
 
-  stop(): Promise<void> {
+  async stop(): Promise<ShutdownMetrics> {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
-    return new Promise((resolve) => {
-      this.wss.close();
-      this.server.close(() => resolve());
-    });
+
+    console.log(`[Bridge] Graceful shutdown initiated (${this.gracefulShutdown.activeTaskCount()} active tasks)`);
+    this.gracefulShutdown.initiateShutdown();
+
+    // Stop accepting new HTTP connections
+    this.server.close();
+
+    // Drain active tasks (waits up to 30s)
+    const metrics = await this.gracefulShutdown.drain();
+
+    // Log shutdown metrics
+    console.log(`[Bridge] Shutdown metrics: ${metrics.tasksCompleted} completed, ${metrics.tasksCancelled} cancelled, ${metrics.shutdownDurationMs}ms elapsed${metrics.timedOut ? ' (timed out)' : ''}`);
+
+    // Close WebSocket connections with proper close frames
+    for (const client of this.wss.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.close(1001, 'Server shutting down');
+      }
+    }
+    this.wss.close();
+
+    return metrics;
   }
 }

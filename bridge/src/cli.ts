@@ -6,6 +6,7 @@ import { EscrowClient, didToHash } from './escrow.js';
 import { loadAgentCardConfig } from './config.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { X402Config } from './middleware/x402.js';
+import { validateBridgeConfig } from './validate-config.js';
 
 function loadConfig(): AgentConfig {
   const required = (key: string): string => {
@@ -38,6 +39,16 @@ function parseBool(value?: string): boolean {
 async function main() {
   console.log('🚀 AgoraMesh Bridge - Claude Code Worker');
   console.log('=========================================\n');
+
+  // Validate configuration before starting
+  const configErrors = validateBridgeConfig(process.env as Record<string, string | undefined>);
+  if (configErrors.length > 0) {
+    console.error('Configuration errors:');
+    for (const err of configErrors) {
+      console.error(`  ${err.variable}: ${err.message}`);
+    }
+    process.exit(1);
+  }
 
   const envConfig = loadConfig();
   const jsonConfig = loadAgentCardConfig();
@@ -119,11 +130,24 @@ async function main() {
 
   const server = new BridgeServer(serverConfig);
 
-  // Graceful shutdown
+  // Graceful shutdown with task draining
+  let shutdownInProgress = false;
   async function shutdown(): Promise<void> {
-    console.log('\n[Bridge] Shutting down...');
-    await server.stop();
-    process.exit(0);
+    if (shutdownInProgress) return;
+    shutdownInProgress = true;
+
+    console.log('\n[Bridge] Shutdown signal received...');
+
+    // Force exit after 35s (5s beyond the 30s drain timeout)
+    const forceTimer = setTimeout(() => {
+      console.error('[Bridge] Force exit after timeout');
+      process.exit(1);
+    }, 35_000);
+    forceTimer.unref();
+
+    const metrics = await server.stop();
+    console.log(`[Bridge] Shutdown complete: ${JSON.stringify(metrics)}`);
+    process.exit(metrics.timedOut ? 1 : 0);
   }
 
   process.on('SIGINT', shutdown);

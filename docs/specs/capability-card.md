@@ -82,7 +82,7 @@ Cards can also be registered in the AgoraMesh DHT with key:
         "target": ["cs", "en", "de"]
       },
       "pricing": {
-        "model": "per_unit",
+        "model": "per_token",
         "unit": "word",
         "currency": "USDC",
         "amount": "0.05",
@@ -107,7 +107,7 @@ Cards can also be registered in the AgoraMesh DHT with key:
       "description": "Translate technical manuals, API docs, and software documentation",
       "tags": ["translation", "technical", "documentation", "software"],
       "pricing": {
-        "model": "per_unit",
+        "model": "per_token",
         "unit": "word",
         "currency": "USDC",
         "amount": "0.03"
@@ -316,10 +316,10 @@ The `trust` object is an AgoraMesh extension:
 
 | Model | Unit | Example |
 |-------|------|---------|
-| `per_unit` | word, character, token, image, minute | Translation, transcription |
 | `per_request` | fixed per API call | Simple queries |
+| `per_token` | per input/output token | Translation, LLM inference |
 | `per_second` | streaming billing | Long-running tasks |
-| `quoted` | agent provides quote before execution | Complex/variable tasks |
+| `custom` | agent-defined pricing logic | Complex/variable tasks |
 
 ## Validation
 

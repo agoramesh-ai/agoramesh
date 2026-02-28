@@ -85,6 +85,9 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
     /// @notice Emitted when reputation recording fails
     event ReputationRecordingFailed(bytes32 indexed providerDid, bool success);
 
+    /// @notice Emitted on every state transition
+    event StateTransition(uint256 indexed escrowId, State from, State to, uint256 timestamp, address triggeredBy);
+
     // ============ Constructor ============
 
     /// @notice Initialize the AgoraMeshEscrow contract
@@ -175,6 +178,7 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         // Transfer tokens from client to contract
         IERC20(e.token).safeTransferFrom(msg.sender, address(this), e.amount);
 
+        _emitStateTransition(escrowId, State.AWAITING_DEPOSIT, State.FUNDED);
         emit EscrowFunded(escrowId);
     }
 
@@ -193,6 +197,7 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         e.outputHash = outputHash;
         e.deliveredAt = block.timestamp;
 
+        _emitStateTransition(escrowId, State.FUNDED, State.DELIVERED);
         emit TaskDelivered(escrowId, outputHash);
     }
 
@@ -226,6 +231,7 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         // Record successful transaction in TrustRegistry
         _recordTransaction(e.providerDid, e.amount, true);
 
+        _emitStateTransition(escrowId, State.DELIVERED, State.RELEASED);
         emit EscrowReleased(escrowId);
     }
 
@@ -252,8 +258,10 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         }
 
         // Update state
+        State previousState = e.state;
         e.state = State.DISPUTED;
 
+        _emitStateTransition(escrowId, previousState, State.DISPUTED);
         emit DisputeInitiated(escrowId, msg.sender);
     }
 
@@ -276,14 +284,18 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         uint256 clientShare = e.amount - providerShare;
 
         // Update state based on resolution
+        State newState;
         if (releaseToProvider && providerShare == e.amount) {
-            e.state = State.RELEASED;
+            newState = State.RELEASED;
         } else if (!releaseToProvider && providerShare == 0) {
-            e.state = State.REFUNDED;
+            newState = State.REFUNDED;
         } else {
             // Split scenario - use RELEASED as final state
-            e.state = State.RELEASED;
+            newState = State.RELEASED;
         }
+        e.state = newState;
+
+        _emitStateTransition(escrowId, State.DISPUTED, newState);
 
         // Deduct protocol fees and transfer funds
         if (providerShare > 0) {
@@ -327,6 +339,7 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         // Record failed transaction in TrustRegistry
         _recordTransaction(e.providerDid, e.amount, false);
 
+        _emitStateTransition(escrowId, State.FUNDED, State.REFUNDED);
         emit EscrowRefunded(escrowId);
     }
 
@@ -378,6 +391,14 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
     }
 
     // ============ Internal Functions ============
+
+    /// @notice Emit a state transition event
+    /// @param escrowId The escrow ID
+    /// @param from The previous state
+    /// @param to The new state
+    function _emitStateTransition(uint256 escrowId, State from, State to) internal {
+        emit StateTransition(escrowId, from, to, block.timestamp, msg.sender);
+    }
 
     /// @notice Deduct protocol fee and transfer to facilitator/treasury
     /// @param token Token address

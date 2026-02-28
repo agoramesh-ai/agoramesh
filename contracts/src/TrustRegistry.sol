@@ -42,6 +42,9 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
     /// @notice Maximum number of endorsements per agent
     uint256 public constant MAX_ENDORSEMENTS = 10;
 
+    /// @notice Cooldown period before an endorser can re-endorse the same endorsee
+    uint256 public constant ENDORSEMENT_COOLDOWN = 24 hours;
+
     /// @notice Basis points denominator (100%)
     uint256 private constant BASIS_POINTS = 10000;
 
@@ -64,6 +67,9 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
 
     /// @notice Mapping from endorser DID to endorsee DID to whether endorsement exists
     mapping(bytes32 => mapping(bytes32 => bool)) private _hasEndorsement;
+
+    /// @notice Mapping from endorser DID to endorsee DID to last endorsement timestamp
+    mapping(bytes32 => mapping(bytes32 => uint256)) private _lastEndorsementTime;
 
     /// @notice Mapping from owner address to their agent DID
     mapping(address => bytes32) private _ownerToAgent;
@@ -97,6 +103,7 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
     error StakeBelowMinimum();
     error WithdrawalBelowMinimumStake();
     error InvalidDIDHash();
+    error EndorsementCooldownActive(uint256 remainingTime);
 
     // ============ Constructor ============
 
@@ -342,6 +349,12 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
             revert AlreadyEndorsed();
         }
 
+        // Check cooldown (prevents rapid re-endorsement after revoke)
+        uint256 lastTime = _lastEndorsementTime[endorserDid][endorseeDid];
+        if (lastTime != 0 && block.timestamp < lastTime + ENDORSEMENT_COOLDOWN) {
+            revert EndorsementCooldownActive(lastTime + ENDORSEMENT_COOLDOWN - block.timestamp);
+        }
+
         if (_endorsements[endorseeDid].length >= MAX_ENDORSEMENTS) {
             revert MaxEndorsementsReached();
         }
@@ -357,6 +370,7 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
         _endorsements[endorseeDid].push(newEndorsement);
         _endorsementIndex[endorserDid][endorseeDid] = _endorsements[endorseeDid].length - 1;
         _hasEndorsement[endorserDid][endorseeDid] = true;
+        _lastEndorsementTime[endorserDid][endorseeDid] = block.timestamp;
 
         emit EndorsementAdded(endorserDid, endorseeDid, message);
     }

@@ -788,4 +788,114 @@ contract AgoraMeshEscrowTest is Test {
             escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
         assertGt(escrowId, 0);
     }
+
+    // ============ State Transition Event Tests ============
+
+    event StateTransition(
+        uint256 indexed escrowId,
+        IAgoraMeshEscrow.State from,
+        IAgoraMeshEscrow.State to,
+        uint256 timestamp,
+        address triggeredBy
+    );
+
+    function test_FundEscrow_EmitsStateTransition() public {
+        uint256 deadline = block.timestamp + 1 days;
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0)
+        );
+
+        vm.prank(client);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.AWAITING_DEPOSIT,
+            IAgoraMeshEscrow.State.FUNDED,
+            block.timestamp,
+            client
+        );
+        escrow.fundEscrow(escrowId);
+    }
+
+    function test_ConfirmDelivery_EmitsStateTransition() public {
+        uint256 escrowId = _createAndFundEscrow();
+
+        vm.prank(provider);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.FUNDED,
+            IAgoraMeshEscrow.State.DELIVERED,
+            block.timestamp,
+            provider
+        );
+        escrow.confirmDelivery(escrowId, outputHash);
+    }
+
+    function test_ReleaseEscrow_EmitsStateTransition() public {
+        uint256 escrowId = _createFundAndDeliverEscrow();
+
+        vm.prank(client);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.DELIVERED,
+            IAgoraMeshEscrow.State.RELEASED,
+            block.timestamp,
+            client
+        );
+        escrow.releaseEscrow(escrowId);
+    }
+
+    function test_InitiateDispute_EmitsStateTransition() public {
+        uint256 escrowId = _createAndFundEscrow();
+
+        vm.prank(client);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.FUNDED,
+            IAgoraMeshEscrow.State.DISPUTED,
+            block.timestamp,
+            client
+        );
+        escrow.initiateDispute(escrowId, "");
+    }
+
+    function test_ResolveDispute_EmitsStateTransition() public {
+        uint256 escrowId = _createAndFundEscrow();
+
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.prank(arbiter);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.DISPUTED,
+            IAgoraMeshEscrow.State.RELEASED,
+            block.timestamp,
+            arbiter
+        );
+        escrow.resolveDispute(escrowId, true, TASK_AMOUNT);
+    }
+
+    function test_ClaimTimeout_EmitsStateTransition() public {
+        uint256 escrowId = _createAndFundEscrow();
+
+        // Warp past deadline
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(client);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.FUNDED,
+            IAgoraMeshEscrow.State.REFUNDED,
+            block.timestamp,
+            client
+        );
+        escrow.claimTimeout(escrowId);
+    }
 }

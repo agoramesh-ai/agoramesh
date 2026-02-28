@@ -3,12 +3,19 @@
  *
  * Enforces per-DID and per-IP daily request limits for the DID:key free tier.
  * Limits reset at midnight UTC each day. In-memory storage with periodic cleanup.
+ *
+ * Optional file-based persistence via RateLimitStore to survive restarts.
+ * When a store is provided:
+ * - Loads counters from file on construction
+ * - Saves counters to file every 60s and on shutdown
+ * - Cleans up expired entries daily
  */
 
 import {
   FREE_TIER_DAILY_LIMIT,
   FREE_TIER_IP_DAILY_LIMIT,
 } from './types.js';
+import { RateLimitStore } from './rate-limit-store.js';
 
 interface UsageEntry {
   count: number;
@@ -24,9 +31,41 @@ function nextMidnightUTC(): number {
   return tomorrow.getTime();
 }
 
+export interface FreeTierLimiterOptions {
+  /** File path for persistence (e.g. ~/.agoramesh/rate-limits.json) */
+  persistPath?: string;
+  /** Save interval in milliseconds (default: 60000 = 60s) */
+  saveIntervalMs?: number;
+}
+
 export class FreeTierLimiter {
   private didCounts: Map<string, UsageEntry> = new Map();
   private ipCounts: Map<string, UsageEntry> = new Map();
+  private store?: RateLimitStore;
+  private saveTimer?: ReturnType<typeof setInterval>;
+
+  constructor(options?: FreeTierLimiterOptions) {
+    if (options?.persistPath) {
+      this.store = new RateLimitStore(options.persistPath);
+      this.store.load();
+
+      // Sync loaded data into in-memory maps
+      for (const [key, entry] of this.store.getAllDidEntries()) {
+        this.didCounts.set(key, { count: entry.count, resetAt: entry.resetAt });
+      }
+      for (const [key, entry] of this.store.getAllIpEntries()) {
+        this.ipCounts.set(key, { count: entry.count, resetAt: entry.resetAt });
+      }
+
+      // Periodic save (default: every 60s)
+      const interval = options.saveIntervalMs ?? 60000;
+      this.saveTimer = setInterval(() => this.persist(), interval);
+      // Don't block process exit
+      if (this.saveTimer.unref) {
+        this.saveTimer.unref();
+      }
+    }
+  }
 
   /**
    * Check whether a request from a DID/IP combination is allowed.
@@ -133,5 +172,43 @@ export class FreeTierLimiter {
         this.ipCounts.delete(key);
       }
     }
+  }
+
+  /**
+   * Save current state to the persistence file.
+   * Also cleans up expired entries before saving.
+   */
+  persist(): void {
+    if (!this.store) return;
+
+    this.cleanup();
+
+    // Sync in-memory maps to store
+    // Clear store first
+    this.store.cleanup();
+
+    for (const [key, entry] of this.didCounts) {
+      this.store.setEntry(key, 'did', entry.count, entry.resetAt);
+    }
+    for (const [key, entry] of this.ipCounts) {
+      this.store.setEntry(key, 'ip', entry.count, entry.resetAt);
+    }
+
+    try {
+      this.store.save();
+    } catch (err) {
+      console.error('[FreeTierLimiter] Failed to persist rate limits:', err);
+    }
+  }
+
+  /**
+   * Shut down: save final state and clear timer.
+   */
+  shutdown(): void {
+    if (this.saveTimer) {
+      clearInterval(this.saveTimer);
+      this.saveTimer = undefined;
+    }
+    this.persist();
   }
 }

@@ -119,7 +119,7 @@ const status = await me.ping()
 | | Sepolia (testnet) | Mainnet |
 |---|---|---|
 | RPC | `https://sepolia.base.org` | `https://mainnet.base.org` |
-| Node | `https://api.agoramesh.ai` | Coming soon |
+| Node | `https://api.agoramesh.ai` | `https://api.agoramesh.ai` |
 | Currency | Test USDC | USDC |
 
 Default is Sepolia. Switch to mainnet:
