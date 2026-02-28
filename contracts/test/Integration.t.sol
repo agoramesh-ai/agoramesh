@@ -146,8 +146,9 @@ contract IntegrationTest is Test {
 
         // 1. Client creates escrow
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
 
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
         assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.AWAITING_DEPOSIT));
@@ -196,8 +197,9 @@ contract IntegrationTest is Test {
 
         // Create, fund, deliver
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
         vm.prank(provider);
@@ -231,8 +233,9 @@ contract IntegrationTest is Test {
         uint256 deadline = block.timestamp + 1 days;
 
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
 
@@ -265,8 +268,9 @@ contract IntegrationTest is Test {
 
         // Create and fund escrow
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
 
@@ -319,8 +323,9 @@ contract IntegrationTest is Test {
         uint256 deadline = block.timestamp + 7 days;
 
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
 
@@ -369,8 +374,9 @@ contract IntegrationTest is Test {
 
         // Create, fund, deliver
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
         vm.prank(provider);
@@ -452,8 +458,9 @@ contract IntegrationTest is Test {
         uint256 deadline = block.timestamp + 7 days;
 
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
         vm.prank(provider);
@@ -511,8 +518,9 @@ contract IntegrationTest is Test {
         uint256 deadline = block.timestamp + 7 days;
 
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
         vm.prank(provider);
@@ -737,7 +745,9 @@ contract IntegrationTest is Test {
 
         // Create two escrows concurrently
         vm.prank(client);
-        uint256 eid1 = escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount1, taskHash, deadline, address(0));
+        uint256 eid1 = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount1, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         uint256 eid2 = escrow.createEscrow(
             clientDid, providerDid, provider, address(usdc), amount2, keccak256("task-2"), deadline, address(0)
@@ -879,8 +889,9 @@ contract IntegrationTest is Test {
 
         // === Phase 1: Escrow Setup ===
         vm.prank(client);
-        uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0)
+        );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
 
@@ -1099,7 +1110,14 @@ contract IntegrationTest is Test {
         // 2. Create and fund escrow with facilitator
         vm.prank(client);
         uint256 escrowId = escrow.createEscrow(
-            clientDid, providerDid, provider, address(usdc), 200_000_000, taskHash, block.timestamp + 7 days, facilitator
+            clientDid,
+            providerDid,
+            provider,
+            address(usdc),
+            200_000_000,
+            taskHash,
+            block.timestamp + 7 days,
+            facilitator
         );
         vm.prank(client);
         escrow.fundEscrow(escrowId);
@@ -1111,12 +1129,8 @@ contract IntegrationTest is Test {
         escrow.initiateDispute(escrowId, "quality-dispute");
 
         // Record balances before resolution
-        uint256[4] memory balsBefore = [
-            usdc.balanceOf(client),
-            usdc.balanceOf(provider),
-            usdc.balanceOf(facilitator),
-            usdc.balanceOf(treasury)
-        ];
+        uint256[4] memory balsBefore =
+            [usdc.balanceOf(client), usdc.balanceOf(provider), usdc.balanceOf(facilitator), usdc.balanceOf(treasury)];
 
         // 4. Resolve dispute: 30% to provider (60_000_000), 70% to client (140_000_000)
         vm.startPrank(admin);
@@ -1133,7 +1147,9 @@ contract IntegrationTest is Test {
         assertEq(usdc.balanceOf(treasury), balsBefore[3] + 300_000, "Treasury gets 30% of both fees");
 
         // 7. Token conservation: all outflows = original $200 deposit
-        assertEq(uint256(59_700_000 + 139_300_000 + 700_000 + 300_000), uint256(200_000_000), "No tokens lost or created");
+        assertEq(
+            uint256(59_700_000 + 139_300_000 + 700_000 + 300_000), uint256(200_000_000), "No tokens lost or created"
+        );
 
         // 8. Escrow contract drained
         assertEq(usdc.balanceOf(address(escrow)), 0, "Escrow drained");

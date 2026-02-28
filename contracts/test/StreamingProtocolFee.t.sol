@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @dev Mock ERC20 for testing (6 decimals like USDC)
 contract FeeTestMockUSDC is ERC20 {
-    constructor() ERC20("Mock USDC", "USDC") {}
+    constructor() ERC20("Mock USDC", "USDC") { }
 
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
@@ -145,11 +145,7 @@ contract StreamingProtocolFeeTest is Test {
             expectedFacilitatorShare,
             "Facilitator should get 70% of fee"
         );
-        assertEq(
-            usdc.balanceOf(treasury) - treasuryBalBefore,
-            expectedTreasuryShare,
-            "Treasury should get 30% of fee"
-        );
+        assertEq(usdc.balanceOf(treasury) - treasuryBalBefore, expectedTreasuryShare, "Treasury should get 30% of fee");
     }
 
     function test_withdrawMax_deductsProtocolFee() public {
@@ -205,9 +201,7 @@ contract StreamingProtocolFeeTest is Test {
         uint256 fee = (recipientAmount * 50) / 10_000;
         uint256 expectedRecipientNet = recipientAmount - fee;
         assertEq(
-            providerBalAfter - providerBalBefore,
-            expectedRecipientNet,
-            "Recipient portion should have fee deducted"
+            providerBalAfter - providerBalBefore, expectedRecipientNet, "Recipient portion should have fee deducted"
         );
     }
 
@@ -284,14 +278,10 @@ contract StreamingProtocolFeeTest is Test {
         uint256 totalFee = (DEPOSIT_AMOUNT * 50) / 10_000;
 
         assertEq(
-            usdc.balanceOf(treasury) - treasuryBalBefore,
-            totalFee,
-            "No facilitator: 100% of fee should go to treasury"
+            usdc.balanceOf(treasury) - treasuryBalBefore, totalFee, "No facilitator: 100% of fee should go to treasury"
         );
         assertEq(
-            usdc.balanceOf(facilitator),
-            facilitatorBalBefore,
-            "No facilitator: facilitator balance should not change"
+            usdc.balanceOf(facilitator), facilitatorBalBefore, "No facilitator: facilitator balance should not change"
         );
     }
 

@@ -132,7 +132,12 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     // ============ Dispute Creation ============
 
     /// @inheritdoc IDisputeResolution
-    function createDispute(uint256 escrowId, bytes32 evidenceCID) external override nonReentrant returns (uint256 disputeId) {
+    function createDispute(uint256 escrowId, bytes32 evidenceCID)
+        external
+        override
+        nonReentrant
+        returns (uint256 disputeId)
+    {
         // Get escrow details
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
 

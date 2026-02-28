@@ -790,12 +790,12 @@ export class BridgeServer {
         // This eliminates the race condition where fast tasks complete before the listener is registered
         const waitMode = req.query.wait === 'true';
         let syncResultPromise: Promise<TaskResult> | undefined;
-        let syncReject: ((reason?: unknown) => void) | undefined;
+        let _syncReject: ((reason?: unknown) => void) | undefined;
 
         if (waitMode) {
           const syncTimeout = this._syncTimeout;
           syncResultPromise = new Promise<TaskResult>((resolve, reject) => {
-            syncReject = reject;
+            _syncReject = reject;
             const timer = setTimeout(() => {
               const list = this.taskResultListeners.get(task.taskId);
               if (list) {

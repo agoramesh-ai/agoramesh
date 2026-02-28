@@ -422,12 +422,10 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
     /// @param _facilitator Facilitator address
     /// @param escrowId Escrow ID for event emission
     /// @return netAmount Amount after fee deduction
-    function _deductAndTransferFee(
-        address token,
-        uint256 amount,
-        address _facilitator,
-        uint256 escrowId
-    ) internal returns (uint256 netAmount) {
+    function _deductAndTransferFee(address token, uint256 amount, address _facilitator, uint256 escrowId)
+        internal
+        returns (uint256 netAmount)
+    {
         // No fee if protocolFeeBp is 0 or treasury not set
         if (protocolFeeBp == 0 || treasury == address(0)) {
             return amount;

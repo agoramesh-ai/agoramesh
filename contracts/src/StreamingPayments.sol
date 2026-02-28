@@ -144,7 +144,15 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         if (startTime < block.timestamp) revert StartTimeInPast();
         if (endTime <= startTime) revert EndBeforeStart();
         return _createStreamInternal(
-            recipientDid, recipient, token, depositAmount, startTime, endTime, cancelableBySender, cancelableByRecipient, facilitator
+            recipientDid,
+            recipient,
+            token,
+            depositAmount,
+            startTime,
+            endTime,
+            cancelableBySender,
+            cancelableByRecipient,
+            facilitator
         );
     }
 
@@ -450,12 +458,10 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @param _facilitator Facilitator address
     /// @param streamId Stream ID for event emission
     /// @return netAmount Amount after fee deduction
-    function _deductAndTransferFee(
-        address token,
-        uint256 amount,
-        address _facilitator,
-        uint256 streamId
-    ) internal returns (uint256 netAmount) {
+    function _deductAndTransferFee(address token, uint256 amount, address _facilitator, uint256 streamId)
+        internal
+        returns (uint256 netAmount)
+    {
         // No fee if protocolFeeBp is 0 or treasury not set
         if (protocolFeeBp == 0 || treasury == address(0)) {
             return amount;

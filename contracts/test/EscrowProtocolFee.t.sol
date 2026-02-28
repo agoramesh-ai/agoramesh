@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Mock USDC token for protocol fee testing
 contract FeeTestMockUSDC is ERC20 {
-    constructor() ERC20("USD Coin", "USDC") {}
+    constructor() ERC20("USD Coin", "USDC") { }
 
     function decimals() public pure override returns (uint8) {
         return 6;
@@ -437,11 +437,7 @@ contract EscrowProtocolFeeTest is Test {
         uint256 expectedFee = 10_000; // MIN_FEE applied once
 
         assertEq(totalFeeCharged, expectedFee, "Fee should be charged once, not doubled");
-        assertEq(
-            clientReceived + providerReceived + totalFeeCharged,
-            smallAmount,
-            "All funds must be accounted for"
-        );
+        assertEq(clientReceived + providerReceived + totalFeeCharged, smallAmount, "All funds must be accounted for");
     }
 
     // ============ Fuzz Tests ============

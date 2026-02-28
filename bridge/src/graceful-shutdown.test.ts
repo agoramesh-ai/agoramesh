@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GracefulShutdown, type ShutdownMetrics } from './graceful-shutdown.js';
+import { GracefulShutdown } from './graceful-shutdown.js';
 
 describe('GracefulShutdown', () => {
   let shutdown: GracefulShutdown;

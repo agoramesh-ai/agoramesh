@@ -97,12 +97,15 @@ contract StreamingPaymentsTest is Test {
     function test_createStream_incrementingIds() public {
         vm.startPrank(client);
 
-        uint256 id1 =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
-        uint256 id2 =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
-        uint256 id3 =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 id1 = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
+        uint256 id2 = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
+        uint256 id3 = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.stopPrank();
 
@@ -126,7 +129,9 @@ contract StreamingPaymentsTest is Test {
     function test_createStream_revertIfZeroRecipient() public {
         vm.prank(client);
         vm.expectRevert(StreamingPayments.InvalidRecipient.selector);
-        streaming.createStream(providerDid, address(0), address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        streaming.createStream(
+            providerDid, address(0), address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
     }
 
     function test_createStream_revertIfSenderNotRegistered() public {
@@ -136,7 +141,9 @@ contract StreamingPaymentsTest is Test {
         vm.startPrank(unregistered);
         usdc.approve(address(streaming), DEPOSIT_AMOUNT);
         vm.expectRevert(StreamingPayments.SenderNotRegistered.selector);
-        streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
         vm.stopPrank();
     }
 
@@ -180,8 +187,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_ratePerSecond_calculation() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         IStreamingPayments.Stream memory stream = streaming.getStream(streamId);
 
@@ -194,8 +202,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_withdrawableAmountOf_afterHalfDuration() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // Warp to halfway through stream
         vm.warp(block.timestamp + STREAM_DURATION / 2);
@@ -214,8 +223,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_withdrawableAmountOf_afterFullDuration() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // Warp to after stream ends
         vm.warp(block.timestamp + STREAM_DURATION + 1);
@@ -226,8 +236,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_withdraw_success() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // Warp to halfway
         vm.warp(block.timestamp + STREAM_DURATION / 2);
@@ -247,8 +258,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_withdraw_revertIfNotRecipient() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.warp(block.timestamp + STREAM_DURATION / 2);
 
@@ -259,8 +271,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_withdraw_revertIfAmountExceedsAvailable() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.warp(block.timestamp + STREAM_DURATION / 2);
         uint256 withdrawable = streaming.withdrawableAmountOf(streamId);
@@ -272,8 +285,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_withdrawMax_success() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.warp(block.timestamp + STREAM_DURATION / 2);
         uint256 expectedWithdrawable = streaming.withdrawableAmountOf(streamId);
@@ -288,8 +302,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_topUp_success() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         IStreamingPayments.Stream memory streamBefore = streaming.getStream(streamId);
 
@@ -304,8 +319,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_topUp_revertIfNotSender() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.prank(provider);
         vm.expectRevert(StreamingPayments.NotSender.selector);
@@ -314,8 +330,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_topUp_revertIfStreamNotActive() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // Cancel the stream
         vm.prank(client);
@@ -330,8 +347,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_pause_success() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.prank(client);
         streaming.pause(streamId);
@@ -342,8 +360,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_pause_revertIfNotSender() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.prank(provider);
         vm.expectRevert(StreamingPayments.NotSender.selector);
@@ -352,8 +371,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_resume_success() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.prank(client);
         streaming.pause(streamId);
@@ -367,8 +387,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_resume_revertIfNotPaused() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.prank(client);
         vm.expectRevert(StreamingPayments.NotPaused.selector);
@@ -379,8 +400,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_cancel_bySender_success() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // Warp to halfway
         vm.warp(block.timestamp + STREAM_DURATION / 2);
@@ -464,8 +486,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_streamCompletion_afterEndTime() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // Warp past end time
         vm.warp(block.timestamp + STREAM_DURATION + 1);
@@ -482,8 +505,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_streamedAmountOf() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         // At start, nothing streamed
         assertEq(streaming.streamedAmountOf(streamId), 0, "Nothing streamed at start");
@@ -496,8 +520,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_balanceOf() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         assertEq(streaming.balanceOf(streamId), DEPOSIT_AMOUNT, "Full balance at start");
 
@@ -512,8 +537,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_isActive() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         assertTrue(streaming.isActive(streamId), "Should be active");
 
@@ -524,8 +550,12 @@ contract StreamingPaymentsTest is Test {
 
     function test_getStreamsBySender() public {
         vm.startPrank(client);
-        streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
-        streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
+        streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
         vm.stopPrank();
 
         uint256[] memory senderStreams = streaming.getStreamsBySender(clientDid);
@@ -534,8 +564,12 @@ contract StreamingPaymentsTest is Test {
 
     function test_getStreamsByRecipient() public {
         vm.startPrank(client);
-        streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
-        streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
+        streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
         vm.stopPrank();
 
         uint256[] memory recipientStreams = streaming.getStreamsByRecipient(providerDid);
@@ -552,7 +586,8 @@ contract StreamingPaymentsTest is Test {
         usdc.mint(client, amount);
 
         vm.prank(client);
-        uint256 streamId = streaming.createStream(providerDid, provider, address(usdc), amount, duration, true, false, address(0));
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), amount, duration, true, false, address(0));
 
         IStreamingPayments.Stream memory stream = streaming.getStream(streamId);
         assertEq(stream.depositAmount, amount);
@@ -563,8 +598,9 @@ contract StreamingPaymentsTest is Test {
         elapsed = bound(elapsed, 0, STREAM_DURATION);
 
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         vm.warp(block.timestamp + elapsed);
 
@@ -592,7 +628,8 @@ contract StreamingPaymentsTest is Test {
         usdc.mint(client, deposit);
 
         vm.prank(client);
-        uint256 streamId = streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
 
         IStreamingPayments.Stream memory stream = streaming.getStream(streamId);
 
@@ -632,7 +669,8 @@ contract StreamingPaymentsTest is Test {
         usdc.mint(client, deposit);
 
         vm.prank(client);
-        uint256 streamId = streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
 
         IStreamingPayments.Stream memory stream = streaming.getStream(streamId);
 
@@ -662,7 +700,8 @@ contract StreamingPaymentsTest is Test {
         usdc.mint(client, deposit);
 
         vm.prank(client);
-        uint256 streamId = streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
 
         // Verify the PRECISION constant is accessible
         assertEq(streaming.PRECISION(), 1e18, "PRECISION should be 1e18");
@@ -699,7 +738,8 @@ contract StreamingPaymentsTest is Test {
         usdc.mint(client, deposit);
 
         vm.prank(client);
-        uint256 streamId = streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
 
         uint256 totalWithdrawn = 0;
         uint256 startTime = block.timestamp;
@@ -727,8 +767,9 @@ contract StreamingPaymentsTest is Test {
     function test_topUp_rateRecalculation_midstream() public {
         // Create a 30-day stream with 1000 USDC
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         uint256 startTime = block.timestamp;
 
@@ -765,8 +806,9 @@ contract StreamingPaymentsTest is Test {
 
     function test_topUp_withdrawAfterTopUp_noOverwithdraw() public {
         vm.prank(client);
-        uint256 streamId =
-            streaming.createStream(providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0));
+        uint256 streamId = streaming.createStream(
+            providerDid, provider, address(usdc), DEPOSIT_AMOUNT, STREAM_DURATION, true, false, address(0)
+        );
 
         uint256 startTime = block.timestamp;
 

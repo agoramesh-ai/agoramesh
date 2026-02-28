@@ -773,9 +773,7 @@ contract TrustRegistryTest is Test {
         // Alice tries to re-endorse bob immediately - should fail due to cooldown
         // All operations happen in the same block, so remaining time = 24 hours
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(TrustRegistry.EndorsementCooldownActive.selector, 24 hours)
-        );
+        vm.expectRevert(abi.encodeWithSelector(TrustRegistry.EndorsementCooldownActive.selector, 24 hours));
         registry.endorse(bobDid, "Great again!");
     }
 
@@ -844,9 +842,7 @@ contract TrustRegistryTest is Test {
 
         // Should still fail - cooldown not yet passed
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(TrustRegistry.EndorsementCooldownActive.selector, 12 hours)
-        );
+        vm.expectRevert(abi.encodeWithSelector(TrustRegistry.EndorsementCooldownActive.selector, 12 hours));
         registry.endorse(bobDid, "Too early!");
     }
 
