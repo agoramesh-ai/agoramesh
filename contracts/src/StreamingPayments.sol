@@ -50,6 +50,24 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @notice Amount streamed at the time of cancellation
     mapping(uint256 => uint256) private _streamedAtCancel;
 
+    /// @notice Treasury address for collecting protocol fees
+    address public treasury;
+
+    /// @notice Protocol fee in basis points
+    uint256 public protocolFeeBp;
+
+    /// @notice Maximum protocol fee (5%)
+    uint256 public constant MAX_FEE_BP = 500;
+
+    /// @notice Minimum fee ($0.01 USDC = 10_000 in 6 decimal)
+    uint256 public constant MIN_FEE = 10_000;
+
+    /// @notice Basis points denominator
+    uint256 private constant BP = 10_000;
+
+    /// @notice Facilitator share of protocol fee (70%)
+    uint256 public constant FACILITATOR_SHARE_BP = 7_000;
+
     // ============ Constructor ============
 
     /// @notice Deploy the StreamingPayments contract
@@ -74,7 +92,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         uint256 depositAmount,
         uint256 duration,
         bool cancelableBySender,
-        bool cancelableByRecipient
+        bool cancelableByRecipient,
+        address facilitator
     ) external nonReentrant returns (uint256 streamId) {
         require(duration > 0, "Duration must be > 0");
         return _createStreamInternal(
@@ -85,7 +104,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
             block.timestamp,
             block.timestamp + duration,
             cancelableBySender,
-            cancelableByRecipient
+            cancelableByRecipient,
+            facilitator
         );
     }
 
@@ -98,12 +118,13 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         uint256 startTime,
         uint256 endTime,
         bool cancelableBySender,
-        bool cancelableByRecipient
+        bool cancelableByRecipient,
+        address facilitator
     ) external nonReentrant returns (uint256 streamId) {
         require(startTime >= block.timestamp, "Start time in past");
         require(endTime > startTime, "End before start");
         return _createStreamInternal(
-            recipientDid, recipient, token, depositAmount, startTime, endTime, cancelableBySender, cancelableByRecipient
+            recipientDid, recipient, token, depositAmount, startTime, endTime, cancelableBySender, cancelableByRecipient, facilitator
         );
     }
 
@@ -116,7 +137,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         uint256 startTime,
         uint256 endTime,
         bool cancelableBySender,
-        bool cancelableByRecipient
+        bool cancelableByRecipient,
+        address facilitator
     ) internal returns (uint256 streamId) {
         require(depositAmount > 0, "Amount must be > 0");
         require(recipient != address(0), "Invalid recipient");
@@ -151,7 +173,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
             ratePerSecond: ratePerSecond,
             status: StreamStatus.ACTIVE,
             cancelableBySender: cancelableBySender,
-            cancelableByRecipient: cancelableByRecipient
+            cancelableByRecipient: cancelableByRecipient,
+            facilitator: facilitator
         });
 
         // Store the scaled rate for precision calculations
@@ -183,8 +206,9 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
             emit StreamCompleted(streamId);
         }
 
-        IERC20(stream.token).safeTransfer(stream.recipient, amount);
-        emit Withdrawn(streamId, stream.recipient, amount);
+        uint256 netAmount = _deductAndTransferFee(stream.token, amount, stream.facilitator, streamId);
+        IERC20(stream.token).safeTransfer(stream.recipient, netAmount);
+        emit Withdrawn(streamId, stream.recipient, netAmount);
     }
 
     /// @inheritdoc IStreamingPayments
@@ -203,8 +227,9 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
             emit StreamCompleted(streamId);
         }
 
-        IERC20(stream.token).safeTransfer(stream.recipient, withdrawn);
-        emit Withdrawn(streamId, stream.recipient, withdrawn);
+        uint256 netWithdrawn = _deductAndTransferFee(stream.token, withdrawn, stream.facilitator, streamId);
+        IERC20(stream.token).safeTransfer(stream.recipient, netWithdrawn);
+        emit Withdrawn(streamId, stream.recipient, netWithdrawn);
     }
 
     // ============ Top Up ============
@@ -288,12 +313,13 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
 
         stream.status = StreamStatus.CANCELED;
 
-        // Transfer to recipient
+        // Transfer to recipient (with fee deduction)
         if (recipientAmount > 0) {
-            IERC20(stream.token).safeTransfer(stream.recipient, recipientAmount);
+            uint256 netRecipient = _deductAndTransferFee(stream.token, recipientAmount, stream.facilitator, streamId);
+            IERC20(stream.token).safeTransfer(stream.recipient, netRecipient);
         }
 
-        // Refund sender
+        // Refund sender (no fee on refund)
         if (senderRefund > 0) {
             IERC20(stream.token).safeTransfer(stream.sender, senderRefund);
         }
@@ -378,7 +404,77 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         return _nextStreamId;
     }
 
+    // ============ Admin Functions ============
+
+    /// @notice Set the treasury address
+    /// @param _treasury New treasury address
+    function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_treasury != address(0), "Invalid treasury");
+        treasury = _treasury;
+        emit TreasuryUpdated(_treasury);
+    }
+
+    /// @notice Set the protocol fee in basis points
+    /// @param _feeBp New fee in basis points (max 500 = 5%)
+    function setProtocolFeeBp(uint256 _feeBp) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_feeBp <= MAX_FEE_BP, "Fee too high");
+        protocolFeeBp = _feeBp;
+        emit ProtocolFeeUpdated(_feeBp);
+    }
+
     // ============ Internal Functions ============
+
+    /// @notice Deduct protocol fee and transfer to facilitator/treasury
+    /// @param token Token address
+    /// @param amount Amount to deduct fee from
+    /// @param _facilitator Facilitator address
+    /// @param streamId Stream ID for event emission
+    /// @return netAmount Amount after fee deduction
+    function _deductAndTransferFee(
+        address token,
+        uint256 amount,
+        address _facilitator,
+        uint256 streamId
+    ) internal returns (uint256 netAmount) {
+        // No fee if protocolFeeBp is 0 or treasury not set
+        if (protocolFeeBp == 0 || treasury == address(0)) {
+            return amount;
+        }
+
+        // Calculate fee
+        uint256 fee = (amount * protocolFeeBp) / BP;
+
+        // Apply minimum fee if fee > 0 but below minimum
+        if (fee > 0 && fee < MIN_FEE) {
+            fee = MIN_FEE;
+        }
+
+        // Safety: cap fee at half the amount
+        if (fee > amount / 2) {
+            fee = amount / 2;
+        }
+
+        // Split fee between facilitator and treasury
+        uint256 facilitatorShare = 0;
+        uint256 treasuryShare = fee;
+
+        if (_facilitator != address(0)) {
+            facilitatorShare = (fee * FACILITATOR_SHARE_BP) / BP;
+            treasuryShare = fee - facilitatorShare;
+        }
+
+        // Transfer shares
+        if (facilitatorShare > 0) {
+            IERC20(token).safeTransfer(_facilitator, facilitatorShare);
+        }
+        if (treasuryShare > 0) {
+            IERC20(token).safeTransfer(treasury, treasuryShare);
+        }
+
+        emit ProtocolFeeCollected(streamId, fee, _facilitator, facilitatorShare, treasuryShare);
+
+        return amount - fee;
+    }
 
     /// @dev Get the sender's DID from TrustRegistry
     function _getSenderDid(address sender) internal view returns (bytes32) {
