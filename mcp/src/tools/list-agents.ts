@@ -16,7 +16,7 @@ export function registerListAgents(server: McpServer, nodeClient: NodeClient): v
     },
     async (args) => {
       try {
-        const agents = await nodeClient.searchAgents(undefined, {
+        const agents = await nodeClient.searchAgents('*', {
           limit: args.limit,
         });
 

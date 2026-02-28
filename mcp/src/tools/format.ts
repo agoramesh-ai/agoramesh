@@ -32,8 +32,8 @@ export function formatAgent(agent: unknown): string {
   lines.push(`## ${name}`);
   lines.push(`- **DID**: ${did}`);
 
-  // Trust score — from x-agoramesh or search result trust object
-  const trustScore = meta?.trust_score ?? a.trust?.score;
+  // Trust score — prefer computed (from trust object) over declared (x-agoramesh)
+  const trustScore = a.trust?.score ?? meta?.trust_score;
   if (trustScore !== undefined) {
     const tier = a.trust?.tier ? ` (${a.trust.tier})` : '';
     lines.push(`- **Trust Score**: ${trustScore.toFixed(2)}${tier}`);

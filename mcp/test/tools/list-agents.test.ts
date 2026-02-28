@@ -68,7 +68,7 @@ describe('list_agents tool', () => {
       arguments: { limit: 5 },
     });
 
-    expect(spy).toHaveBeenCalledWith(undefined, { limit: 5 });
+    expect(spy).toHaveBeenCalledWith('*', { limit: 5 });
   });
 
   it('handles empty network', async () => {

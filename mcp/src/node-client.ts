@@ -31,11 +31,23 @@ export class NodeClient {
     const result = await this.get(url);
 
     // Node may return array directly or { agents: [...] }
-    if (Array.isArray(result)) return result;
-    if (result && typeof result === 'object' && 'agents' in result && Array.isArray((result as Record<string, unknown>).agents)) {
-      return (result as Record<string, unknown>).agents as unknown[];
+    let items: unknown[];
+    if (Array.isArray(result)) items = result;
+    else if (result && typeof result === 'object' && 'agents' in result && Array.isArray((result as Record<string, unknown>).agents)) {
+      items = (result as Record<string, unknown>).agents as unknown[];
+    } else {
+      return [];
     }
-    return [];
+
+    // Unwrap search envelope: { did, card: {...}, trust: {...} } → flat object
+    return items.map((item) => {
+      const obj = item as Record<string, unknown>;
+      if (obj.card && typeof obj.card === 'object') {
+        const card = obj.card as Record<string, unknown>;
+        return { ...card, did: obj.did, trust: obj.trust };
+      }
+      return item;
+    });
   }
 
   async getAgent(did: string): Promise<unknown | null> {

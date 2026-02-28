@@ -76,6 +76,30 @@ describe('NodeClient', () => {
       expect(result).toBeDefined();
     });
 
+    it('unwraps card envelope from search results', async () => {
+      const envelope = [
+        {
+          did: 'did:agoramesh:base:abc',
+          score: 0.87,
+          card: { name: 'TestAgent', description: 'A test', capabilities: [], 'x-agoramesh': { did: 'did:agoramesh:base:abc' } },
+          trust: { score: 0.75, reputation: 0.95 },
+        },
+      ];
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => envelope });
+
+      const result = await client.searchAgents('test');
+
+      expect(result).toHaveLength(1);
+      const agent = result[0] as Record<string, unknown>;
+      // Card fields should be at top level
+      expect(agent.name).toBe('TestAgent');
+      expect(agent.description).toBe('A test');
+      expect(agent['x-agoramesh']).toBeDefined();
+      // DID and trust from envelope
+      expect(agent.did).toBe('did:agoramesh:base:abc');
+      expect(agent.trust).toEqual({ score: 0.75, reputation: 0.95 });
+    });
+
     it('throws NodeClientError on 500', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
