@@ -34,6 +34,7 @@ interface IAgoraMeshEscrow {
         State state; // Current escrow state
         uint256 createdAt; // Creation timestamp
         uint256 deliveredAt; // Delivery confirmation timestamp
+        address facilitator; // Facilitator address for fee splitting
     }
 
     // ============ Events ============
@@ -65,6 +66,21 @@ interface IAgoraMeshEscrow {
     /// @notice Emitted when a dispute is resolved by an arbiter
     event DisputeResolved(uint256 indexed escrowId, bool releasedToProvider, uint256 providerAmount);
 
+    /// @notice Emitted when protocol fee is collected
+    event ProtocolFeeCollected(
+        uint256 indexed escrowId,
+        uint256 totalFee,
+        address indexed facilitator,
+        uint256 facilitatorShare,
+        uint256 treasuryShare
+    );
+
+    /// @notice Emitted when the treasury address is updated
+    event TreasuryUpdated(address indexed newTreasury);
+
+    /// @notice Emitted when the protocol fee basis points are updated
+    event ProtocolFeeUpdated(uint256 newFeeBp);
+
     // ============ Errors ============
 
     error ClientDIDOwnershipMismatch();
@@ -81,6 +97,7 @@ interface IAgoraMeshEscrow {
     /// @param amount Payment amount in token decimals
     /// @param taskHash Hash of the task specification (for verification)
     /// @param deadline Unix timestamp by which task must be delivered
+    /// @param facilitator Address of the facilitator for fee splitting (address(0) if none)
     /// @return escrowId The unique identifier for the created escrow
     function createEscrow(
         bytes32 clientDid,
@@ -89,7 +106,8 @@ interface IAgoraMeshEscrow {
         address token,
         uint256 amount,
         bytes32 taskHash,
-        uint256 deadline
+        uint256 deadline,
+        address facilitator
     ) external returns (uint256 escrowId);
 
     /// @notice Fund an escrow (transfers tokens from client to contract)
