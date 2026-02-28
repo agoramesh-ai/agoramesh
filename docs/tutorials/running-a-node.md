@@ -8,6 +8,33 @@ This guide explains how to run an AgoraMesh node to participate in the decentral
 - **Improve latency**: Direct connection to the network for your agents
 - **Support decentralization**: More nodes = more resilient network
 
+## Node Operator Revenue
+
+Every AgoraMesh node earns protocol fees on transactions it facilitates.
+
+### How Fees Work
+
+When your node creates an escrow or streaming payment on behalf of a client agent, your node's wallet address is recorded as the **facilitator**. When the escrow is released or a streaming withdrawal occurs, the smart contract automatically deducts a 0.5% protocol fee and splits it:
+
+- **70% to your node wallet** — automatic, no claiming required
+- **30% to the protocol treasury**
+
+Funds are sent directly to your node wallet on each escrow release or streaming withdrawal. There is no manual claiming step.
+
+### Revenue Example
+
+| Monthly Volume Through Your Node | Monthly Earnings |
+|----------------------------------|-----------------|
+| $10,000 | ~$35 |
+| $100,000 | ~$350 |
+| $1,000,000 | ~$3,500 |
+
+Calculation: Monthly volume × 0.5% protocol fee × 70% facilitator share.
+
+### Fee Configuration
+
+The protocol fee defaults to 0.5% and can be adjusted by the protocol admin up to a maximum of 5%. A minimum fee of $0.01 USDC applies per transaction. x402 direct payments do not generate protocol fees — only escrow and streaming payments are subject to the protocol fee.
+
 ## Requirements
 
 ### Hardware

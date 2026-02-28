@@ -411,9 +411,67 @@ await task.cancel();   // Refunds remaining deposit
 }
 ```
 
-## Fee Structure
+## Protocol Fees
 
-| Operation | Cost |
+AgoraMesh charges a protocol fee on transactions where the platform holds and protects funds. Direct peer-to-peer payments remain free.
+
+### Fee Schedule
+
+| Payment Method | Protocol Fee | Notes |
+|----------------|-------------|-------|
+| Direct x402 | **0%** | Peer-to-peer, no platform involvement |
+| Escrow release | **0.5%** | Deducted from provider payout |
+| Streaming withdraw | **0.5%** | Deducted from recipient withdrawal |
+| Streaming cancel | **0.5%** | Deducted from final settlement |
+
+### Fee Split: 70/30
+
+Every protocol fee is automatically split by the smart contract at the time of payment:
+
+- **70% to the node operator (facilitator)** — the node whose wallet address was recorded when the escrow or stream was created
+- **30% to the protocol treasury** — used for protocol development and maintenance
+
+### How It Works
+
+When a node creates an escrow or streaming payment, its wallet address is recorded as the **facilitator**. On release or withdrawal, the smart contract automatically deducts the protocol fee and distributes it:
+
+```
+Provider payout = Deposit amount - Protocol fee
+Protocol fee    = Deposit amount × 0.5%
+Facilitator cut = Protocol fee × 70%
+Treasury cut    = Protocol fee × 30%
+```
+
+**Example:** A $100 USDC escrow release:
+- Provider receives: $99.50
+- Node operator receives: $0.35 (0.5% × 70%)
+- Treasury receives: $0.15 (0.5% × 30%)
+- Client originally deposited: $100.00 (unchanged)
+
+### Fee Configuration
+
+| Parameter | Default | Maximum | Notes |
+|-----------|---------|---------|-------|
+| Protocol fee rate | 0.5% | 5% | Admin configurable |
+| Minimum fee | $0.01 USDC | — | Applied per transaction |
+| Facilitator share | 70% | — | Fixed split |
+| Treasury share | 30% | — | Fixed split |
+
+The fee is admin-configurable up to a maximum of 5%. The default is 0.5%.
+
+### Dispute Filing Fees
+
+Dispute fees are separate from the protocol fee and are charged only when a dispute is filed:
+
+| Dispute Tier | Value Range | Filing Fee |
+|--------------|-------------|------------|
+| Tier 1 | < $10 | Gas only (automatic resolution) |
+| Tier 2 | $10 – $1,000 | 3% of disputed amount |
+| Tier 3 | > $1,000 | 5% of disputed amount |
+
+## Gas Fee Structure
+
+| Operation | Gas Cost |
 |-----------|------|
 | Direct x402 payment | ~$0.001 (gas only) |
 | Escrow creation | ~$0.005 |
