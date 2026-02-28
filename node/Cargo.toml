@@ -62,7 +62,7 @@ uuid = { version = "1.12", features = ["v4"] }
 # Semantic search
 fastembed = "4"
 qdrant-client = "1"
-lru = "0.13"
+lru = "0.16"
 
 # Caching
 moka = { version = "0.12", features = ["future"] }
