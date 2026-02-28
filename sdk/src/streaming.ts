@@ -57,6 +57,7 @@ export interface Stream {
   status: StreamStatus;
   cancelableBySender: boolean;
   cancelableByRecipient: boolean;
+  facilitator: `0x${string}`;
 }
 
 /**
@@ -77,6 +78,8 @@ export interface CreateStreamOptions {
   cancelableByRecipient?: boolean;
   /** Token address (defaults to USDC) */
   tokenAddress?: `0x${string}`;
+  /** Node operator address for protocol fee split (defaults to address(0)) */
+  facilitator?: `0x${string}`;
 }
 
 /**
@@ -99,6 +102,8 @@ export interface CreateStreamWithTimestampsOptions {
   cancelableByRecipient?: boolean;
   /** Token address (defaults to USDC) */
   tokenAddress?: `0x${string}`;
+  /** Node operator address for protocol fee split (defaults to address(0)) */
+  facilitator?: `0x${string}`;
 }
 
 /**
@@ -181,6 +186,7 @@ const STREAMING_ABI = [
       { name: 'duration', type: 'uint256' },
       { name: 'cancelableBySender', type: 'bool' },
       { name: 'cancelableByRecipient', type: 'bool' },
+      { name: 'facilitator', type: 'address' },
     ],
     outputs: [{ name: 'streamId', type: 'uint256' }],
   },
@@ -197,6 +203,7 @@ const STREAMING_ABI = [
       { name: 'endTime', type: 'uint256' },
       { name: 'cancelableBySender', type: 'bool' },
       { name: 'cancelableByRecipient', type: 'bool' },
+      { name: 'facilitator', type: 'address' },
     ],
     outputs: [{ name: 'streamId', type: 'uint256' }],
   },
@@ -272,6 +279,7 @@ const STREAMING_ABI = [
           { name: 'status', type: 'uint8' },
           { name: 'cancelableBySender', type: 'bool' },
           { name: 'cancelableByRecipient', type: 'bool' },
+          { name: 'facilitator', type: 'address' },
         ],
       },
     ],
@@ -360,6 +368,7 @@ function parseStream(data: {
   status: number;
   cancelableBySender: boolean;
   cancelableByRecipient: boolean;
+  facilitator: `0x${string}`;
 }): Stream {
   return {
     id: data.id,
@@ -376,6 +385,7 @@ function parseStream(data: {
     status: data.status as StreamStatus,
     cancelableBySender: data.cancelableBySender,
     cancelableByRecipient: data.cancelableByRecipient,
+    facilitator: data.facilitator,
   };
 }
 
@@ -481,6 +491,7 @@ export class StreamingPaymentsClient {
         BigInt(options.duration),
         options.cancelableBySender ?? true,
         options.cancelableByRecipient ?? false,
+        options.facilitator ?? '0x0000000000000000000000000000000000000000',
       ],
     });
 
@@ -544,6 +555,7 @@ export class StreamingPaymentsClient {
         endTime,
         options.cancelableBySender ?? true,
         options.cancelableByRecipient ?? false,
+        options.facilitator ?? '0x0000000000000000000000000000000000000000',
       ],
     });
 

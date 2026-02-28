@@ -31,6 +31,7 @@ const ESCROW_ABI = [
       { name: 'amount', type: 'uint256' },
       { name: 'taskHash', type: 'bytes32' },
       { name: 'deadline', type: 'uint256' },
+      { name: 'facilitator', type: 'address' },
     ],
     outputs: [{ name: 'escrowId', type: 'uint256' }],
   },
@@ -98,6 +99,7 @@ const ESCROW_ABI = [
           { name: 'state', type: 'uint8' },
           { name: 'createdAt', type: 'uint256' },
           { name: 'deliveredAt', type: 'uint256' },
+          { name: 'facilitator', type: 'address' },
         ],
       },
     ],
@@ -194,6 +196,7 @@ function parseEscrow(data: {
   state: number;
   createdAt: bigint;
   deliveredAt: bigint;
+  facilitator: `0x${string}`;
 }): Escrow {
   return {
     id: data.id,
@@ -209,6 +212,7 @@ function parseEscrow(data: {
     state: data.state as EscrowState,
     createdAt: data.createdAt,
     deliveredAt: data.deliveredAt,
+    facilitator: data.facilitator,
   };
 }
 
@@ -318,6 +322,7 @@ export class PaymentClient {
         amountWei,
         options.taskHash,
         deadline,
+        options.facilitator ?? '0x0000000000000000000000000000000000000000',
       ],
     });
 

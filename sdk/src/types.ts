@@ -447,6 +447,8 @@ export interface Escrow {
   createdAt: bigint;
   /** Delivery confirmation timestamp */
   deliveredAt: bigint;
+  /** Node operator who facilitated this escrow */
+  facilitator: `0x${string}`;
 }
 
 /**
@@ -465,6 +467,8 @@ export interface CreateEscrowOptions {
   deadline: number | Date;
   /** Token address (defaults to USDC) */
   tokenAddress?: `0x${string}`;
+  /** Node operator address for protocol fee split (defaults to address(0)) */
+  facilitator?: `0x${string}`;
 }
 
 // =============================================================================
