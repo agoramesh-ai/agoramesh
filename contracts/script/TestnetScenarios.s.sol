@@ -267,7 +267,8 @@ contract TestnetScenarios is Script {
             streamAmount,
             duration,
             true, // cancelableBySender
-            true // cancelableByRecipient
+            true, // cancelableByRecipient
+            address(0) // no facilitator
         );
 
         console.log("   Stream created with ID:", streamId);
