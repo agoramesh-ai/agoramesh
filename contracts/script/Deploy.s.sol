@@ -59,6 +59,7 @@ contract Deploy is Script {
 
         DeployedContracts memory c = _deployContracts(admin, usdc, lzEndpoint);
         _configureRoles(c);
+        _configureProtocolFees(c, admin);
         _configureChainRegistry(c.chainRegistry, c.trustRegistry, usdc, lzEndpoint, isMainnet);
 
         vm.stopBroadcast();
@@ -130,6 +131,18 @@ contract Deploy is Script {
         console.log("- Granted ARBITER_ROLE to DisputeResolution on NFTBoundReputation");
     }
 
+    function _configureProtocolFees(DeployedContracts memory c, address admin) internal {
+        console.log("\nConfiguring protocol fees...");
+
+        AgoraMeshEscrow(c.escrow).setTreasury(admin);
+        AgoraMeshEscrow(c.escrow).setProtocolFeeBp(50);
+        console.log("- Escrow: treasury =", admin, ", fee = 0.5%");
+
+        StreamingPayments(c.streaming).setTreasury(admin);
+        StreamingPayments(c.streaming).setProtocolFeeBp(50);
+        console.log("- Streaming: treasury =", admin, ", fee = 0.5%");
+    }
+
     function _configureChainRegistry(
         address chainRegistryAddr,
         address trustRegistryAddr,
@@ -173,6 +186,11 @@ contract Deploy is Script {
         console.log("  AgoraMeshEscrow:         ", c.escrow);
         console.log("  TieredDisputeResolution: ", c.disputes);
         console.log("  StreamingPayments:       ", c.streaming);
+        console.log("");
+        console.log("Protocol Fees:");
+        console.log("  Treasury:                ", admin);
+        console.log("  Escrow Fee:               0.5% (50 bp)");
+        console.log("  Streaming Fee:            0.5% (50 bp)");
         console.log("");
         console.log("Cross-Chain Layer:");
         console.log("  CrossChainTrustSync:     ", c.crossChain);
