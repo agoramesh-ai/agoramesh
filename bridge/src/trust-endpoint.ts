@@ -80,7 +80,8 @@ async function getNetworkTrust(
   if (!nodeUrl) return null;
 
   try {
-    const response = await fetch(`${nodeUrl}/trust/${encodeURIComponent(did)}`, {
+    const url = new URL(`/trust/${encodeURIComponent(did)}`, nodeUrl);
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(NETWORK_TIMEOUT),

@@ -35,15 +35,19 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
     return false;
   }
 
-  function buildQueryString(params: Record<string, string | undefined>): string {
-    const entries = Object.entries(params).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined,
-    );
-    return new URLSearchParams(entries).toString();
+  /** Build a validated URL using new URL() to prevent SSRF via path injection */
+  function buildNodeUrl(path: string, params?: Record<string, string | undefined>): URL {
+    const url = new URL(path, nodeUrl);
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined) url.searchParams.set(key, value);
+      }
+    }
+    return url;
   }
 
-  async function proxyGet(url: string): Promise<{ status: number; data: unknown }> {
-    const response = await fetch(url, {
+  async function proxyGet(url: URL): Promise<{ status: number; data: unknown }> {
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(PROXY_TIMEOUT),
@@ -69,7 +73,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
     if (!requireNodeUrl(res)) return;
 
     try {
-      const qs = buildQueryString({
+      const url = buildNodeUrl('/agents/semantic', {
         q: req.query.q as string | undefined,
         limit: req.query.limit as string | undefined,
         offset: req.query.offset as string | undefined,
@@ -79,7 +83,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
         currency: req.query.currency as string | undefined,
       });
 
-      const result = await proxyGet(`${nodeUrl}/agents/semantic?${qs}`);
+      const result = await proxyGet(url);
       sendAgentList(res, result.data);
     } catch (error) {
       handleProxyError(res, error);
@@ -99,7 +103,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
     }
 
     try {
-      const result = await proxyGet(`${nodeUrl}/agents/${encodeURIComponent(did)}`);
+      const result = await proxyGet(buildNodeUrl(`/agents/${encodeURIComponent(did)}`));
 
       if (result.status === 404) {
         return res.status(404).json({
@@ -128,7 +132,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
 
     try {
       const { query, minTrust, maxPrice, tags, limit, offset } = parsed.data;
-      const qs = buildQueryString({
+      const url = buildNodeUrl('/agents/semantic', {
         q: query,
         limit: limit?.toString(),
         offset: offset?.toString(),
@@ -137,7 +141,7 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
         tags: tags?.join(','),
       });
 
-      const result = await proxyGet(`${nodeUrl}/agents/semantic?${qs}`);
+      const result = await proxyGet(url);
       sendAgentList(res, result.data);
     } catch (error) {
       handleProxyError(res, error);
