@@ -5,7 +5,7 @@ import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, Server, IncomingMessage } from 'http';
 import type { AddressInfo } from 'net';
-import { timingSafeEqual, randomBytes, createHmac } from 'crypto';
+import { timingSafeEqual, randomBytes } from 'crypto';
 import { ZodError } from 'zod';
 import { ClaudeExecutor } from './executor.js';
 import { ResolvedTaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
@@ -32,13 +32,17 @@ interface DIDRequest extends Request {
 }
 
 /**
- * Constant-time token comparison using HMAC.
- * HMAC ensures equal-length buffers (32 bytes), eliminating length-leak workarounds.
+ * Constant-time token comparison to prevent timing attacks.
+ * Pads shorter buffer to match length before comparing to avoid length oracle.
  */
 function safeCompare(a: string, b: string): boolean {
-  const hmacA = createHmac('sha256', 'agoramesh-auth').update(a).digest();
-  const hmacB = createHmac('sha256', 'agoramesh-auth').update(b).digest();
-  return timingSafeEqual(hmacA, hmacB);
+  const bufA = Buffer.from(a, 'utf-8');
+  const bufB = Buffer.from(b, 'utf-8');
+  if (bufA.length !== bufB.length) {
+    timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
 }
 
 // =============================================================================
