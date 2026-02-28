@@ -8,6 +8,9 @@ import { TrustStore, TrustProfile } from './trust-store.js';
 
 const NETWORK_TIMEOUT = 3000;
 
+/** DID format validation regex — prevents SSRF via path injection */
+const DID_FORMAT = /^did:[a-z]+:[a-zA-Z0-9._:%-]+$/;
+
 interface TrustEndpointConfig {
   trustStore: TrustStore;
   nodeUrl?: string;
@@ -18,6 +21,14 @@ export function createTrustEndpoint(config: TrustEndpointConfig): Router {
 
   router.get('/trust/:did(*)', async (req: Request, res: Response) => {
     const did = req.params.did;
+
+    if (!DID_FORMAT.test(did)) {
+      return res.status(400).json({
+        error: 'Invalid DID format',
+        code: 'VALIDATION_ERROR',
+        help: { message: 'DID must match format: did:<method>:<identifier>' },
+      });
+    }
 
     const [local, network] = await Promise.all([
       getLocalTrust(config.trustStore, did),
@@ -69,7 +80,7 @@ async function getNetworkTrust(
   if (!nodeUrl) return null;
 
   try {
-    const response = await fetch(`${nodeUrl}/trust/${did}`, {
+    const response = await fetch(`${nodeUrl}/trust/${encodeURIComponent(did)}`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(NETWORK_TIMEOUT),

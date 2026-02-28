@@ -331,7 +331,7 @@ contract EscrowProtocolFeeTest is Test {
         assertEq(usdc.balanceOf(provider), providerBalanceBefore + TASK_AMOUNT - expectedFee);
     }
 
-    function test_resolveDispute_splitScenario_feeOnBothShares() public {
+    function test_resolveDispute_splitScenario_singleFeeOnFullAmount() public {
         uint256 escrowId = _createFundAndDeliverEscrow(facilitator);
 
         vm.prank(client);
@@ -342,28 +342,106 @@ contract EscrowProtocolFeeTest is Test {
         uint256 treasuryBalanceBefore = usdc.balanceOf(treasury);
         uint256 facilitatorBalanceBefore = usdc.balanceOf(facilitator);
 
-        // 60/40 split: provider gets 60%, client gets 40%
-        uint256 providerShare = 6_000 * 1e6; // $6,000
-        uint256 clientShare = 4_000 * 1e6; // $4,000
+        // 50/50 split: provider gets 50%, client gets 50%
+        uint256 providerShare = 5_000 * 1e6; // $5,000
 
         vm.prank(arbiter);
         escrow.resolveDispute(escrowId, true, providerShare);
 
-        // Fee on provider share: 6_000e6 * 50 / 10_000 = 30e6
-        uint256 providerFee = 30 * 1e6;
-        // Fee on client share: 4_000e6 * 50 / 10_000 = 20e6
-        uint256 clientFee = 20 * 1e6;
+        // Fee calculated ONCE on full amount: 10_000e6 * 50 / 10_000 = 50e6
+        uint256 totalFee = 50 * 1e6;
+        uint256 netAmount = TASK_AMOUNT - totalFee; // 9_950e6
 
-        assertEq(usdc.balanceOf(provider), providerBalanceBefore + providerShare - providerFee);
-        assertEq(usdc.balanceOf(client), clientBalanceBefore + clientShare - clientFee);
+        // Net amount distributed proportionally
+        // Provider net: netAmount * providerShare / TASK_AMOUNT = 9_950e6 * 5_000e6 / 10_000e6 = 4_975e6
+        uint256 expectedProviderNet = (netAmount * providerShare) / TASK_AMOUNT;
+        // Client net: netAmount - expectedProviderNet
+        uint256 expectedClientNet = netAmount - expectedProviderNet;
 
-        // Total fees collected
-        uint256 totalFees = providerFee + clientFee; // $50
-        uint256 facilitatorTotal = (providerFee * 7_000) / 10_000 + (clientFee * 7_000) / 10_000;
-        uint256 treasuryTotal = totalFees - facilitatorTotal;
+        assertEq(usdc.balanceOf(provider), providerBalanceBefore + expectedProviderNet);
+        assertEq(usdc.balanceOf(client), clientBalanceBefore + expectedClientNet);
 
-        assertEq(usdc.balanceOf(facilitator), facilitatorBalanceBefore + facilitatorTotal);
-        assertEq(usdc.balanceOf(treasury), treasuryBalanceBefore + treasuryTotal);
+        // Total fee: $50 (single fee, not double)
+        uint256 facilitatorFeeShare = (totalFee * 7_000) / 10_000;
+        uint256 treasuryFeeShare = totalFee - facilitatorFeeShare;
+
+        assertEq(usdc.balanceOf(facilitator), facilitatorBalanceBefore + facilitatorFeeShare);
+        assertEq(usdc.balanceOf(treasury), treasuryBalanceBefore + treasuryFeeShare);
+    }
+
+    function test_resolveDispute_50_50_split_feeSameAsFullRelease() public {
+        // This test verifies the total fee is the same whether:
+        // 1. Full amount released to provider
+        // 2. 50/50 split between client and provider
+        // Both should result in the same total fee (no double-charging)
+
+        // Scenario 1: Full release
+        uint256 escrowId1 = _createFundAndDeliverEscrow(address(0));
+        vm.prank(client);
+        escrow.initiateDispute(escrowId1, "evidence");
+
+        uint256 treasury1Before = usdc.balanceOf(treasury);
+        vm.prank(arbiter);
+        escrow.resolveDispute(escrowId1, true, TASK_AMOUNT);
+        uint256 feeForFullRelease = usdc.balanceOf(treasury) - treasury1Before;
+
+        // Scenario 2: 50/50 split
+        uint256 escrowId2 = _createFundAndDeliverEscrow(address(0));
+        vm.prank(client);
+        escrow.initiateDispute(escrowId2, "evidence");
+
+        uint256 treasury2Before = usdc.balanceOf(treasury);
+        vm.prank(arbiter);
+        escrow.resolveDispute(escrowId2, true, TASK_AMOUNT / 2);
+        uint256 feeForSplit = usdc.balanceOf(treasury) - treasury2Before;
+
+        // Total fee should be the same regardless of split
+        assertEq(feeForFullRelease, feeForSplit, "Fee should be same for full release and 50/50 split");
+    }
+
+    function test_resolveDispute_smallSplit_noDoubleMinFee() public {
+        // Critical test: With small amounts, MIN_FEE gets applied to EACH share
+        // separately, resulting in double the minimum fee.
+        // Example: $1 escrow, 50/50 split -> each share is $0.50 -> each triggers MIN_FEE ($0.01)
+        // Old behavior: 2x MIN_FEE = $0.02 total fee
+        // Correct: 1x MIN_FEE = $0.01 total fee (fee calculated on full $1 once)
+
+        uint256 smallAmount = 1 * 1e6; // $1
+        uint256 deadline = block.timestamp + 1 days;
+
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), smallAmount, taskHash, deadline, address(0)
+        );
+        vm.prank(client);
+        escrow.fundEscrow(escrowId);
+        vm.prank(provider);
+        escrow.confirmDelivery(escrowId, outputHash);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "evidence");
+
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+        uint256 clientBefore = usdc.balanceOf(client);
+        uint256 providerBefore = usdc.balanceOf(provider);
+
+        // 50/50 split
+        vm.prank(arbiter);
+        escrow.resolveDispute(escrowId, true, smallAmount / 2);
+
+        uint256 totalFeeCharged = usdc.balanceOf(treasury) - treasuryBefore;
+        uint256 clientReceived = usdc.balanceOf(client) - clientBefore;
+        uint256 providerReceived = usdc.balanceOf(provider) - providerBefore;
+
+        // Fee should be calculated once on full $1: max(1e6 * 50 / 10000, MIN_FEE) = max(5000, 10000) = 10000
+        // But safety cap: min(10000, 1e6/2) = min(10000, 500000) = 10000
+        uint256 expectedFee = 10_000; // MIN_FEE applied once
+
+        assertEq(totalFeeCharged, expectedFee, "Fee should be charged once, not doubled");
+        assertEq(
+            clientReceived + providerReceived + totalFeeCharged,
+            smallAmount,
+            "All funds must be accounted for"
+        );
     }
 
     // ============ Fuzz Tests ============

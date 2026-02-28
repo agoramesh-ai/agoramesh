@@ -898,4 +898,88 @@ contract AgoraMeshEscrowTest is Test {
         );
         escrow.claimTimeout(escrowId);
     }
+
+    // ============ H-01: AbandonEscrow Tests ============
+
+    function test_AbandonEscrow_ByClient() public {
+        uint256 deadline = block.timestamp + 1 days;
+
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0)
+        );
+
+        // Verify in AWAITING_DEPOSIT state
+        IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.AWAITING_DEPOSIT));
+
+        // Abandon the escrow
+        vm.prank(client);
+        escrow.abandonEscrow(escrowId);
+
+        // Verify state is now REFUNDED
+        e = escrow.getEscrow(escrowId);
+        assertEq(uint256(e.state), uint256(IAgoraMeshEscrow.State.REFUNDED));
+    }
+
+    function test_AbandonEscrow_EmitsStateTransition() public {
+        uint256 deadline = block.timestamp + 1 days;
+
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0)
+        );
+
+        vm.prank(client);
+        vm.expectEmit(true, false, false, true);
+        emit StateTransition(
+            escrowId,
+            IAgoraMeshEscrow.State.AWAITING_DEPOSIT,
+            IAgoraMeshEscrow.State.REFUNDED,
+            block.timestamp,
+            client
+        );
+        escrow.abandonEscrow(escrowId);
+    }
+
+    function test_AbandonEscrow_RevertIfNotClient() public {
+        uint256 deadline = block.timestamp + 1 days;
+
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0)
+        );
+
+        vm.prank(provider);
+        vm.expectRevert(AgoraMeshEscrow.NotClient.selector);
+        escrow.abandonEscrow(escrowId);
+    }
+
+    function test_AbandonEscrow_RevertIfNotAwaitingDeposit() public {
+        // Fund the escrow first
+        uint256 escrowId = _createAndFundEscrow();
+
+        vm.prank(client);
+        vm.expectRevert(AgoraMeshEscrow.InvalidState.selector);
+        escrow.abandonEscrow(escrowId);
+    }
+
+    function test_AbandonEscrow_NoTokenTransfer() public {
+        uint256 deadline = block.timestamp + 1 days;
+
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0)
+        );
+
+        uint256 clientBalanceBefore = usdc.balanceOf(client);
+        uint256 escrowBalanceBefore = usdc.balanceOf(address(escrow));
+
+        vm.prank(client);
+        escrow.abandonEscrow(escrowId);
+
+        // No token transfers should have happened
+        assertEq(usdc.balanceOf(client), clientBalanceBefore);
+        assertEq(usdc.balanceOf(address(escrow)), escrowBalanceBefore);
+    }
 }

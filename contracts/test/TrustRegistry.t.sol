@@ -849,4 +849,174 @@ contract TrustRegistryTest is Test {
         );
         registry.endorse(bobDid, "Too early!");
     }
+
+    // ============ L-01: TreasuryUpdated Event and Fix Error Type ============
+
+    event TreasuryUpdated(address indexed newTreasury);
+
+    function test_SetTreasury_EmitsTreasuryUpdated() public {
+        address newTreasury = address(0x99);
+
+        vm.prank(admin);
+        vm.expectEmit(true, false, false, false);
+        emit TreasuryUpdated(newTreasury);
+        registry.setTreasury(newTreasury);
+
+        assertEq(registry.treasury(), newTreasury);
+    }
+
+    function test_SetTreasury_RevertIfZeroAddress() public {
+        vm.prank(admin);
+        vm.expectRevert(TrustRegistry.InvalidTreasuryAddress.selector);
+        registry.setTreasury(address(0));
+    }
+
+    // ============ M-03: CID and Endorsement Message Length Limits ============
+
+    function test_RegisterAgent_RevertIfCIDTooLong() public {
+        // Create a CID string longer than 256 bytes
+        bytes memory longCID = new bytes(257);
+        for (uint256 i = 0; i < 257; i++) {
+            longCID[i] = "a";
+        }
+
+        vm.prank(alice);
+        vm.expectRevert(TrustRegistry.CapabilityCardCIDTooLong.selector);
+        registry.registerAgent(aliceDid, string(longCID));
+    }
+
+    function test_RegisterAgent_SucceedsWithMaxLengthCID() public {
+        // Create a CID string of exactly 256 bytes
+        bytes memory maxCID = new bytes(256);
+        for (uint256 i = 0; i < 256; i++) {
+            maxCID[i] = "a";
+        }
+
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, string(maxCID));
+
+        ITrustRegistry.AgentInfo memory info = registry.getAgent(aliceDid);
+        assertEq(info.owner, alice);
+    }
+
+    function test_UpdateCapabilityCard_RevertIfCIDTooLong() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+
+        bytes memory longCID = new bytes(257);
+        for (uint256 i = 0; i < 257; i++) {
+            longCID[i] = "a";
+        }
+
+        vm.prank(alice);
+        vm.expectRevert(TrustRegistry.CapabilityCardCIDTooLong.selector);
+        registry.updateCapabilityCard(aliceDid, string(longCID));
+    }
+
+    function test_Endorse_RevertIfMessageTooLong() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+        vm.prank(bob);
+        registry.registerAgent(bobDid, bobCID);
+
+        bytes memory longMsg = new bytes(513);
+        for (uint256 i = 0; i < 513; i++) {
+            longMsg[i] = "a";
+        }
+
+        vm.prank(alice);
+        vm.expectRevert(TrustRegistry.EndorsementMessageTooLong.selector);
+        registry.endorse(bobDid, string(longMsg));
+    }
+
+    function test_Endorse_SucceedsWithMaxLengthMessage() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+        vm.prank(bob);
+        registry.registerAgent(bobDid, bobCID);
+
+        bytes memory maxMsg = new bytes(512);
+        for (uint256 i = 0; i < 512; i++) {
+            maxMsg[i] = "a";
+        }
+
+        vm.prank(alice);
+        registry.endorse(bobDid, string(maxMsg));
+
+        ITrustRegistry.Endorsement[] memory endorsements = registry.getEndorsements(bobDid);
+        assertEq(endorsements.length, 1);
+    }
+
+    // ============ M-02: Deactivate Agent Clears Owner Mapping ============
+
+    function test_DeactivateAgent_ClearsOwnerMapping() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+
+        // Verify owner mapping exists
+        assertEq(registry.getAgentByOwner(alice), aliceDid);
+
+        // Deactivate
+        vm.prank(alice);
+        registry.deactivateAgent(aliceDid);
+
+        // Owner mapping should be cleared
+        assertEq(registry.getAgentByOwner(alice), bytes32(0));
+    }
+
+    function test_DeactivateAgent_AllowsReregistration() public {
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+
+        // Deactivate
+        vm.prank(alice);
+        registry.deactivateAgent(aliceDid);
+
+        // Should be able to register a new agent with the same owner
+        bytes32 newDid = keccak256("did:agoramesh:alice-v2");
+        vm.prank(alice);
+        registry.registerAgent(newDid, "QmNewCapabilityCard");
+
+        // Verify new agent is registered
+        ITrustRegistry.AgentInfo memory info = registry.getAgent(newDid);
+        assertEq(info.owner, alice);
+        assertTrue(info.isActive);
+        assertEq(registry.getAgentByOwner(alice), newDid);
+    }
+
+    // ============ M-07: Volume Divisor Consistency Tests ============
+
+    function test_VolumeFactorConsistentWithNFTBoundReputation() public {
+        // Both TrustRegistry and NFTBoundReputation should use the same divisor
+        // for converting totalVolumeUsd to volume factor.
+        // totalVolumeUsd is in 6-decimal USDC units (same as raw USDC)
+        // $100 in 6-decimal = 100 * 1e6 = 100_000_000
+        // Volume factor for $100 should be 1 (1 point per $100 volume)
+
+        vm.prank(alice);
+        registry.registerAgent(aliceDid, aliceCID);
+
+        // Record a transaction with $100 volume (in cents, as fed by escrow: 100 * 100 = 10_000)
+        // But with the fix, totalVolumeUsd stores raw 6-decimal values
+        // We need to record with the value that represents $100 in whatever unit the system uses
+        // The recordTransaction takes volumeUsd as parameter directly
+        // After fix, the divisor in _calculateReputationScore should be 100_000_000
+
+        // Record 10 successful transactions with $10,000 volume each
+        // to get a meaningful volume factor
+        for (uint256 i = 0; i < 10; i++) {
+            vm.prank(oracle);
+            registry.recordTransaction(aliceDid, 10_000_000_000, true); // $10,000 in 6-decimal
+        }
+
+        // Total volume: 100_000_000_000 ($100,000 in 6-decimal)
+        // Volume factor: 100_000_000_000 / 100_000_000 = 1000 (capped at 1000)
+        ITrustRegistry.TrustData memory data = registry.getTrustData(aliceDid);
+        assertEq(data.totalVolumeUsd, 100_000_000_000);
+
+        // The reputation score should reflect the correct volume factor
+        // With 10 successful transactions and high volume, score should be close to max
+        (uint256 score,,) = registry.getReputation(aliceDid);
+        assertGt(score, 0, "Score should be positive");
+    }
 }

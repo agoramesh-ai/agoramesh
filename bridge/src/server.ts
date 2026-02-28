@@ -20,16 +20,26 @@ import { createTrustEndpoint } from './trust-endpoint.js';
 import { GracefulShutdown, type ShutdownMetrics } from './graceful-shutdown.js';
 import { retryWithBackoff } from './retry.js';
 
+/** Maximum pending tasks in memory before rejecting new ones */
+export const MAX_PENDING_TASKS = 500;
+
+/** Maximum completed task results in memory before evicting oldest */
+export const MAX_COMPLETED_TASKS = 1000;
+
 /** Express request with optional DID identity attached by auth middleware */
 interface DIDRequest extends Request {
   didIdentity?: DIDIdentity;
 }
 
 function safeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
+  const bufA = Buffer.from(a, 'utf-8');
+  const bufB = Buffer.from(b, 'utf-8');
+  if (bufA.length !== bufB.length) {
+    // L-2: Compare bufA against itself for constant time before returning false
+    timingSafeEqual(bufA, bufA);
     return false;
   }
-  return timingSafeEqual(Buffer.from(a, 'utf-8'), Buffer.from(b, 'utf-8'));
+  return timingSafeEqual(bufA, bufB);
 }
 
 // =============================================================================
@@ -190,6 +200,9 @@ export interface BridgeServerConfig extends RichAgentConfig {
   nodeUrl?: string;
   /** Graceful shutdown timeout in milliseconds (default: 30000) */
   shutdownTimeoutMs?: number;
+  /** Trust proxy setting for Express (default: 1 in production, false otherwise).
+   *  Set via TRUST_PROXY env var. Accepts number, boolean string, or comma-separated IPs. */
+  trustProxy?: string | number | boolean;
 }
 
 /**
@@ -208,6 +221,8 @@ export class BridgeServer {
   private _syncTimeout: number = TASK_SYNC_TIMEOUT;
   private cleanupInterval?: ReturnType<typeof setInterval>;
   private taskWebSockets: Map<string, WebSocket> = new Map();
+  private wsIdentities: WeakMap<WebSocket, string> = new WeakMap();
+  private heartbeatInterval?: ReturnType<typeof setInterval>;
   private escrowClient?: EscrowClient;
   private providerDid?: `0x${string}`;
   private requireAuth: boolean;
@@ -248,8 +263,10 @@ export class BridgeServer {
     }
     this.app = express();
 
-    // Trust first proxy (nginx) for correct client IP in rate limiting and logs
-    this.app.set('trust proxy', 1);
+    // Trust proxy for correct client IP in rate limiting and logs.
+    // Configurable via TRUST_PROXY env var (default: 1 in production, false otherwise).
+    const trustProxy = config.trustProxy ?? (process.env.NODE_ENV === 'production' ? 1 : false);
+    this.app.set('trust proxy', trustProxy);
 
     // Setup security headers with helmet
     this.setupSecurityHeaders();
@@ -588,13 +605,19 @@ export class BridgeServer {
   }
 
   private setupRoutes() {
-    // Health check
-    this.app.get('/health', (_req: Request, res: Response) => {
-      res.json({
-        status: 'ok',
-        agent: this.config.name,
-        mode: this.executor.isDemoMode ? 'demo' : 'live',
-      });
+    // Health check — L-3: minimal info for unauthenticated, detailed for authenticated
+    this.app.get('/health', (req: Request, res: Response) => {
+      const isAuthenticated = this.apiToken && this.isApiTokenValid(req);
+
+      if (isAuthenticated) {
+        res.json({
+          status: 'ok',
+          agent: this.config.name,
+          mode: this.executor.isDemoMode ? 'demo' : 'live',
+        });
+      } else {
+        res.json({ status: 'ok' });
+      }
     });
 
     // Discovery proxy — no auth, proxies to P2P node
@@ -718,6 +741,14 @@ export class BridgeServer {
         });
       }
 
+      if (this.pendingTasks.size >= MAX_PENDING_TASKS) {
+        return res.status(503).json(buildRichError(
+          'Server at capacity',
+          ErrorCode.INTERNAL_ERROR,
+          { message: 'Too many pending tasks. Try again later.' },
+        ));
+      }
+
       try {
         const parsed = TaskInputSchema.parse(req.body);
 
@@ -756,17 +787,48 @@ export class BridgeServer {
         this.taskOwners.set(task.taskId, task.clientDid);
         this.gracefulShutdown.registerTask(task.taskId);
 
+        // M-3: Set up sync mode listener BEFORE calling executeTask
+        // This eliminates the race condition where fast tasks complete before the listener is registered
+        const waitMode = req.query.wait === 'true';
+        let syncResultPromise: Promise<TaskResult> | undefined;
+        let syncReject: ((reason?: unknown) => void) | undefined;
+
+        if (waitMode) {
+          const syncTimeout = this._syncTimeout;
+          syncResultPromise = new Promise<TaskResult>((resolve, reject) => {
+            syncReject = reject;
+            const timer = setTimeout(() => {
+              const list = this.taskResultListeners.get(task.taskId);
+              if (list) {
+                const idx = list.indexOf(resolve);
+                if (idx >= 0) list.splice(idx, 1);
+                if (list.length === 0) this.taskResultListeners.delete(task.taskId);
+              }
+              reject(new Error('sync_timeout'));
+            }, syncTimeout);
+
+            const listener = (r: TaskResult) => {
+              clearTimeout(timer);
+              resolve(r);
+            };
+
+            const existing = this.taskResultListeners.get(task.taskId);
+            if (existing) {
+              existing.push(listener);
+            } else {
+              this.taskResultListeners.set(task.taskId, [listener]);
+            }
+          });
+        }
+
         // Execute async, return acknowledgement
         const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
         this.executeTask(task).then(async (result) => {
           this.pendingTasks.delete(task.taskId);
           this.gracefulShutdown.completeTask(task.taskId);
 
-          // Store completed result with TTL for polling
-          this.completedTasks.set(task.taskId, {
-            result,
-            expiresAt: Date.now() + TASK_RESULT_TTL,
-          });
+          // Store completed result with TTL for polling (with eviction)
+          this.storeCompletedTask(task.taskId, result);
 
           // Notify sync mode listeners
           const listeners = this.taskResultListeners.get(task.taskId);
@@ -796,41 +858,9 @@ export class BridgeServer {
         });
 
         // Sync mode: wait for result if ?wait=true
-        const waitMode = req.query.wait === 'true';
-        if (waitMode) {
-          const syncTimeout = this._syncTimeout;
+        if (waitMode && syncResultPromise) {
           try {
-            const result = await new Promise<TaskResult>((resolve, reject) => {
-              // Check if already completed (race condition: task finished before we set up listener)
-              const existing = this.completedTasks.get(task.taskId);
-              if (existing) {
-                resolve(existing.result);
-                return;
-              }
-
-              const timer = setTimeout(() => {
-                // Remove listener on timeout
-                const list = this.taskResultListeners.get(task.taskId);
-                if (list) {
-                  const idx = list.indexOf(resolve);
-                  if (idx >= 0) list.splice(idx, 1);
-                  if (list.length === 0) this.taskResultListeners.delete(task.taskId);
-                }
-                reject(new Error('sync_timeout'));
-              }, syncTimeout);
-
-              const listener = (r: TaskResult) => {
-                clearTimeout(timer);
-                resolve(r);
-              };
-
-              const existing2 = this.taskResultListeners.get(task.taskId);
-              if (existing2) {
-                existing2.push(listener);
-              } else {
-                this.taskResultListeners.set(task.taskId, [listener]);
-              }
-            });
+            const result = await syncResultPromise;
 
             // Return full result synchronously
             const syncResponse: Record<string, unknown> = {
@@ -961,11 +991,44 @@ export class BridgeServer {
 
   private setupWebSocket() {
     const MAX_WS_CONNECTIONS = 100;
-    this.wss.on('connection', (ws: WebSocket) => {
+
+    // L-5: Heartbeat ping/pong to detect stale connections (30s interval)
+    this.heartbeatInterval = setInterval(() => {
+      for (const client of this.wss.clients) {
+        const ws = client as WebSocket & { isAlive?: boolean };
+        if (ws.isAlive === false) {
+          ws.terminate();
+          continue;
+        }
+        ws.isAlive = false;
+        ws.ping();
+      }
+    }, 30_000);
+
+    this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
       if (this.wss!.clients.size > MAX_WS_CONNECTIONS) {
         ws.close(1013, 'Too many connections');
         return;
       }
+
+      // H-2: Extract authenticated identity from WS auth token
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        const [scheme, token] = authHeader.split(' ');
+        if (scheme === 'FreeTier' && token) {
+          this.wsIdentities.set(ws, token);
+        } else if (scheme === 'Bearer' && token) {
+          // Generate a stable identity from the Bearer token
+          this.wsIdentities.set(ws, `ws:bearer:${token.slice(0, 8)}`);
+        }
+      }
+
+      // L-5: Track liveness for heartbeat
+      (ws as WebSocket & { isAlive?: boolean }).isAlive = true;
+      ws.on('pong', () => {
+        (ws as WebSocket & { isAlive?: boolean }).isAlive = true;
+      });
+
       console.log('[Bridge] WebSocket client connected');
 
       const messageTimestamps: number[] = [];
@@ -997,6 +1060,15 @@ export class BridgeServer {
               return;
             }
 
+            if (this.pendingTasks.size >= MAX_PENDING_TASKS) {
+              ws.send(JSON.stringify({
+                type: 'error',
+                code: 'SERVICE_UNAVAILABLE',
+                message: 'Server at capacity: too many pending tasks',
+              }));
+              return;
+            }
+
             const wsParsed = TaskInputSchema.parse(message.payload);
 
             // Auto-generate taskId if not provided
@@ -1004,9 +1076,9 @@ export class BridgeServer {
               wsParsed.taskId = `task-${Date.now()}-${randomBytes(4).toString('hex')}`;
             }
 
-            // Auto-fill clientDid if not provided
+            // H-2: Auto-fill clientDid from WS authenticated identity
             if (!wsParsed.clientDid) {
-              wsParsed.clientDid = 'anonymous';
+              wsParsed.clientDid = this.wsIdentities.get(ws) || 'ws:unauthenticated';
             }
 
             // After auto-fill, taskId and clientDid are always present
@@ -1032,6 +1104,7 @@ export class BridgeServer {
             }
 
             this.pendingTasks.set(task.taskId, task);
+            this.taskOwners.set(task.taskId, task.clientDid);
             this.taskWebSockets.set(task.taskId, ws);
             this.gracefulShutdown.registerTask(task.taskId);
             const result = await this.executeTask(task);
@@ -1091,6 +1164,9 @@ export class BridgeServer {
   async submitTask(task: ResolvedTaskInput): Promise<TaskResult> {
     if (this.gracefulShutdown.isShuttingDown()) {
       throw new Error('Server is shutting down, not accepting new tasks');
+    }
+    if (this.pendingTasks.size >= MAX_PENDING_TASKS) {
+      throw new Error('Server at capacity: too many pending tasks');
     }
     this.pendingTasks.set(task.taskId, task);
     this.gracefulShutdown.registerTask(task.taskId);
@@ -1163,6 +1239,27 @@ export class BridgeServer {
     }
     // Periodically save trust data
     this.trustStore.save();
+  }
+
+  /**
+   * Store a completed task result with size limit enforcement.
+   * Evicts oldest entries when exceeding MAX_COMPLETED_TASKS.
+   */
+  private storeCompletedTask(taskId: string, result: TaskResult): void {
+    // Evict oldest entries if at capacity
+    while (this.completedTasks.size >= MAX_COMPLETED_TASKS) {
+      const oldestKey = this.completedTasks.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.completedTasks.delete(oldestKey);
+        this.taskOwners.delete(oldestKey);
+      } else {
+        break;
+      }
+    }
+    this.completedTasks.set(taskId, {
+      result,
+      expiresAt: Date.now() + TASK_RESULT_TTL,
+    });
   }
 
   private cleanupCompletedTasks(): void {
@@ -1358,6 +1455,9 @@ Optional: \`taskId\` (auto-generated), \`clientDid\` (auto-filled from auth), \`
   async stop(): Promise<ShutdownMetrics> {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
+    }
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
     }
 
     console.log(`[Bridge] Graceful shutdown initiated (${this.gracefulShutdown.activeTaskCount()} active tasks)`);

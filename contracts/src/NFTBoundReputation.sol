@@ -39,6 +39,9 @@ contract NFTBoundReputation is AccessControlEnumerable, ReentrancyGuard {
     /// @notice Cooldown period for stake withdrawals (7 days)
     uint256 public constant STAKE_COOLDOWN = 7 days;
 
+    /// @notice Maximum batch size for batchRecordTransactions
+    uint256 public constant MAX_BATCH_SIZE = 100;
+
     // ============ Structs ============
 
     /// @notice Reputation data for an agent token
@@ -106,6 +109,7 @@ contract NFTBoundReputation is AccessControlEnumerable, ReentrancyGuard {
     error WithdrawalBelowMinimumStake();
     error NoWithdrawPending();
     error CooldownNotPassed();
+    error BatchTooLarge();
 
     // ============ Constructor ============
 
@@ -158,6 +162,9 @@ contract NFTBoundReputation is AccessControlEnumerable, ReentrancyGuard {
     {
         if (tokenIds.length != volumes.length || tokenIds.length != successes.length) {
             revert ArrayLengthMismatch();
+        }
+        if (tokenIds.length > MAX_BATCH_SIZE) {
+            revert BatchTooLarge();
         }
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -407,10 +414,14 @@ contract NFTBoundReputation is AccessControlEnumerable, ReentrancyGuard {
 
     // ============ Admin Functions ============
 
+    /// @notice Emitted when the treasury address is updated
+    event TreasuryUpdated(address indexed newTreasury);
+
     /// @notice Set treasury address
     /// @param _treasury New treasury address
     function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_treasury == address(0)) revert InvalidTreasuryAddress();
         treasury = _treasury;
+        emit TreasuryUpdated(_treasury);
     }
 }

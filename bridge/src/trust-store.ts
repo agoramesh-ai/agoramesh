@@ -47,6 +47,9 @@ const TRUSTED_MAX_FAILURE_RATE = 0.10;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/** Maximum number of trust profiles to keep in memory (LRU eviction) */
+export const MAX_TRUST_PROFILES = 10000;
+
 export class TrustStore {
   private profiles: Map<string, TrustProfile> = new Map();
   private persistPath: string;
@@ -63,6 +66,10 @@ export class TrustStore {
   getProfile(did: string): TrustProfile {
     let profile = this.profiles.get(did);
     if (!profile) {
+      // Enforce MAX_TRUST_PROFILES with LRU eviction before adding new entry
+      if (this.profiles.size >= MAX_TRUST_PROFILES) {
+        this.evictLRU();
+      }
       profile = {
         did,
         tier: TrustTier.NEW,
@@ -72,10 +79,24 @@ export class TrustStore {
         lastActivity: Date.now(),
       };
       this.profiles.set(did, profile);
+    } else {
+      // Move to end of Map iteration order (LRU refresh)
+      this.profiles.delete(did);
+      this.profiles.set(did, profile);
     }
     // Always re-evaluate tier
     profile.tier = this.evaluateTier(profile);
     return profile;
+  }
+
+  /**
+   * Evict the least recently used profile (first entry in Map iteration order).
+   */
+  private evictLRU(): void {
+    const firstKey = this.profiles.keys().next().value;
+    if (firstKey !== undefined) {
+      this.profiles.delete(firstKey);
+    }
   }
 
   /**
@@ -160,15 +181,30 @@ export class TrustStore {
     return TrustTier.NEW;
   }
 
+  /** DID format validation — prevents prototype pollution via malicious keys */
+  private static readonly DID_KEY_PATTERN = /^(did:[a-z]+:[a-zA-Z0-9._:%-]+|[a-zA-Z0-9._-]{1,128})$/;
+
   /**
    * Load profiles from the persistence file.
+   * Uses Object.create(null) to prevent prototype pollution from JSON keys.
    */
   private load(): void {
     try {
       const raw = readFileSync(this.persistPath, 'utf-8');
-      const data = JSON.parse(raw) as Record<string, TrustProfile>;
-      for (const [did, profile] of Object.entries(data)) {
-        this.profiles.set(did, profile);
+      // Parse into a null-prototype object to prevent __proto__ pollution
+      const data: Record<string, TrustProfile> = Object.assign(
+        Object.create(null),
+        JSON.parse(raw),
+      );
+      for (const did of Object.keys(data)) {
+        // H-4: Skip keys that could cause prototype pollution or aren't valid identifiers
+        if (!TrustStore.DID_KEY_PATTERN.test(did)) {
+          continue;
+        }
+        const profile = data[did];
+        if (profile && typeof profile === 'object' && profile.did) {
+          this.profiles.set(did, profile);
+        }
       }
     } catch {
       // File doesn't exist or is corrupted — start fresh

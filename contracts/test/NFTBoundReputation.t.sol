@@ -520,6 +520,48 @@ contract NFTBoundReputationTest is Test {
         assertEq(reputation.getStakedAmount(tokenId), 600 * 10 ** 6);
     }
 
+    // ============ L-08: MAX_BATCH_SIZE ============
+
+    function test_BatchRecordTransactions_RevertIfTooLarge() public {
+        _mintAgentToken(user1, DID1);
+        uint256 tokenId = agentToken.getTokenByDID(DID1);
+
+        // Create arrays of 101 elements (exceeding MAX_BATCH_SIZE = 100)
+        uint256[] memory tokenIds = new uint256[](101);
+        uint256[] memory volumes = new uint256[](101);
+        bool[] memory successes = new bool[](101);
+        for (uint256 i = 0; i < 101; i++) {
+            tokenIds[i] = tokenId;
+            volumes[i] = 100 * 1e6;
+            successes[i] = true;
+        }
+
+        vm.prank(oracle);
+        vm.expectRevert(NFTBoundReputation.BatchTooLarge.selector);
+        reputation.batchRecordTransactions(tokenIds, volumes, successes);
+    }
+
+    function test_BatchRecordTransactions_SucceedsAtMaxBatchSize() public {
+        _mintAgentToken(user1, DID1);
+        uint256 tokenId = agentToken.getTokenByDID(DID1);
+
+        // Create arrays of exactly 100 elements (at MAX_BATCH_SIZE)
+        uint256[] memory tokenIds = new uint256[](100);
+        uint256[] memory volumes = new uint256[](100);
+        bool[] memory successes = new bool[](100);
+        for (uint256 i = 0; i < 100; i++) {
+            tokenIds[i] = tokenId;
+            volumes[i] = 100 * 1e6;
+            successes[i] = true;
+        }
+
+        vm.prank(oracle);
+        reputation.batchRecordTransactions(tokenIds, volumes, successes);
+
+        (, uint256 transactions,) = reputation.getReputation(tokenId);
+        assertEq(transactions, 100);
+    }
+
     // ============ Helper Functions ============
 
     function _mintAgentToken(address to, bytes32 didHash) internal {

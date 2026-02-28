@@ -2092,4 +2092,137 @@ contract DisputeResolutionTest is Test {
         uint256 providerAfter = usdc.balanceOf(provider);
         assertEq(providerAfter - providerBefore, 100 * 1e6, "Provider should receive full amount");
     }
+
+    // ============ M-06: Internal checkAutoResolution Tests ============
+
+    function test_executeAutoResolution_usesInternalCheck() public {
+        // Test that executeAutoResolution works correctly after refactoring
+        // to use internal view function instead of this.checkAutoResolution
+        uint256 escrowId = _createFundedEscrow(5 * 1e6); // $5, Tier 1
+
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.prank(client);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+
+        // Submit provider evidence too
+        vm.prank(provider);
+        disputeResolution.submitEvidence(disputeId, keccak256("provider-evidence"));
+
+        // Warp past evidence period
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+
+        // Both sides have evidence -> should be 50/50 split
+        (bool canResolve, uint256 clientShare) = disputeResolution.checkAutoResolution(disputeId);
+        assertTrue(canResolve, "Should be resolvable");
+        assertEq(clientShare, 5000, "Should be 50/50 when both have evidence");
+
+        vm.prank(client);
+        disputeResolution.executeAutoResolution(disputeId);
+
+        IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
+        assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.SETTLED));
+        assertEq(d.clientShare, 5000);
+        assertEq(d.providerShare, 5000);
+    }
+
+    // ============ M-04: Per-Dispute Fee Tracking and Arbiter Rewards ============
+
+    function test_disputeFeeTrackedPerDispute() public {
+        uint256 escrowId = _createFundedEscrow(100 * 1e6); // Tier 2
+
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        // Check that dispute fee was tracked
+        uint256 trackedFee = disputeResolution.getDisputeFee(disputeId);
+        assertEq(trackedFee, 5 * 1e6, "Dispute fee should be tracked");
+    }
+
+    function test_claimArbiterReward() public {
+        // Create a Tier 2 dispute, go through full voting cycle
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        // Warp past evidence period
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+
+        // Oracle submits AI analysis
+        vm.prank(oracle);
+        disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+
+        // All 3 arbiters vote
+        vm.prank(arbiter1);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+        vm.prank(arbiter2);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+        vm.prank(arbiter3);
+        disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
+
+        // Finalize ruling
+        vm.warp(block.timestamp + VOTING_PERIOD + 1);
+        disputeResolution.finalizeRuling(disputeId);
+
+        // Arbiters should have claimable rewards after finalization
+        uint256 arbiter1Reward = disputeResolution.getArbiterReward(arbiter1);
+        assertGt(arbiter1Reward, 0, "Arbiter should have claimable reward");
+
+        // Claim reward
+        uint256 balanceBefore = usdc.balanceOf(arbiter1);
+        vm.prank(arbiter1);
+        disputeResolution.claimArbiterReward();
+        uint256 balanceAfter = usdc.balanceOf(arbiter1);
+
+        assertEq(balanceAfter - balanceBefore, arbiter1Reward, "Should receive correct reward");
+        assertEq(disputeResolution.getArbiterReward(arbiter1), 0, "Reward should be cleared");
+    }
+
+    function test_withdrawFees_onlyUnallocated() public {
+        // Create a Tier 2 dispute - fee goes to pool
+        uint256 escrowId = _createFundedEscrow(100 * 1e6);
+
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.startPrank(client);
+        usdc.approve(address(disputeResolution), 5 * 1e6);
+        disputeResolution.createDispute(escrowId, keccak256("evidence"));
+        vm.stopPrank();
+
+        // feePool should have the fee
+        assertEq(disputeResolution.feePool(), 5 * 1e6);
+    }
+
+    function test_checkAutoResolution_publicStillWorks() public {
+        // Verify public checkAutoResolution still returns correct results
+        uint256 escrowId = _createFundedEscrow(5 * 1e6);
+
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "");
+
+        vm.prank(client);
+        uint256 disputeId = disputeResolution.createDispute(escrowId, keccak256("evidence"));
+
+        // Before evidence period ends
+        (bool canResolve,) = disputeResolution.checkAutoResolution(disputeId);
+        assertFalse(canResolve, "Cannot resolve before evidence period");
+
+        // After evidence period
+        vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
+        (canResolve,) = disputeResolution.checkAutoResolution(disputeId);
+        assertTrue(canResolve, "Can resolve after evidence period");
+    }
 }

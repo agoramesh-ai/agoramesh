@@ -803,12 +803,13 @@ describe('E2E: Agent card and health check', () => {
     await server.stop();
   });
 
-  it('returns health status with agent name', async () => {
+  it('returns health status without agent details (L-3)', async () => {
     const res = await request(app).get('/health');
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
-    expect(res.body.agent).toBe('e2e-test-agent');
+    // L-3: Unauthenticated health check only returns status
+    expect(res.body.agent).toBeUndefined();
   });
 
   it('does not expose pendingTasks in health response', async () => {
@@ -849,7 +850,9 @@ describe('E2E: Agent card and health check', () => {
 
     expect(healthRes.status).toBe(200);
     expect(cardRes.status).toBe(200);
-    expect(healthRes.body.agent).toBe(cardRes.body.name);
+    // L-3: Unauthenticated health check only returns status
+    expect(healthRes.body.status).toBe('ok');
+    expect(cardRes.body.name).toBeDefined();
   });
 
   it('returns security headers (helmet)', async () => {

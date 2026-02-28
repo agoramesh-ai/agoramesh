@@ -166,6 +166,7 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
     /// @inheritdoc IVerifiedNamespaces
     function reserveNamespace(string calldata name) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         bytes32 nsHash = _validateAndHashName(name);
+        if (_namespaces[nsHash].owner != address(0)) revert NamespaceAlreadyExists();
         _reserved[nsHash] = true;
     }
 

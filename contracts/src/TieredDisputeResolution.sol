@@ -69,6 +69,15 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     /// @notice Fee pool for arbiter rewards
     uint256 public feePool;
 
+    /// @notice Fees tracked per dispute
+    mapping(uint256 => uint256) private _disputeFees;
+
+    /// @notice Claimable arbiter rewards
+    mapping(address => uint256) private _arbiterRewards;
+
+    /// @notice Total allocated arbiter rewards (not yet claimed)
+    uint256 private _totalAllocatedRewards;
+
     // ============ Errors ============
 
     error InvalidEscrow();
@@ -123,7 +132,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     // ============ Dispute Creation ============
 
     /// @inheritdoc IDisputeResolution
-    function createDispute(uint256 escrowId, bytes32 evidenceCID) external override returns (uint256 disputeId) {
+    function createDispute(uint256 escrowId, bytes32 evidenceCID) external override nonReentrant returns (uint256 disputeId) {
         // Get escrow details
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
 
@@ -144,14 +153,18 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         Tier tier = determineTier(e.amount);
 
         // Calculate and collect fee for Tier 2+
+        uint256 fee = 0;
         if (tier != Tier.AUTO) {
-            uint256 fee = calculateFee(tier, e.amount);
+            fee = calculateFee(tier, e.amount);
             paymentToken.safeTransferFrom(msg.sender, address(this), fee);
             feePool += fee;
         }
 
         // Generate dispute ID
         disputeId = ++_nextDisputeId;
+
+        // Track fee per dispute
+        _disputeFees[disputeId] = fee;
 
         // Create dispute record
         _disputes[disputeId] = Dispute({
@@ -347,13 +360,32 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         d.state = DisputeState.APPEALABLE;
         d.appealDeadline = block.timestamp + APPEAL_PERIOD;
 
+        // Distribute portion of fee to voting arbiters (50% of dispute fee)
+        uint256 disputeFee = _disputeFees[disputeId];
+        if (disputeFee > 0 && votes.length > 0) {
+            uint256 arbiterPool = disputeFee / 2; // 50% to arbiters
+            // Cap at available feePool to prevent underflow
+            if (arbiterPool > feePool) {
+                arbiterPool = feePool;
+            }
+            uint256 perArbiter = arbiterPool / votes.length;
+            if (perArbiter > 0) {
+                uint256 totalDistributed = perArbiter * votes.length;
+                for (uint256 i = 0; i < votes.length; i++) {
+                    _arbiterRewards[votes[i].arbiter] += perArbiter;
+                }
+                _totalAllocatedRewards += totalDistributed;
+                feePool -= totalDistributed;
+            }
+        }
+
         emit RulingGiven(disputeId, d.clientShare, d.providerShare, true);
     }
 
     // ============ Appeal ============
 
     /// @inheritdoc IDisputeResolution
-    function appeal(uint256 disputeId) external override {
+    function appeal(uint256 disputeId) external override nonReentrant {
         Dispute storage d = _getDispute(disputeId);
 
         // Verify appealable state
@@ -376,9 +408,10 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         }
 
         // Collect appeal fee (escalates to Tier 3)
-        uint256 fee = calculateFee(Tier.COMMUNITY, d.amount);
-        paymentToken.safeTransferFrom(msg.sender, address(this), fee);
-        feePool += fee;
+        uint256 appealFee = calculateFee(Tier.COMMUNITY, d.amount);
+        paymentToken.safeTransferFrom(msg.sender, address(this), appealFee);
+        feePool += appealFee;
+        _disputeFees[disputeId] += appealFee;
 
         // Escalate to Tier 3 and increment round
         d.tier = Tier.COMMUNITY;
@@ -434,33 +467,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         override
         returns (bool canResolve, uint256 clientShare)
     {
-        Dispute storage d = _disputes[disputeId];
-
-        if (d.id == 0) {
-            return (false, 0);
-        }
-
-        // Must be Tier 1
-        if (d.tier != Tier.AUTO) {
-            return (false, 0);
-        }
-
-        // Must be past evidence period
-        if (block.timestamp <= d.evidenceDeadline) {
-            return (false, 0);
-        }
-
-        // Auto-resolution logic:
-        // - No provider evidence = full refund to client
-        // - No client evidence = full release to provider
-        // - Both evidence = 50/50 split (requires human review in reality)
-        if (d.providerEvidenceCID == bytes32(0)) {
-            return (true, BP); // 100% to client
-        } else if (d.clientEvidenceCID == bytes32(0)) {
-            return (true, 0); // 100% to provider
-        } else {
-            return (true, BP / 2); // 50/50
-        }
+        return _checkAutoResolutionInternal(disputeId);
     }
 
     /// @inheritdoc IDisputeResolution
@@ -481,7 +488,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
             revert EvidencePeriodNotEnded();
         }
 
-        (bool canResolve, uint256 clientShare) = this.checkAutoResolution(disputeId);
+        (bool canResolve, uint256 clientShare) = _checkAutoResolutionInternal(disputeId);
         if (!canResolve) {
             revert CannotAutoResolve();
         }
@@ -562,6 +569,44 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
 
     // ============ Internal Functions ============
 
+    /// @notice Internal auto-resolution check logic
+    /// @param disputeId The dispute ID
+    /// @return canResolve True if can auto-resolve
+    /// @return clientShare Suggested client share if can resolve
+    function _checkAutoResolutionInternal(uint256 disputeId)
+        internal
+        view
+        returns (bool canResolve, uint256 clientShare)
+    {
+        Dispute storage d = _disputes[disputeId];
+
+        if (d.id == 0) {
+            return (false, 0);
+        }
+
+        // Must be Tier 1
+        if (d.tier != Tier.AUTO) {
+            return (false, 0);
+        }
+
+        // Must be past evidence period
+        if (block.timestamp <= d.evidenceDeadline) {
+            return (false, 0);
+        }
+
+        // Auto-resolution logic:
+        // - No provider evidence = full refund to client
+        // - No client evidence = full release to provider
+        // - Both evidence = 50/50 split (requires human review in reality)
+        if (d.providerEvidenceCID == bytes32(0)) {
+            return (true, BP); // 100% to client
+        } else if (d.clientEvidenceCID == bytes32(0)) {
+            return (true, 0); // 100% to provider
+        } else {
+            return (true, BP / 2); // 50/50
+        }
+    }
+
     /// @notice Get dispute by ID, revert if not found
     function _getDispute(uint256 disputeId) internal view returns (Dispute storage) {
         Dispute storage d = _disputes[disputeId];
@@ -615,7 +660,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
 
     // ============ Fee Management ============
 
-    /// @notice Withdraw accumulated fees
+    /// @notice Withdraw accumulated fees (only unallocated fees)
     /// @param to Address to send fees to
     function withdrawFees(address to) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 amount = feePool;
@@ -623,6 +668,30 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         feePool = 0;
         paymentToken.safeTransfer(to, amount);
         emit FeesWithdrawn(to, amount);
+    }
+
+    /// @notice Claim accumulated arbiter rewards
+    function claimArbiterReward() external nonReentrant {
+        uint256 reward = _arbiterRewards[msg.sender];
+        if (reward == 0) revert NoFeesToWithdraw();
+        _arbiterRewards[msg.sender] = 0;
+        _totalAllocatedRewards -= reward;
+        paymentToken.safeTransfer(msg.sender, reward);
+        emit ArbiterRewardClaimed(msg.sender, reward);
+    }
+
+    /// @notice Get the fee tracked for a specific dispute
+    /// @param disputeId The dispute ID
+    /// @return The fee amount
+    function getDisputeFee(uint256 disputeId) external view returns (uint256) {
+        return _disputeFees[disputeId];
+    }
+
+    /// @notice Get the claimable reward for an arbiter
+    /// @param arbiter The arbiter address
+    /// @return The claimable reward amount
+    function getArbiterReward(address arbiter) external view returns (uint256) {
+        return _arbiterRewards[arbiter];
     }
 
     // ============ Arbiter Pool Management ============
@@ -679,4 +748,7 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
 
     /// @notice Emitted when accumulated fees are withdrawn
     event FeesWithdrawn(address indexed to, uint256 amount);
+
+    /// @notice Emitted when an arbiter claims their reward
+    event ArbiterRewardClaimed(address indexed arbiter, uint256 amount);
 }

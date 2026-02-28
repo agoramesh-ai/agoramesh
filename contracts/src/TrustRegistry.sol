@@ -45,6 +45,12 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
     /// @notice Cooldown period before an endorser can re-endorse the same endorsee
     uint256 public constant ENDORSEMENT_COOLDOWN = 24 hours;
 
+    /// @notice Maximum length of a capability card CID
+    uint256 public constant MAX_CAPABILITY_CID_LENGTH = 256;
+
+    /// @notice Maximum length of an endorsement message
+    uint256 public constant MAX_ENDORSEMENT_MSG_LENGTH = 512;
+
     /// @notice Basis points denominator (100%)
     uint256 private constant BASIS_POINTS = 10000;
 
@@ -104,6 +110,14 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
     error WithdrawalBelowMinimumStake();
     error InvalidDIDHash();
     error EndorsementCooldownActive(uint256 remainingTime);
+    error CapabilityCardCIDTooLong();
+    error EndorsementMessageTooLong();
+    error InvalidTreasuryAddress();
+
+    // ============ Events (Admin) ============
+
+    /// @notice Emitted when the treasury address is updated
+    event TreasuryUpdated(address indexed newTreasury);
 
     // ============ Constructor ============
 
@@ -128,6 +142,9 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
         }
         if (bytes(capabilityCardCID).length == 0) {
             revert InvalidCapabilityCardCID();
+        }
+        if (bytes(capabilityCardCID).length > MAX_CAPABILITY_CID_LENGTH) {
+            revert CapabilityCardCIDTooLong();
         }
 
         if (_ownerToAgent[msg.sender] != bytes32(0)) {
@@ -155,6 +172,9 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
         if (bytes(newCID).length == 0) {
             revert InvalidCapabilityCardCID();
         }
+        if (bytes(newCID).length > MAX_CAPABILITY_CID_LENGTH) {
+            revert CapabilityCardCIDTooLong();
+        }
 
         _agents[didHash].capabilityCardCID = newCID;
 
@@ -167,6 +187,7 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
         _requireActive(didHash);
 
         _agents[didHash].isActive = false;
+        delete _ownerToAgent[msg.sender];
 
         emit AgentDeactivated(didHash);
     }
@@ -323,14 +344,19 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
     /// @notice Set the treasury address for slashed funds
     /// @param _treasury New treasury address
     function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_treasury == address(0)) revert InvalidAdmin();
+        if (_treasury == address(0)) revert InvalidTreasuryAddress();
         treasury = _treasury;
+        emit TreasuryUpdated(_treasury);
     }
 
     // ============ Endorsement Functions ============
 
     /// @inheritdoc ITrustRegistry
     function endorse(bytes32 endorseeDid, string calldata message) external override {
+        if (bytes(message).length > MAX_ENDORSEMENT_MSG_LENGTH) {
+            revert EndorsementMessageTooLong();
+        }
+
         bytes32 endorserDid = _ownerToAgent[msg.sender];
 
         if (endorserDid == bytes32(0)) {
@@ -461,7 +487,7 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
 
         // Volume factor (logarithmic scaling, caps at $100k)
         // Simple linear scaling for now: 1 point per $100 volume, max 1000 points
-        uint256 volumeFactor = data.totalVolumeUsd / 100_00; // Convert cents to $100 units
+        uint256 volumeFactor = data.totalVolumeUsd / 100_000_000; // Convert 6-decimal USDC to $100 units
         if (volumeFactor > 1000) {
             volumeFactor = 1000;
         }

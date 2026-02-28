@@ -123,7 +123,7 @@ describe('Discovery Proxy', () => {
       expect(res.status).toBe(200);
       expect(res.body.did).toBe('did:test:1');
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/agents/did:test:1'),
+        expect.stringContaining('/agents/did%3Atest%3A1'),
         expect.any(Object),
       );
     });
@@ -139,6 +139,40 @@ describe('Discovery Proxy', () => {
 
       expect(res.status).toBe(404);
       expect(res.body.code).toBe('NOT_FOUND');
+    });
+
+    it('returns 400 for invalid DID format (SSRF prevention)', async () => {
+      const res = await request(app).get('/discovery/agents/not-a-valid-did');
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 400 for DID with URL injection characters', async () => {
+      const res = await request(app).get(
+        '/discovery/agents/did:test:1%00http://evil.com'
+      );
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 400 for DID with spaces', async () => {
+      const res = await request(app).get('/discovery/agents/not a did');
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('encodes DID in URL path to prevent injection', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ did: 'did:key:z6MkTest' }),
+      });
+
+      await request(app).get('/discovery/agents/did:key:z6MkTest');
+
+      // Should use encodeURIComponent for the DID parameter
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain(encodeURIComponent('did:key:z6MkTest'));
     });
   });
 

@@ -8,6 +8,9 @@ import { z } from 'zod';
 
 const PROXY_TIMEOUT = 5000;
 
+/** DID format validation regex — prevents SSRF via path injection */
+const DID_FORMAT = /^did:[a-z]+:[a-zA-Z0-9._:%-]+$/;
+
 const SearchBodySchema = z.object({
   query: z.string().min(1, 'query is required').max(500),
   minTrust: z.number().min(0).max(1).optional(),
@@ -86,8 +89,17 @@ export function createDiscoveryProxy(nodeUrl?: string): Router {
   router.get('/discovery/agents/:did(*)', async (req: Request, res: Response) => {
     if (!requireNodeUrl(res)) return;
 
+    const did = req.params.did;
+    if (!DID_FORMAT.test(did)) {
+      return res.status(400).json({
+        error: 'Invalid DID format',
+        code: 'VALIDATION_ERROR',
+        help: { message: 'DID must match format: did:<method>:<identifier>' },
+      });
+    }
+
     try {
-      const result = await proxyGet(`${nodeUrl}/agents/${req.params.did}`);
+      const result = await proxyGet(`${nodeUrl}/agents/${encodeURIComponent(did)}`);
 
       if (result.status === 404) {
         return res.status(404).json({

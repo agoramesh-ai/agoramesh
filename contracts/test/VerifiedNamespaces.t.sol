@@ -539,4 +539,27 @@ contract VerifiedNamespacesTest is Test {
         assertEq(namespaces.MAX_METADATA_KEY_LENGTH(), 64);
         assertEq(namespaces.MAX_METADATA_VALUE_LENGTH(), 1024);
     }
+
+    // ============ L-06: ReserveNamespace Ownership Check ============
+
+    function test_ReserveNamespace_RevertsIfAlreadyRegistered() public {
+        // Register a namespace first
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Try to reserve it - should revert because it's already owned
+        vm.prank(admin);
+        vm.expectRevert(VerifiedNamespaces.NamespaceAlreadyExists.selector);
+        namespaces.reserveNamespace(NS_OPENAI);
+    }
+
+    function test_ReserveNamespace_SucceedsForUnregistered() public {
+        vm.prank(admin);
+        namespaces.reserveNamespace(NS_OPENAI);
+
+        // Verify it's now reserved (can't register)
+        vm.prank(user1);
+        vm.expectRevert(VerifiedNamespaces.NamespaceReserved.selector);
+        namespaces.registerNamespace(NS_OPENAI);
+    }
 }

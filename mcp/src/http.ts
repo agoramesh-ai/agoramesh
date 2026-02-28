@@ -11,8 +11,10 @@ const port = parseInt(process.env.AGORAMESH_MCP_PORT || '3401');
 const nodeUrl = process.env.AGORAMESH_NODE_URL || 'http://localhost:8080';
 const bridgeUrl = process.env.AGORAMESH_BRIDGE_URL || undefined;
 const publicUrl = process.env.AGORAMESH_PUBLIC_URL || 'https://api.agoramesh.ai';
+const authToken = process.env.AGORAMESH_MCP_AUTH_TOKEN || undefined;
+const corsOrigin = process.env.AGORAMESH_CORS_ORIGIN || undefined;
 
-const handler = createMcpRequestHandler({ nodeUrl, bridgeUrl, publicUrl });
+const handler = createMcpRequestHandler({ nodeUrl, bridgeUrl, publicUrl, authToken, corsOrigin });
 const httpServer = createHttpServer(handler);
 
 httpServer.listen(port, () => {

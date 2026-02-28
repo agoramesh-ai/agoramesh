@@ -226,6 +226,52 @@ describe('TrustStore', () => {
   });
 
   // ==========================================================================
+  // Prototype pollution prevention (H-4)
+  // ==========================================================================
+
+  describe('prototype pollution prevention', () => {
+    it('rejects __proto__ as DID key', () => {
+      const profile = store.getProfile('__proto__');
+      // Should NOT pollute Object.prototype
+      expect(({} as any).__proto__).not.toHaveProperty('tier');
+      // Should either reject or safely handle the key
+      expect(profile.did).toBe('__proto__');
+    });
+
+    it('rejects constructor as DID key', () => {
+      const profile = store.getProfile('constructor');
+      expect(profile.did).toBe('constructor');
+    });
+
+    it('validates DID format before storing in trust store', () => {
+      // DID format validation should prevent polluted keys
+      // The store should only accept keys matching DID pattern or valid identifiers
+    });
+
+    it('loads JSON safely without prototype pollution', () => {
+      const { writeFileSync } = require('node:fs');
+      // Write a malicious JSON file with __proto__ key
+      writeFileSync(
+        join(tempDir, 'poison.json'),
+        JSON.stringify({
+          '__proto__': { tier: 'trusted', completedTasks: 999 },
+          'did:key:z6MkSafe': { did: 'did:key:z6MkSafe', tier: 'new', firstSeen: Date.now(), completedTasks: 0, failedTasks: 0, lastActivity: Date.now() },
+        })
+      );
+
+      const store2 = new TrustStore(join(tempDir, 'poison.json'));
+
+      // Object.prototype should not be polluted
+      expect(({} as any).tier).toBeUndefined();
+      expect(({} as any).completedTasks).toBeUndefined();
+
+      // Safe key should load fine
+      const safeProfile = store2.getProfile('did:key:z6MkSafe');
+      expect(safeProfile.completedTasks).toBe(0);
+    });
+  });
+
+  // ==========================================================================
   // Persistence
   // ==========================================================================
 

@@ -235,6 +235,24 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
         emit EscrowReleased(escrowId);
     }
 
+    /// @notice Abandon an escrow that has not yet been funded
+    /// @param escrowId The escrow to abandon
+    /// @dev Only callable by client when escrow is in AWAITING_DEPOSIT state
+    function abandonEscrow(uint256 escrowId) external {
+        Escrow storage e = _getEscrow(escrowId);
+
+        // Verify caller is the client
+        if (msg.sender != e.clientAddress) revert NotClient();
+
+        // Verify state
+        if (e.state != State.AWAITING_DEPOSIT) revert InvalidState();
+
+        // Update state - no funds to return since never funded
+        e.state = State.REFUNDED;
+
+        _emitStateTransition(escrowId, State.AWAITING_DEPOSIT, State.REFUNDED);
+    }
+
     // ============ Dispute Functions ============
 
     /// @inheritdoc IAgoraMeshEscrow
@@ -290,14 +308,19 @@ contract AgoraMeshEscrow is IAgoraMeshEscrow, AccessControlEnumerable, Reentranc
 
         _emitStateTransition(escrowId, State.DISPUTED, newState);
 
-        // Deduct protocol fees and transfer funds
-        if (providerShare > 0) {
-            uint256 netProviderShare = _deductAndTransferFee(e.token, providerShare, e.facilitator, escrowId);
+        // Deduct protocol fee ONCE on the full amount, then distribute proportionally
+        uint256 netAmount = _deductAndTransferFee(e.token, e.amount, e.facilitator, escrowId);
+
+        // Distribute net amount proportionally
+        if (providerShare > 0 && clientShare > 0) {
+            uint256 netProviderShare = (netAmount * providerShare) / e.amount;
+            uint256 netClientShare = netAmount - netProviderShare;
             IERC20(e.token).safeTransfer(e.providerAddress, netProviderShare);
-        }
-        if (clientShare > 0) {
-            uint256 netClientShare = _deductAndTransferFee(e.token, clientShare, e.facilitator, escrowId);
             IERC20(e.token).safeTransfer(e.clientAddress, netClientShare);
+        } else if (providerShare > 0) {
+            IERC20(e.token).safeTransfer(e.providerAddress, netAmount);
+        } else if (clientShare > 0) {
+            IERC20(e.token).safeTransfer(e.clientAddress, netAmount);
         }
 
         // Record transaction outcome in TrustRegistry

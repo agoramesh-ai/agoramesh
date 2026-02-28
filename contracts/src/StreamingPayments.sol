@@ -279,7 +279,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     // ============ Pause/Resume ============
 
     /// @inheritdoc IStreamingPayments
-    function pause(uint256 streamId) external {
+    function pause(uint256 streamId) external nonReentrant {
         Stream storage stream = _streams[streamId];
         if (msg.sender != stream.sender) revert NotSender();
         if (stream.status != StreamStatus.ACTIVE) revert NotActive();
@@ -291,7 +291,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     }
 
     /// @inheritdoc IStreamingPayments
-    function resume(uint256 streamId) external {
+    function resume(uint256 streamId) external nonReentrant {
         Stream storage stream = _streams[streamId];
         if (msg.sender != stream.sender) revert NotSender();
         if (stream.status != StreamStatus.PAUSED) revert NotPaused();

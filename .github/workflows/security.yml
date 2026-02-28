@@ -52,23 +52,19 @@ jobs:
 
       - name: Audit SDK dependencies
         working-directory: sdk
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: npm audit --audit-level=critical
 
       - name: Audit Bridge dependencies
         working-directory: bridge
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: npm audit --audit-level=critical
 
       # Rust dependencies
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
-        continue-on-error: true
 
       - name: Audit Rust dependencies
         working-directory: node
         run: cargo audit
-        continue-on-error: true
 
   # ==========================================================================
   # SAST - static analysis for common vulnerability patterns

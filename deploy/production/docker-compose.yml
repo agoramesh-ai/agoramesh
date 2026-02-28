@@ -1,6 +1,12 @@
 services:
   node:
     image: ghcr.io/agoramesh-ai/agoramesh-node:latest
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
     command:
       - ./agoramesh
       - start
@@ -35,6 +41,12 @@ services:
 
   bridge:
     image: ghcr.io/agoramesh-ai/agoramesh-bridge:latest
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
     ports:
       - "127.0.0.1:3402:3402"
     environment:
@@ -59,6 +71,12 @@ services:
 
   mcp:
     image: ghcr.io/agoramesh-ai/agoramesh-mcp:latest
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
     command: ["node", "dist/http.js"]
     ports:
       - "127.0.0.1:3403:3403"

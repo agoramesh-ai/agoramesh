@@ -478,3 +478,59 @@ describe('A2A JSON-RPC 2.0 — POST /a2a (agent card endpoint)', () => {
     expect(res.body.error.code).toBe(A2A_ERRORS.TASK_NOT_CANCELLABLE.code);
   });
 });
+
+describe('A2A message/send validation (H-3)', () => {
+  let server: BridgeServer;
+  let app: any;
+
+  beforeAll(async () => {
+    server = new BridgeServer({
+      ...testConfig,
+      rateLimit: { enabled: false },
+    });
+    app = (server as any).app;
+  });
+
+  afterAll(async () => {
+    await server.stop();
+  });
+
+  it('rejects prompt exceeding max length', async () => {
+    const res = await request(app)
+      .post('/a2a')
+      .send({
+        jsonrpc: '2.0',
+        id: 'val-1',
+        method: 'message/send',
+        params: {
+          message: {
+            role: 'user',
+            parts: [{ type: 'text', text: 'x'.repeat(200_000) }],
+          },
+        },
+      });
+
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe(A2A_ERRORS.INVALID_PARAMS.code);
+    expect(res.body.error.data).toMatch(/prompt.*length|too long/i);
+  });
+
+  it('rejects empty prompt text', async () => {
+    const res = await request(app)
+      .post('/a2a')
+      .send({
+        jsonrpc: '2.0',
+        id: 'val-2',
+        method: 'message/send',
+        params: {
+          message: {
+            role: 'user',
+            parts: [{ type: 'text', text: '' }],
+          },
+        },
+      });
+
+    expect(res.body.error).toBeDefined();
+    expect(res.body.error.code).toBe(A2A_ERRORS.INVALID_PARAMS.code);
+  });
+});

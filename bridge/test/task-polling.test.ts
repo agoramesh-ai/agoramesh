@@ -545,3 +545,52 @@ describe('Task polling constants', () => {
     expect(TASK_SYNC_TIMEOUT).toBe(60000);
   });
 });
+
+describe('Sync mode race condition (M-3)', () => {
+  let server: BridgeServer;
+  let app: any;
+
+  beforeAll(async () => {
+    server = new BridgeServer({
+      ...testConfig,
+      rateLimit: { enabled: false },
+    });
+    app = (server as any).app;
+    // Set short sync timeout for faster tests
+    (server as any)._syncTimeout = 5000;
+  });
+
+  afterAll(async () => {
+    await server.stop();
+  });
+
+  it('handles fast-completing tasks in sync mode without missing results', async () => {
+    // Mock executor to resolve instantly
+    const executor = (server as any).executor;
+    const originalExecute = executor.execute.bind(executor);
+    executor.execute = vi.fn().mockResolvedValue({
+      taskId: 'fast-sync-task',
+      status: 'completed',
+      output: 'instant result',
+      duration: 1,
+    });
+
+    try {
+      const res = await request(app)
+        .post('/task?wait=true')
+        .send({
+          taskId: 'fast-sync-task',
+          type: 'prompt',
+          prompt: 'fast task',
+          clientDid: 'did:test:sync-race',
+        });
+
+      // Should get the result, not a 202 timeout
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('completed');
+      expect(res.body.output).toBe('instant result');
+    } finally {
+      executor.execute = originalExecute;
+    }
+  });
+});

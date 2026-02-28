@@ -36,16 +36,17 @@ describe('BridgeServer', () => {
       expect(res.body.status).toBe('ok');
     });
 
-    it('returns agent name', async () => {
+    it('does not expose agent name for unauthenticated requests (L-3)', async () => {
       const res = await request(app).get('/health');
 
-      expect(res.body.agent).toBe('test-agent');
+      // L-3: Unauthenticated health check only returns status
+      expect(res.body.agent).toBeUndefined();
     });
 
-    it('returns mode field (demo or live)', async () => {
+    it('does not expose mode for unauthenticated requests (L-3)', async () => {
       const res = await request(app).get('/health');
 
-      expect(res.body.mode).toMatch(/^(demo|live)$/);
+      expect(res.body.mode).toBeUndefined();
     });
 
     it('does not expose pending tasks count', async () => {

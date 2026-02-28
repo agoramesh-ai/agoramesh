@@ -71,11 +71,18 @@ async function main() {
   // CORS origins (comma-separated, defaults to localhost in dev)
   const corsOrigins = process.env.BRIDGE_CORS_ORIGINS;
 
+  // Trust proxy setting: number, boolean, or string (e.g. 'loopback', comma-separated IPs)
+  const trustProxyEnv = process.env.TRUST_PROXY;
+  const trustProxy = trustProxyEnv !== undefined
+    ? (/^\d+$/.test(trustProxyEnv) ? parseInt(trustProxyEnv, 10) : trustProxyEnv === 'true' ? true : trustProxyEnv === 'false' ? false : trustProxyEnv)
+    : undefined;
+
   const serverConfig: BridgeServerConfig = {
     ...config,
     host,
     requireAuth,
     apiToken,
+    trustProxy,
     nodeUrl: process.env.AGORAMESH_NODE_URL,
     cors: corsOrigins
       ? { origins: corsOrigins.split(',').map((s) => s.trim()) }

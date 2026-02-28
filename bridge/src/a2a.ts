@@ -149,12 +149,22 @@ async function handleMessageSend(
     return jsonRpcError(id, A2A_ERRORS.INVALID_PARAMS, 'Empty text in message part');
   }
 
+  // H-3: Validate prompt length (same as TaskInputSchema: 100KB)
+  const MAX_PROMPT_LENGTH = 100_000;
+  if (prompt.length > MAX_PROMPT_LENGTH) {
+    return jsonRpcError(id, A2A_ERRORS.INVALID_PARAMS, `Prompt length ${prompt.length} exceeds maximum of ${MAX_PROMPT_LENGTH} characters. Too long.`);
+  }
+
+  // H-3: Validate timeout if provided
+  const rawTimeout = typeof params.timeout === 'number' ? params.timeout : 300;
+  const timeout = Math.max(1, Math.min(3600, rawTimeout));
+
   const taskId = `a2a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const task: ResolvedTaskInput = {
     taskId,
     type: 'prompt',
     prompt,
-    timeout: 300,
+    timeout,
     clientDid: typeof message.role === 'string' ? `did:a2a:${message.role}` : 'did:a2a:user',
   };
 
