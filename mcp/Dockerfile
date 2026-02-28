@@ -41,14 +41,14 @@ USER agoramesh
 
 # Environment defaults
 ENV NODE_ENV=production \
-    AGORAMESH_MCP_PORT=3401 \
+    AGORAMESH_MCP_PORT=3403 \
     AGORAMESH_NODE_URL=http://node:8080 \
     AGORAMESH_BRIDGE_URL=http://bridge:3402
 
-EXPOSE 3401
+EXPOSE 3403
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget -qO- http://127.0.0.1:3401/health || exit 1
+    CMD wget -qO- http://127.0.0.1:3403/health || exit 1
 
 CMD ["node", "dist/http.js"]
