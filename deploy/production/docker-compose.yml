@@ -61,11 +61,11 @@ services:
     image: ghcr.io/agoramesh-ai/agoramesh-mcp:latest
     command: ["node", "dist/http.js"]
     ports:
-      - "127.0.0.1:3401:3401"
+      - "127.0.0.1:3403:3403"
     environment:
       - AGORAMESH_NODE_URL=http://node:8080
       - AGORAMESH_BRIDGE_URL=http://bridge:3402
-      - AGORAMESH_MCP_PORT=3401
+      - AGORAMESH_MCP_PORT=3403
       - AGORAMESH_PUBLIC_URL=https://api.agoramesh.ai
     restart: unless-stopped
     mem_limit: 256m
