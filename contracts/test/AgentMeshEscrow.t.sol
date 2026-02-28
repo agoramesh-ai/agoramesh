@@ -107,7 +107,7 @@ contract AgoraMeshEscrowTest is Test {
         uint256 deadline = block.timestamp + 1 days;
 
         vm.prank(client);
-        escrowId = escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+        escrowId = escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         vm.prank(client);
         escrow.fundEscrow(escrowId);
@@ -145,7 +145,7 @@ contract AgoraMeshEscrowTest is Test {
         vm.expectEmit(true, true, true, true);
         emit IAgoraMeshEscrow.EscrowCreated(1, clientDid, providerDid, TASK_AMOUNT, deadline);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         assertEq(escrowId, 1);
 
@@ -170,11 +170,11 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.startPrank(client);
         uint256 id1 =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
         uint256 id2 =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
         uint256 id3 =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
         vm.stopPrank();
 
         assertEq(id1, 1);
@@ -191,7 +191,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.AgentNotActive.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_RevertIfProviderNotActive() public {
@@ -203,7 +203,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.AgentNotActive.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_RevertIfZeroAmount() public {
@@ -211,7 +211,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.InvalidAmount.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), 0, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), 0, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_RevertIfDeadlineInPast() public {
@@ -219,7 +219,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.InvalidDeadline.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_RevertIfZeroProviderAddress() public {
@@ -227,7 +227,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.InvalidProviderAddress.selector);
-        escrow.createEscrow(clientDid, providerDid, address(0), address(usdc), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, address(0), address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_RevertIfZeroToken() public {
@@ -235,7 +235,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.InvalidToken.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(0), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(0), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     // ============ FundEscrow Tests ============
@@ -245,7 +245,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         uint256 clientBalanceBefore = usdc.balanceOf(client);
 
@@ -265,7 +265,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         vm.prank(provider);
         vm.expectRevert(AgoraMeshEscrow.NotClient.selector);
@@ -315,7 +315,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         vm.prank(provider);
         vm.expectRevert(AgoraMeshEscrow.InvalidState.selector);
@@ -392,7 +392,7 @@ contract AgoraMeshEscrowTest is Test {
         // 1. Client creates escrow
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         // Verify AWAITING_DEPOSIT state
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
@@ -478,7 +478,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         vm.warp(deadline + 1);
 
@@ -542,7 +542,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.InvalidState.selector);
@@ -675,7 +675,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
 
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
 
@@ -701,7 +701,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), amount, taskHash, deadline, address(0));
 
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(escrowId);
         assertEq(e.amount, amount);
@@ -758,7 +758,7 @@ contract AgoraMeshEscrowTest is Test {
         uint256 deadline = block.timestamp + 1 days;
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.TokenNotAllowed.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(otherToken), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(otherToken), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_SucceedsWithAllowedToken() public {
@@ -766,7 +766,7 @@ contract AgoraMeshEscrowTest is Test {
         uint256 deadline = block.timestamp + 1 days;
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
         assertGt(escrowId, 0);
     }
 
@@ -777,7 +777,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         vm.expectRevert(AgoraMeshEscrow.DeadlineTooFar.selector);
-        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+        escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
     }
 
     function test_CreateEscrow_SucceedsAtMaxDeadline() public {
@@ -785,7 +785,7 @@ contract AgoraMeshEscrowTest is Test {
 
         vm.prank(client);
         uint256 escrowId =
-            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline);
+            escrow.createEscrow(clientDid, providerDid, provider, address(usdc), TASK_AMOUNT, taskHash, deadline, address(0));
         assertGt(escrowId, 0);
     }
 }

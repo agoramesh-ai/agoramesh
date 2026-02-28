@@ -98,7 +98,7 @@ contract DisputeResolutionTest is Test {
         usdc.approve(address(escrow), amount);
 
         escrowId = escrow.createEscrow(
-            clientDid, providerDid, provider, address(usdc), amount, keccak256("task"), block.timestamp + 7 days
+            clientDid, providerDid, provider, address(usdc), amount, keccak256("task"), block.timestamp + 7 days, address(0)
         );
 
         escrow.fundEscrow(escrowId);
