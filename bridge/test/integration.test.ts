@@ -11,20 +11,20 @@ import type { AgentConfig } from '../src/types.js';
 
 // Mock the SDK
 vi.mock('@agoramesh/sdk', () => ({
-  AgoraMeshClient: vi.fn().mockImplementation(() => ({
-    connect: vi.fn().mockResolvedValue(undefined),
-    disconnect: vi.fn(),
-    isConnected: vi.fn().mockReturnValue(true),
-    registerAgent: vi.fn().mockResolvedValue('0x1234567890abcdef'),
-    getAgent: vi.fn().mockResolvedValue(null),
-    isAgentActive: vi.fn().mockResolvedValue(false),
-    getAddress: vi.fn().mockReturnValue('0xAgentAddress'),
-  })),
-  DiscoveryClient: vi.fn().mockImplementation(() => ({
-    setNodeUrl: vi.fn(),
-    announce: vi.fn().mockResolvedValue(undefined),
-    unannounce: vi.fn().mockResolvedValue(undefined),
-  })),
+  AgoraMeshClient: vi.fn().mockImplementation(function () {
+    this.connect = vi.fn().mockResolvedValue(undefined);
+    this.disconnect = vi.fn();
+    this.isConnected = vi.fn().mockReturnValue(true);
+    this.registerAgent = vi.fn().mockResolvedValue('0x1234567890abcdef');
+    this.getAgent = vi.fn().mockResolvedValue(null);
+    this.isAgentActive = vi.fn().mockResolvedValue(false);
+    this.getAddress = vi.fn().mockReturnValue('0xAgentAddress');
+  }),
+  DiscoveryClient: vi.fn().mockImplementation(function () {
+    this.setNodeUrl = vi.fn();
+    this.announce = vi.fn().mockResolvedValue(undefined);
+    this.unannounce = vi.fn().mockResolvedValue(undefined);
+  }),
 }));
 
 // Mock IPFS service for registration tests
@@ -168,15 +168,15 @@ describe('AgoraMeshIntegration', () => {
     it('should skip registration if agent already registered', async () => {
       // Mock getAgent to return existing agent
       const { AgoraMeshClient } = await import('@agoramesh/sdk');
-      vi.mocked(AgoraMeshClient).mockImplementation(() => ({
-        connect: vi.fn().mockResolvedValue(undefined),
-        disconnect: vi.fn(),
-        isConnected: vi.fn().mockReturnValue(true),
-        registerAgent: vi.fn().mockResolvedValue('0xnew'),
-        getAgent: vi.fn().mockResolvedValue({ did: 'existing', isActive: true }),
-        isAgentActive: vi.fn().mockResolvedValue(true),
-        getAddress: vi.fn().mockReturnValue('0xAgentAddress'),
-      }) as any);
+      vi.mocked(AgoraMeshClient).mockImplementation(function (this: any) {
+        this.connect = vi.fn().mockResolvedValue(undefined);
+        this.disconnect = vi.fn();
+        this.isConnected = vi.fn().mockReturnValue(true);
+        this.registerAgent = vi.fn().mockResolvedValue('0xnew');
+        this.getAgent = vi.fn().mockResolvedValue({ did: 'existing', isActive: true });
+        this.isAgentActive = vi.fn().mockResolvedValue(true);
+        this.getAddress = vi.fn().mockReturnValue('0xAgentAddress');
+      } as any);
 
       integration = new AgoraMeshIntegration(config, {
         rpcUrl: 'https://sepolia.base.org',

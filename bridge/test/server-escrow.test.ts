@@ -12,15 +12,15 @@ import type { AgentConfig } from '../src/types.js';
 
 // Mock the ClaudeExecutor to avoid actual Claude Code execution
 vi.mock('../src/executor.js', () => ({
-  ClaudeExecutor: vi.fn().mockImplementation(() => ({
-    execute: vi.fn().mockResolvedValue({
+  ClaudeExecutor: vi.fn().mockImplementation(function () {
+    this.execute = vi.fn().mockResolvedValue({
       taskId: 'test-task-1',
       status: 'completed',
       output: 'Task completed successfully',
       duration: 1234,
-    }),
-    cancelTask: vi.fn().mockReturnValue(true),
-  })),
+    });
+    this.cancelTask = vi.fn().mockReturnValue(true);
+  }),
 }));
 
 // Base agent config for tests

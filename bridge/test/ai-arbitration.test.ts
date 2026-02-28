@@ -21,11 +21,11 @@ import { Escrow, EscrowState } from '../src/escrow.js';
 // Mock Anthropic Claude API
 const mockClaudeResponse = vi.fn();
 vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(() => ({
-    messages: {
+  default: vi.fn().mockImplementation(function () {
+    this.messages = {
       create: mockClaudeResponse,
-    },
-  })),
+    };
+  }),
 }));
 
 // Mock viem contract calls
