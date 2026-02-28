@@ -3,10 +3,12 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/AgoraMeshEscrow.sol";
+import "../src/StreamingPayments.sol";
 import "../src/TieredDisputeResolution.sol";
 import "../src/TrustRegistry.sol";
 import "../src/interfaces/IAgoraMeshEscrow.sol";
 import "../src/interfaces/IDisputeResolution.sol";
+import "../src/interfaces/IStreamingPayments.sol";
 import "../src/interfaces/ITrustRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -27,6 +29,7 @@ contract IntegrationMockUSDC is ERC20 {
 /// @notice End-to-end tests covering Escrow, DisputeResolution, and TrustRegistry
 contract IntegrationTest is Test {
     AgoraMeshEscrow public escrow;
+    StreamingPayments public streaming;
     TieredDisputeResolution public disputeResolution;
     TrustRegistry public trustRegistry;
     IntegrationMockUSDC public usdc;
@@ -35,6 +38,8 @@ contract IntegrationTest is Test {
     address public client = makeAddr("client");
     address public provider = makeAddr("provider");
     address public oracle = makeAddr("oracle");
+    address public facilitator = makeAddr("facilitator");
+    address public treasury = makeAddr("treasury");
     address public arbiter1 = makeAddr("arbiter1");
     address public arbiter2 = makeAddr("arbiter2");
     address public arbiter3 = makeAddr("arbiter3");
@@ -91,6 +96,9 @@ contract IntegrationTest is Test {
         // Add USDC to allowed tokens
         escrow.addAllowedToken(address(usdc));
 
+        // Deploy StreamingPayments
+        streaming = new StreamingPayments(admin, address(trustRegistry));
+
         vm.stopPrank();
 
         // Register agents
@@ -118,9 +126,11 @@ contract IntegrationTest is Test {
         trustRegistry.depositStake(providerDid, MINIMUM_STAKE);
         vm.stopPrank();
 
-        // Pre-approve escrow contract for client
-        vm.prank(client);
+        // Pre-approve escrow and streaming contracts for client
+        vm.startPrank(client);
         usdc.approve(address(escrow), type(uint256).max);
+        usdc.approve(address(streaming), type(uint256).max);
+        vm.stopPrank();
     }
 
     // ================================================================
@@ -937,5 +947,195 @@ contract IntegrationTest is Test {
 
         // Verify escrow contract has no remaining balance from this escrow
         // (the escrow contract balance might have other escrows)
+    }
+
+    // ================================================================
+    // Protocol Fee: end-to-end escrow with protocol fee + facilitator
+    // ================================================================
+
+    function test_endToEnd_escrowWithProtocolFee() public {
+        uint256 amount = 1000 * 1e6; // $1000
+
+        // 1. Configure protocol fee (0.5%) and treasury
+        vm.startPrank(admin);
+        escrow.setTreasury(treasury);
+        escrow.setProtocolFeeBp(50); // 0.5%
+        vm.stopPrank();
+
+        // 2. Create escrow with facilitator
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), amount, taskHash, block.timestamp + 7 days, facilitator
+        );
+
+        // 3. Fund escrow
+        vm.prank(client);
+        escrow.fundEscrow(escrowId);
+
+        // 4. Confirm delivery
+        vm.prank(provider);
+        escrow.confirmDelivery(escrowId, outputHash);
+
+        // Record balances before release
+        uint256 providerBalBefore = usdc.balanceOf(provider);
+        uint256 facilitatorBalBefore = usdc.balanceOf(facilitator);
+        uint256 treasuryBalBefore = usdc.balanceOf(treasury);
+
+        // 5. Release escrow (expect ProtocolFeeCollected event)
+        vm.expectEmit(true, false, true, true, address(escrow));
+        // fee = 1000e6 * 50 / 10000 = 5_000_000
+        // facilitatorShare = 5_000_000 * 7000 / 10000 = 3_500_000
+        // treasuryShare = 5_000_000 - 3_500_000 = 1_500_000
+        emit IAgoraMeshEscrow.ProtocolFeeCollected(escrowId, 5_000_000, facilitator, 3_500_000, 1_500_000);
+        vm.prank(client);
+        escrow.releaseEscrow(escrowId);
+
+        // 6. Verify distributions
+        uint256 expectedFee = 5_000_000; // 0.5% of $1000
+        uint256 expectedFacilitator = 3_500_000; // 70% of fee
+        uint256 expectedTreasury = 1_500_000; // 30% of fee
+        uint256 expectedProvider = amount - expectedFee; // 995_000_000
+
+        assertEq(usdc.balanceOf(provider), providerBalBefore + expectedProvider, "Provider gets 99.5%");
+        assertEq(usdc.balanceOf(facilitator), facilitatorBalBefore + expectedFacilitator, "Facilitator gets 70% of fee");
+        assertEq(usdc.balanceOf(treasury), treasuryBalBefore + expectedTreasury, "Treasury gets 30% of fee");
+
+        // 7. Verify token conservation: all outflows = original deposit
+        uint256 totalOut = expectedProvider + expectedFacilitator + expectedTreasury;
+        assertEq(totalOut, amount, "No tokens lost or created");
+
+        // 8. Escrow contract should have zero balance for this escrow
+        assertEq(usdc.balanceOf(address(escrow)), 0, "Escrow drained");
+    }
+
+    // ================================================================
+    // Protocol Fee: end-to-end streaming with protocol fee + facilitator
+    // ================================================================
+
+    function test_endToEnd_streamWithProtocolFee() public {
+        uint256 depositAmount = 1000 * 1e6; // $1000 USDC
+        uint256 duration = 1000; // 1000 seconds
+
+        // 1. Configure protocol fee (0.5%) and treasury on streaming
+        vm.startPrank(admin);
+        streaming.setTreasury(treasury);
+        streaming.setProtocolFeeBp(50); // 0.5%
+        vm.stopPrank();
+
+        // 2. Create stream with facilitator
+        vm.prank(client);
+        uint256 streamId = streaming.createStream(
+            providerDid,
+            provider,
+            address(usdc),
+            depositAmount,
+            duration,
+            true, // cancelableBySender
+            false, // cancelableByRecipient
+            facilitator
+        );
+
+        // Verify stream created
+        IStreamingPayments.Stream memory s = streaming.getStream(streamId);
+        assertEq(s.depositAmount, depositAmount);
+        assertEq(s.facilitator, facilitator);
+
+        // 3. Warp forward 500 seconds (50% streamed)
+        vm.warp(block.timestamp + 500);
+
+        uint256 withdrawable = streaming.withdrawableAmountOf(streamId);
+        assertEq(withdrawable, 500 * 1e6, "50% should be withdrawable");
+
+        // Record balances
+        uint256 recipientBalBefore = usdc.balanceOf(provider);
+        uint256 facilitatorBalBefore = usdc.balanceOf(facilitator);
+        uint256 treasuryBalBefore = usdc.balanceOf(treasury);
+
+        // 4. Withdraw available amount
+        vm.prank(provider);
+        streaming.withdraw(streamId, withdrawable);
+
+        // 5. Verify fee splits
+        // fee = 500_000_000 * 50 / 10000 = 2_500_000
+        // facilitatorShare = 2_500_000 * 7000 / 10000 = 1_750_000
+        // treasuryShare = 2_500_000 - 1_750_000 = 750_000
+        // netToRecipient = 500_000_000 - 2_500_000 = 497_500_000
+        uint256 expectedFee = 2_500_000;
+        uint256 expectedFacilitator = 1_750_000;
+        uint256 expectedTreasury = 750_000;
+        uint256 expectedNet = withdrawable - expectedFee;
+
+        assertEq(usdc.balanceOf(provider), recipientBalBefore + expectedNet, "Recipient gets amount minus 0.5% fee");
+        assertEq(usdc.balanceOf(facilitator), facilitatorBalBefore + expectedFacilitator, "Facilitator gets 70% of fee");
+        assertEq(usdc.balanceOf(treasury), treasuryBalBefore + expectedTreasury, "Treasury gets 30% of fee");
+
+        // Verify token conservation for this withdrawal
+        uint256 totalOut = expectedNet + expectedFacilitator + expectedTreasury;
+        assertEq(totalOut, withdrawable, "Sum of outflows equals withdrawal amount");
+
+        // Remaining balance in stream
+        assertEq(streaming.withdrawableAmountOf(streamId), 0, "Nothing more to withdraw at this point");
+    }
+
+    // ================================================================
+    // Protocol Fee: escrow dispute with protocol fee deducted from both shares
+    // ================================================================
+
+    function test_endToEnd_escrowDisputeWithProtocolFee() public {
+        // Amount: $200, split 70% client / 30% provider
+        // Fee: 0.5% (50 bp), facilitator gets 70% of fee, treasury gets 30%
+        //
+        // providerShare = 60_000_000, clientShare = 140_000_000
+        // Fee on provider: 300_000 (facilitator: 210_000, treasury: 90_000), net: 59_700_000
+        // Fee on client:   700_000 (facilitator: 490_000, treasury: 210_000), net: 139_300_000
+        // Total facilitator: 700_000, total treasury: 300_000
+
+        // 1. Configure protocol fee (0.5%) and treasury
+        vm.startPrank(admin);
+        escrow.setTreasury(treasury);
+        escrow.setProtocolFeeBp(50);
+        vm.stopPrank();
+
+        // 2. Create and fund escrow with facilitator
+        vm.prank(client);
+        uint256 escrowId = escrow.createEscrow(
+            clientDid, providerDid, provider, address(usdc), 200_000_000, taskHash, block.timestamp + 7 days, facilitator
+        );
+        vm.prank(client);
+        escrow.fundEscrow(escrowId);
+
+        // 3. Provider delivers, then client disputes
+        vm.prank(provider);
+        escrow.confirmDelivery(escrowId, outputHash);
+        vm.prank(client);
+        escrow.initiateDispute(escrowId, "quality-dispute");
+
+        // Record balances before resolution
+        uint256[4] memory balsBefore = [
+            usdc.balanceOf(client),
+            usdc.balanceOf(provider),
+            usdc.balanceOf(facilitator),
+            usdc.balanceOf(treasury)
+        ];
+
+        // 4. Resolve dispute: 30% to provider (60_000_000), 70% to client (140_000_000)
+        vm.startPrank(admin);
+        escrow.grantRole(escrow.ARBITER_ROLE(), admin);
+        escrow.resolveDispute(escrowId, true, 60_000_000);
+        vm.stopPrank();
+
+        // 5. Verify fee deducted from both provider and client shares
+        assertEq(usdc.balanceOf(provider), balsBefore[1] + 59_700_000, "Provider gets 30% minus fee");
+        assertEq(usdc.balanceOf(client), balsBefore[0] + 139_300_000, "Client gets 70% minus fee");
+
+        // 6. Verify facilitator and treasury received correct splits
+        assertEq(usdc.balanceOf(facilitator), balsBefore[2] + 700_000, "Facilitator gets 70% of both fees");
+        assertEq(usdc.balanceOf(treasury), balsBefore[3] + 300_000, "Treasury gets 30% of both fees");
+
+        // 7. Token conservation: all outflows = original $200 deposit
+        assertEq(uint256(59_700_000 + 139_300_000 + 700_000 + 300_000), uint256(200_000_000), "No tokens lost or created");
+
+        // 8. Escrow contract drained
+        assertEq(usdc.balanceOf(address(escrow)), 0, "Escrow drained");
     }
 }
