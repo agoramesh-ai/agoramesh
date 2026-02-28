@@ -3,9 +3,9 @@ name: Security
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
   schedule:
     # Daily scan at 3 AM CET for newly discovered vulnerabilities
     - cron: "0 2 * * *"
