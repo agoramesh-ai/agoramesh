@@ -59,7 +59,7 @@ async fn test_health_endpoint_includes_uptime() {
         .unwrap();
 
     assert_status(200, status);
-    assert_json_contains(&body, "uptime");
+    assert_json_contains(&body, "uptime_seconds");
 
     server.stop().await;
 }
@@ -74,7 +74,7 @@ async fn test_health_endpoint_includes_peers() {
         .unwrap();
 
     assert_status(200, status);
-    assert_json_contains(&body, "peers");
+    assert_json_contains(&body, "peer_count");
 
     server.stop().await;
 }

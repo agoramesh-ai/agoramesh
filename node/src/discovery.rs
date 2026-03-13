@@ -343,12 +343,7 @@ impl DiscoveryService {
             let mut cache = self.cache.write().map_err(|e| {
                 Error::Discovery(format!("Failed to acquire cache write lock: {}", e))
             })?;
-            cache.insert(
-                did,
-                card,
-                Instant::now(),
-                self.cache_config.max_entries,
-            )
+            cache.insert(did, card, Instant::now(), self.cache_config.max_entries)
         };
         self.remove_from_search_index(evicted).await;
         Ok(())
@@ -1326,7 +1321,10 @@ mod tests {
             max_entries: 100,
         });
         let did = "did:agoramesh:base:ttl-expire";
-        service.register(&sample_capability_card(did)).await.unwrap();
+        service
+            .register(&sample_capability_card(did))
+            .await
+            .unwrap();
         assert!(service.get(did).await.unwrap().is_some());
 
         tokio::time::sleep(Duration::from_millis(40)).await;
@@ -1346,23 +1344,48 @@ mod tests {
         let did2 = "did:agoramesh:base:lru-2";
         let did3 = "did:agoramesh:base:lru-3";
 
-        service.register(&sample_capability_card(did1)).await.unwrap();
-        service.register(&sample_capability_card(did2)).await.unwrap();
+        service
+            .register(&sample_capability_card(did1))
+            .await
+            .unwrap();
+        service
+            .register(&sample_capability_card(did2))
+            .await
+            .unwrap();
         // Touch did1 so did2 becomes LRU.
         let _ = service.get(did1).await.unwrap();
-        service.register(&sample_capability_card(did3)).await.unwrap();
+        service
+            .register(&sample_capability_card(did3))
+            .await
+            .unwrap();
 
-        assert_eq!(service.cache_size(), 2, "Cache should stay within max_entries");
-        assert!(service.get(did1).await.unwrap().is_some(), "Most recently used should remain");
-        assert!(service.get(did3).await.unwrap().is_some(), "Newest entry should remain");
-        assert!(service.get(did2).await.unwrap().is_none(), "Least recently used should be evicted");
+        assert_eq!(
+            service.cache_size(),
+            2,
+            "Cache should stay within max_entries"
+        );
+        assert!(
+            service.get(did1).await.unwrap().is_some(),
+            "Most recently used should remain"
+        );
+        assert!(
+            service.get(did3).await.unwrap().is_some(),
+            "Newest entry should remain"
+        );
+        assert!(
+            service.get(did2).await.unwrap().is_none(),
+            "Least recently used should be evicted"
+        );
     }
 
     #[tokio::test]
     async fn test_invalidate_removes_specific_cached_entry() {
         let service = DiscoveryService::new();
         let did = "did:agoramesh:base:invalidate-target";
-        service.register(&sample_capability_card(did)).await.unwrap();
+        service
+            .register(&sample_capability_card(did))
+            .await
+            .unwrap();
         assert!(service.get(did).await.unwrap().is_some());
 
         let removed = service.invalidate(did).await.unwrap();

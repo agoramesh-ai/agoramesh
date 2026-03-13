@@ -24,8 +24,8 @@ use tokio::sync::RwLock;
 struct HealthResponse {
     status: String,
     version: String,
-    peers: u64,
-    uptime: u64,
+    peer_count: u64,
+    uptime_seconds: u64,
 }
 
 /// Seed trust data entry from AGORAMESH_SEED_TRUST env var.
@@ -555,8 +555,8 @@ async fn main() -> Result<()> {
                 Ok(Ok(response)) => {
                     info!("Node status: {}", response.status);
                     info!("Version: {}", response.version);
-                    info!("Connected peers: {}", response.peers);
-                    info!("Uptime: {} seconds", response.uptime);
+                    info!("Connected peers: {}", response.peer_count);
+                    info!("Uptime: {} seconds", response.uptime_seconds);
                 }
                 Ok(Err(e)) => {
                     error!("Health check failed: {}", e);

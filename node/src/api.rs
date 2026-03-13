@@ -39,10 +39,10 @@ pub struct HealthResponse {
     pub version: String,
 
     /// Number of connected peers.
-    pub peers: u64,
+    pub peer_count: u64,
 
     /// Node uptime in seconds.
-    pub uptime: u64,
+    pub uptime_seconds: u64,
 }
 
 /// Node identity and configuration info.
@@ -287,14 +287,14 @@ fn is_admin_request(headers: &HeaderMap, token: &str) -> bool {
 
 /// Health check handler.
 async fn health_handler(State(state): State<AppState>) -> Json<HealthResponse> {
-    let uptime = state.start_time.elapsed().as_secs();
-    let peers = state.peer_count.load(Ordering::Relaxed);
+    let uptime_seconds = state.start_time.elapsed().as_secs();
+    let peer_count = state.peer_count.load(Ordering::Relaxed);
 
     Json(HealthResponse {
         status: "ok".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
-        peers,
-        uptime,
+        peer_count,
+        uptime_seconds,
     })
 }
 
@@ -619,7 +619,7 @@ mod tests {
         // Uptime is returned as u64, so it's always non-negative
         // Just verify it's a reasonable value (not some garbage)
         assert!(
-            health.uptime < 3600,
+            health.uptime_seconds < 3600,
             "Uptime should be less than 1 hour in test"
         );
     }
@@ -671,7 +671,7 @@ mod tests {
 
         response.assert_status_ok();
         let health: HealthResponse = response.json();
-        assert_eq!(health.peers, 5, "Should return peer count from state");
+        assert_eq!(health.peer_count, 5, "Should return peer count from state");
     }
 
     // ========== TDD Tests: GET /.well-known/agent.json ==========
