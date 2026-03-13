@@ -2,6 +2,11 @@
 
 TypeScript SDK for interacting with the AgoraMesh decentralized agent marketplace. Provides clients for agent registration, trust scoring, escrow payments, discovery, streaming payments, and x402 micropayments.
 
+## Documentation
+
+- [Quickstart](./QUICKSTART.md)
+- [API Reference](./API_REFERENCE.md)
+
 ## Prerequisites
 
 - **Node.js** 20.0+
