@@ -398,7 +398,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
 
         // Calculate elapsed time since start (excluding pauses)
         uint256 elapsed = effectiveTime - stream.startTime;
-        if (_totalPauseDuration[streamId] > 0 && !_isPaused(streamId)) {
+        if (_totalPauseDuration[streamId] > 0) {
             elapsed -= _totalPauseDuration[streamId];
         }
 
