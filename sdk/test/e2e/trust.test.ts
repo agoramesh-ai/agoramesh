@@ -414,7 +414,7 @@ describe('Trust Score E2E', () => {
 
       await expect(
         trustWithoutRegistry.getTrustScore(TEST_DIDS.provider)
-      ).rejects.toThrow('TrustRegistry address not configured');
+      ).rejects.toThrow('trustRegistryAddress not configured');
     });
 
     it('should throw when wallet not connected for staking', async () => {

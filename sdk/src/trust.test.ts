@@ -323,7 +323,7 @@ describe('TrustClient', () => {
 
       await expect(
         trust.getTrustFromNode('did:agoramesh:base:unknown', 'https://api.agoramesh.ai')
-      ).rejects.toThrow('Failed to get trust from node');
+      ).rejects.toThrow('Failed to get trust score from node');
     });
   });
 
@@ -336,7 +336,7 @@ describe('TrustClient', () => {
       (client.getContractAddresses as Mock).mockReturnValueOnce({});
 
       await expect(trust.getTrustScore('did:agoramesh:base:agent1')).rejects.toThrow(
-        'TrustRegistry address not configured'
+        'trustRegistryAddress not configured'
       );
     });
 

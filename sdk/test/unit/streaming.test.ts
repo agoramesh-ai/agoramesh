@@ -152,7 +152,7 @@ describe('StreamingPaymentsClient', () => {
           amount: '100',
           duration: 3600,
         })
-      ).rejects.toThrow('Token address not configured');
+      ).rejects.toThrow('tokenAddress');
     });
 
     it('should use default cancelability settings', async () => {
@@ -899,7 +899,7 @@ describe('StreamingPaymentsClient', () => {
         streamingPaymentsAddress: STREAMING_ADDRESS,
       });
 
-      await expect(streaming.recoverStream(1n)).rejects.toThrow('Stream is not stuck');
+      await expect(streaming.recoverStream(1n)).rejects.toThrow('not stuck');
     });
   });
 

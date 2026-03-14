@@ -12,6 +12,13 @@ import type { AgoraMeshClient } from './client.js';
 import { didToHash } from './client.js';
 import { parseUSDC, formatUSDC, toUnixTimestamp, calculateElapsedTime } from './utils.js';
 import { ERC20_ABI } from './abis.js';
+import {
+  ClientNotConnectedError,
+  WalletNotConnectedError,
+  ConfigurationError,
+  AgoraMeshError,
+  AgoraMeshErrorCode,
+} from './errors.js';
 
 // =============================================================================
 // Types
@@ -465,12 +472,12 @@ export class StreamingPaymentsClient {
     const ownerAddress = this.client.getAddress();
 
     if (!walletClient || !publicClient || !ownerAddress) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('createStream');
     }
 
     const tokenAddress = options.tokenAddress ?? addresses.usdc;
     if (!tokenAddress) {
-      throw new Error('Token address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TOKEN_NOT_CONFIGURED, 'tokenAddress (USDC)', 'createStream');
     }
 
     const recipientDidHash = didToHash(options.recipientDid);
@@ -505,7 +512,7 @@ export class StreamingPaymentsClient {
     });
 
     if (logs.length === 0) {
-      throw new Error('StreamCreated event not found in transaction receipt');
+      throw new AgoraMeshError(AgoraMeshErrorCode.STREAM_EVENT_NOT_FOUND, 'StreamCreated event not found in transaction receipt — the transaction succeeded but no stream was created. Check contract state and event logs.');
     }
 
     const firstLog = logs[0]!;
@@ -526,12 +533,12 @@ export class StreamingPaymentsClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('createStreamWithTimestamps');
     }
 
     const tokenAddress = options.tokenAddress ?? addresses.usdc;
     if (!tokenAddress) {
-      throw new Error('Token address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TOKEN_NOT_CONFIGURED, 'tokenAddress (USDC)', 'createStreamWithTimestamps');
     }
 
     const recipientDidHash = didToHash(options.recipientDid);
@@ -569,7 +576,7 @@ export class StreamingPaymentsClient {
     });
 
     if (logs.length === 0) {
-      throw new Error('StreamCreated event not found in transaction receipt');
+      throw new AgoraMeshError(AgoraMeshErrorCode.STREAM_EVENT_NOT_FOUND, 'StreamCreated event not found in transaction receipt — the transaction succeeded but no stream was created. Check contract state and event logs.');
     }
 
     const firstLog = logs[0]!;
@@ -591,7 +598,7 @@ export class StreamingPaymentsClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('withdraw');
     }
 
     const amountWei = parseUSDC(amount);
@@ -617,7 +624,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('withdrawMax');
     }
 
     const txHash = await walletClient.writeContract({
@@ -653,7 +660,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('topUp');
     }
 
     const stream = await this.getStream(streamId);
@@ -682,7 +689,7 @@ export class StreamingPaymentsClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('pause');
     }
 
     const txHash = await walletClient.writeContract({
@@ -705,7 +712,7 @@ export class StreamingPaymentsClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('resume');
     }
 
     const txHash = await walletClient.writeContract({
@@ -728,7 +735,7 @@ export class StreamingPaymentsClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('cancel');
     }
 
     const txHash = await walletClient.writeContract({
@@ -755,7 +762,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getStream');
     }
 
     const result = await publicClient.readContract({
@@ -778,7 +785,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getWithdrawableAmount');
     }
 
     return publicClient.readContract({
@@ -799,7 +806,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getStreamedAmount');
     }
 
     return publicClient.readContract({
@@ -820,7 +827,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getBalance');
     }
 
     return publicClient.readContract({
@@ -841,7 +848,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('isActive');
     }
 
     return publicClient.readContract({
@@ -862,7 +869,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getStreamsBySender');
     }
 
     const didHash = didToHash(senderDid);
@@ -886,7 +893,7 @@ export class StreamingPaymentsClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getStreamsByRecipient');
     }
 
     const didHash = didToHash(recipientDid);
@@ -1105,14 +1112,14 @@ export class StreamingPaymentsClient {
   async recoverStream(streamId: bigint): Promise<RecoveryResult> {
     const isStuck = await this.isStreamStuck(streamId);
     if (!isStuck) {
-      throw new Error('Stream is not stuck');
+      throw new AgoraMeshError(AgoraMeshErrorCode.STREAM_NOT_STUCK, 'Cannot recover stream — it is not stuck. A stream is considered stuck when it has not been withdrawn from for an extended period while still active.');
     }
 
     const walletClient = this.client.getWalletClient();
     const publicClient = this.client.getPublicClient();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('recoverStream');
     }
 
     // Withdraw all available funds
@@ -1211,7 +1218,7 @@ export class StreamingPaymentsClient {
     const ownerAddress = this.client.getAddress();
 
     if (!walletClient || !publicClient || !ownerAddress) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('ensureAllowance');
     }
 
     const allowance = await publicClient.readContract({

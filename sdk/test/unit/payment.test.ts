@@ -175,7 +175,7 @@ describe('PaymentClient', () => {
       const payment = new PaymentClient(mockClient, TEST_CLIENT_DID);
 
       await expect(payment.createEscrow(createDefaultEscrowOptions())).rejects.toThrow(
-        'Escrow address not configured'
+        'escrowAddress not configured'
       );
     });
 
@@ -186,7 +186,7 @@ describe('PaymentClient', () => {
       const payment = new PaymentClient(mockClient, TEST_CLIENT_DID);
 
       await expect(payment.createEscrow(createDefaultEscrowOptions())).rejects.toThrow(
-        'Token address not configured'
+        'tokenAddress'
       );
     });
 
@@ -347,7 +347,7 @@ describe('PaymentClient', () => {
       });
       const payment = new PaymentClient(mockClient, TEST_CLIENT_DID);
 
-      await expect(payment.fundEscrow(1n)).rejects.toThrow('Escrow address not configured');
+      await expect(payment.fundEscrow(1n)).rejects.toThrow('escrowAddress not configured');
     });
 
     it('should approve token if allowance is insufficient', async () => {
@@ -442,7 +442,7 @@ describe('PaymentClient', () => {
       const outputHash = keccak256(toHex('output data'));
 
       await expect(payment.confirmDelivery(1n, outputHash)).rejects.toThrow(
-        'Escrow address not configured'
+        'escrowAddress not configured'
       );
     });
 
@@ -486,7 +486,7 @@ describe('PaymentClient', () => {
       });
       const payment = new PaymentClient(mockClient, TEST_CLIENT_DID);
 
-      await expect(payment.releaseEscrow(1n)).rejects.toThrow('Escrow address not configured');
+      await expect(payment.releaseEscrow(1n)).rejects.toThrow('escrowAddress not configured');
     });
 
     it('should call writeContract with correct parameters', async () => {
@@ -562,7 +562,7 @@ describe('PaymentClient', () => {
       });
       const payment = new PaymentClient(mockClient, TEST_CLIENT_DID);
 
-      await expect(payment.initiateDispute(1n)).rejects.toThrow('Escrow address not configured');
+      await expect(payment.initiateDispute(1n)).rejects.toThrow('escrowAddress not configured');
     });
 
     it('should call writeContract with default empty evidence', async () => {
@@ -621,7 +621,7 @@ describe('PaymentClient', () => {
       });
       const payment = new PaymentClient(mockClient, TEST_CLIENT_DID);
 
-      await expect(payment.getEscrow(1n)).rejects.toThrow('Escrow address not configured');
+      await expect(payment.getEscrow(1n)).rejects.toThrow('escrowAddress not configured');
     });
 
     it('should return parsed escrow data', async () => {

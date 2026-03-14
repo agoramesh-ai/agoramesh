@@ -18,6 +18,13 @@ import { didToHash } from './client.js';
 import { BASIS_POINTS } from './types.js';
 import { parseUSDC, formatUSDC } from './utils.js';
 import { ERC20_ABI } from './abis.js';
+import {
+  ClientNotConnectedError,
+  WalletNotConnectedError,
+  ConfigurationError,
+  AgoraMeshError,
+  AgoraMeshErrorCode,
+} from './errors.js';
 
 // =============================================================================
 // ABI Fragments
@@ -227,7 +234,7 @@ export class TrustClient {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Failed to get trust from node: ${error}`);
+      throw new AgoraMeshError(AgoraMeshErrorCode.DISCOVERY_SEARCH_FAILED, `Failed to get trust score from node ${nodeUrl} for DID ${did}: ${error}`, { did, nodeUrl });
     }
 
     const data = (await response.json()) as {
@@ -261,10 +268,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getTrustScore');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'getTrustScore');
     }
 
     const didHash = didToHash(did);
@@ -296,10 +303,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getTrustDetails');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'getTrustDetails');
     }
 
     const didHash = didToHash(did);
@@ -374,10 +381,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getReputation');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'getReputation');
     }
 
     const didHash = didToHash(did);
@@ -413,10 +420,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getEndorsements');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'getEndorsements');
     }
 
     const didHash = didToHash(did);
@@ -463,13 +470,13 @@ export class TrustClient {
     const ownerAddress = this.client.getAddress();
 
     if (!walletClient || !publicClient || !ownerAddress) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('depositStake');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'depositStake');
     }
     if (!addresses.usdc) {
-      throw new Error('USDC address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.USDC_NOT_CONFIGURED, 'usdcAddress', 'depositStake');
     }
 
     const didHash = didToHash(did);
@@ -525,10 +532,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('requestWithdraw');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'requestWithdraw');
     }
 
     const didHash = didToHash(did);
@@ -565,10 +572,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('executeWithdraw');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'executeWithdraw');
     }
 
     const didHash = didToHash(did);
@@ -594,10 +601,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getStakeInfo');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'getStakeInfo');
     }
 
     const didHash = didToHash(did);
@@ -656,10 +663,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('endorse');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'endorse');
     }
 
     const endorseeHash = didToHash(endorseeDid);
@@ -685,10 +692,10 @@ export class TrustClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('revokeEndorsement');
     }
     if (!addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'revokeEndorsement');
     }
 
     const endorseeHash = didToHash(endorseeDid);

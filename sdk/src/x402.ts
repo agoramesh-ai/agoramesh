@@ -9,6 +9,7 @@
  */
 
 import { createWalletClient, http, parseUnits, type WalletClient, type Account } from 'viem';
+import { AgoraMeshError, AgoraMeshErrorCode } from './errors.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 
@@ -193,26 +194,40 @@ export class X402Client {
       const requirementHeader = response.headers.get(PAYMENT_REQUIRED_HEADER);
 
       if (!requirementHeader) {
-        throw new Error('402 response missing payment requirement header');
+        throw new AgoraMeshError(
+          AgoraMeshErrorCode.PAYMENT_REQUIREMENT_MISSING,
+          `402 Payment Required response is missing the "${PAYMENT_REQUIRED_HEADER}" header. The server returned a 402 status but did not include payment instructions.`,
+          { url: String(url) },
+        );
       }
 
       const requirement = this.decodePaymentRequirement(requirementHeader);
 
       // Check if payment requirement has expired
       if (requirement.expiresAt && Date.now() / 1000 > requirement.expiresAt) {
-        throw new Error('Payment requirement has expired');
+        throw new AgoraMeshError(
+          AgoraMeshErrorCode.PAYMENT_REQUIREMENT_EXPIRED,
+          `Payment requirement has expired (expiresAt: ${requirement.expiresAt}). Request a fresh payment requirement by retrying the original request.`,
+          { expiresAt: requirement.expiresAt, url: String(url) },
+        );
       }
 
       // Validate payment amount is positive
       const amountWei = parseUnits(requirement.amount, 6);
       if (amountWei <= 0n) {
-        throw new Error('Payment amount must be positive');
+        throw new AgoraMeshError(
+          AgoraMeshErrorCode.PAYMENT_INVALID_AMOUNT,
+          `Payment amount must be positive, got "${requirement.amount}". The server returned an invalid payment requirement.`,
+          { amount: requirement.amount, url: String(url) },
+        );
       }
 
       // Validate payment amount using BigInt for precision
       if (amountWei > parseUnits(maxAmount, 6)) {
-        throw new Error(
-          `Payment amount ${requirement.amount} exceeds maximum ${maxAmount}`
+        throw new AgoraMeshError(
+          AgoraMeshErrorCode.PAYMENT_INVALID_AMOUNT,
+          `Payment amount ${requirement.amount} exceeds configured maximum ${maxAmount}. Increase maxAmount in X402FetchOptions or reject this payment.`,
+          { amount: requirement.amount, maxAmount, url: String(url) },
         );
       }
 
@@ -264,12 +279,19 @@ export class X402Client {
       
       // Validate required fields
       if (!requirement.network || !requirement.receiver || !requirement.amount) {
-        throw new Error('Invalid payment requirement: missing required fields');
+        throw new AgoraMeshError(
+          AgoraMeshErrorCode.PAYMENT_INVALID_REQUIREMENT,
+          `Invalid payment requirement: missing required fields (network, receiver, amount). Got: ${JSON.stringify({ network: requirement.network, receiver: requirement.receiver, amount: requirement.amount })}`,
+        );
       }
 
       return requirement;
     } catch (error) {
-      throw new Error(`Failed to decode payment requirement: ${error}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.PAYMENT_DECODE_FAILED,
+        `Failed to decode payment requirement header: ${error}. Expected base64-encoded JSON with fields: network, receiver, amount.`,
+        { error: String(error) },
+      );
     }
   }
 

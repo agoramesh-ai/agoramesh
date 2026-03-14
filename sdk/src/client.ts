@@ -36,6 +36,14 @@ import {
   BASE_SEPOLIA_USDC,
 } from './types.js';
 
+import {
+  AgoraMeshError,
+  AgoraMeshErrorCode,
+  ClientNotConnectedError,
+  WalletNotConnectedError,
+  ConfigurationError,
+} from './errors.js';
+
 // =============================================================================
 // ABI Fragments
 // =============================================================================
@@ -185,25 +193,45 @@ const DID_ETHR_PATTERN = /^did:ethr:(?:[a-zA-Z0-9]+:)?0x[a-fA-F0-9]{40}$/;
  */
 export function validateDID(did: string): void {
   if (!did) {
-    throw new Error(`Invalid DID format: ${did}`);
+    throw new AgoraMeshError(
+      AgoraMeshErrorCode.INVALID_DID_FORMAT,
+      `Invalid DID format: received empty string. Expected format: did:<method>:<network>:<identifier> (e.g., did:agoramesh:base:0x...)`,
+      { did },
+    );
   }
 
   // Check which DID method is being used and validate accordingly
   if (did.startsWith('did:agoramesh:') || did.startsWith('did:web:')) {
     if (!DID_AGORAMESH_WEB_PATTERN.test(did)) {
-      throw new Error(`Invalid DID format: ${did}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.INVALID_DID_FORMAT,
+        `Invalid DID format: "${did}". Expected pattern: did:agoramesh:<network>:<hex-address> or did:web:<domain>`,
+        { did, method: 'agoramesh/web' },
+      );
     }
   } else if (did.startsWith('did:key:')) {
     if (!DID_KEY_PATTERN.test(did)) {
-      throw new Error(`Invalid DID format: ${did}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.INVALID_DID_FORMAT,
+        `Invalid DID format: "${did}". Key DIDs must start with 'z' for multibase encoding (e.g., did:key:z6Mk...)`,
+        { did, method: 'key' },
+      );
     }
   } else if (did.startsWith('did:ethr:')) {
     if (!DID_ETHR_PATTERN.test(did)) {
-      throw new Error(`Invalid DID format: ${did}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.INVALID_DID_FORMAT,
+        `Invalid DID format: "${did}". Ethereum DIDs require a full 0x-prefixed address (e.g., did:ethr:0x... or did:ethr:mainnet:0x...)`,
+        { did, method: 'ethr' },
+      );
     }
   } else {
     // Unsupported DID method
-    throw new Error(`Invalid DID format: ${did}`);
+    throw new AgoraMeshError(
+      AgoraMeshErrorCode.INVALID_DID_FORMAT,
+      `Invalid DID format: "${did}". Supported DID methods: agoramesh, web, key, ethr`,
+      { did },
+    );
   }
 }
 
@@ -221,7 +249,11 @@ function getChain(chainId: number): Chain {
     case BASE_SEPOLIA_CHAIN_ID:
       return baseSepolia;
     default:
-      throw new Error(`Unsupported chain ID: ${chainId}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.UNSUPPORTED_CHAIN,
+        `Unsupported chain ID: ${chainId}. Supported chains: Base Mainnet (${BASE_MAINNET_CHAIN_ID}), Base Sepolia (${BASE_SEPOLIA_CHAIN_ID})`,
+        { chainId },
+      );
   }
 }
 
@@ -336,7 +368,10 @@ export class AgoraMeshClient {
    */
   async connect(): Promise<void> {
     if (this.connected) {
-      throw new Error('Client is already connected');
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.CLIENT_ALREADY_CONNECTED,
+        'Client is already connected. Call disconnect() first if you need to reconnect.',
+      );
     }
 
     // Create public client for read operations
@@ -348,8 +383,10 @@ export class AgoraMeshClient {
     // Verify connection by fetching chain ID
     const chainId = await this.publicClient.getChainId();
     if (chainId !== this.config.chainId) {
-      throw new Error(
-        `Chain ID mismatch: expected ${this.config.chainId}, got ${chainId}`
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.CLIENT_CONNECTION_FAILED,
+        `Chain ID mismatch: expected ${this.config.chainId}, got ${chainId}. Verify that rpcUrl points to the correct network.`,
+        { expected: this.config.chainId, actual: chainId, rpcUrl: this.config.rpcUrl },
       );
     }
 
@@ -574,7 +611,7 @@ export class AgoraMeshClient {
    */
   private requireConnection(): void {
     if (!this.connected || !this.publicClient) {
-      throw new Error('Client is not connected. Call connect() first.');
+      throw new ClientNotConnectedError('ensureConnected');
     }
   }
 
@@ -584,7 +621,7 @@ export class AgoraMeshClient {
   private requireWallet(): void {
     this.requireConnection();
     if (!this.walletClient || !this.account) {
-      throw new Error('No wallet configured. Provide a privateKey in config.');
+      throw new WalletNotConnectedError('ensureWallet');
     }
   }
 
@@ -593,7 +630,7 @@ export class AgoraMeshClient {
    */
   private requireTrustRegistry(): void {
     if (!this.addresses.trustRegistry) {
-      throw new Error('TrustRegistry address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TRUST_REGISTRY_NOT_CONFIGURED, 'trustRegistryAddress', 'ensureTrustRegistry');
     }
   }
 

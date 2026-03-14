@@ -8,6 +8,10 @@
  */
 
 import type { AgoraMeshClient } from './client.js';
+import {
+  ClientNotConnectedError,
+  WalletNotConnectedError,
+} from './errors.js';
 
 // =============================================================================
 // Constants
@@ -202,7 +206,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('registerAgentOnERC8004');
     }
 
     const txHash = await walletClient.writeContract({
@@ -244,7 +248,7 @@ export class ERC8004BridgeClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('updateAgentURI');
     }
 
     return walletClient.writeContract({
@@ -277,7 +281,7 @@ export class ERC8004BridgeClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('submitFeedbackToERC8004');
     }
 
     return walletClient.writeContract({
@@ -310,7 +314,7 @@ export class ERC8004BridgeClient {
     const walletClient = this.client.getWalletClient();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('submitValidation');
     }
 
     return walletClient.writeContract({
@@ -335,7 +339,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getERC8004AgentId');
     }
 
     return publicClient.readContract({
@@ -356,7 +360,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getAgoraMeshTokenId');
     }
 
     return publicClient.readContract({
@@ -377,7 +381,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('isRegistered');
     }
 
     return publicClient.readContract({
@@ -402,7 +406,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getAgoraMeshtadata');
     }
 
     return publicClient.readContract({
@@ -425,7 +429,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getReputationSummary');
     }
 
     const [count, summaryValue, summaryValueDecimals] =
@@ -452,7 +456,7 @@ export class ERC8004BridgeClient {
     const publicClient = this.client.getPublicClient();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getTotalRegistered');
     }
 
     return publicClient.readContract({

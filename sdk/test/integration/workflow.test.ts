@@ -466,7 +466,7 @@ describe('x402 Micropayment Integration', () => {
       x402Client.fetch('https://agent.example.com/expensive', undefined, {
         maxAmount: '10.00',
       })
-    ).rejects.toThrow(/exceeds maximum/);
+    ).rejects.toThrow(/exceeds configured maximum/);
   });
 });
 

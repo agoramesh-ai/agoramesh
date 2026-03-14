@@ -271,7 +271,7 @@ describe('X402Client', () => {
         client.fetch('https://api.example.com/task', undefined, {
           maxAmount: '50.00',
         })
-      ).rejects.toThrow(/exceeds maximum/);
+      ).rejects.toThrow(/exceeds configured maximum/);
     });
 
     it('should call onPayment callback', async () => {
@@ -313,7 +313,7 @@ describe('X402Client', () => {
       );
 
       await expect(client.fetch('https://api.example.com/task')).rejects.toThrow(
-        /missing payment requirement header/
+        /missing the/
       );
     });
 

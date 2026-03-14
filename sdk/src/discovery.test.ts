@@ -135,7 +135,7 @@ describe('DiscoveryClient', () => {
   describe('search()', () => {
     it('should throw error when node URL not configured', async () => {
       await expect(discovery.search('translate documents')).rejects.toThrow(
-        'Node URL not configured'
+        'nodeUrl not configured'
       );
     });
 
@@ -285,7 +285,7 @@ describe('DiscoveryClient', () => {
       });
 
       await expect(discovery.search('translate')).rejects.toThrow(
-        'Discovery search failed: Internal Server Error'
+        'Discovery search failed'
       );
     });
   });
@@ -406,7 +406,7 @@ describe('DiscoveryClient', () => {
   describe('announce()', () => {
     it('should throw error when node URL not configured', async () => {
       const card = sampleCapabilityCard('did:agoramesh:base:agent1');
-      await expect(discovery.announce(card)).rejects.toThrow('Node URL not configured');
+      await expect(discovery.announce(card)).rejects.toThrow('nodeUrl not configured');
     });
 
     it('should POST capability card to agents endpoint', async () => {

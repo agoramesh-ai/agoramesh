@@ -411,7 +411,7 @@ describe('Escrow E2E', () => {
           taskHash: keccak256(toHex('Test')),
           deadline: Date.now() + 3600000,
         })
-      ).rejects.toThrow('Escrow address not configured');
+      ).rejects.toThrow('escrowAddress not configured');
     });
 
     it('should throw when getting non-existent escrow', async () => {

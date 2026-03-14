@@ -116,7 +116,7 @@ describe('Agent Discovery E2E', () => {
       const capabilityCard = createTestCapabilityCard();
 
       await expect(discoveryWithoutNode.announce(capabilityCard)).rejects.toThrow(
-        'Node URL not configured'
+        'nodeUrl not configured'
       );
     });
 
@@ -253,7 +253,7 @@ describe('Agent Discovery E2E', () => {
       const discoveryWithoutNode = new DiscoveryClient(client);
 
       await expect(discoveryWithoutNode.search('test')).rejects.toThrow(
-        'Node URL not configured'
+        'nodeUrl not configured'
       );
     });
   });

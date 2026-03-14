@@ -13,6 +13,13 @@ import { didToHash } from './client.js';
 import { EscrowStateNames } from './types.js';
 import { parseUSDC, formatUSDC, toUnixTimestamp } from './utils.js';
 import { ERC20_ABI } from './abis.js';
+import {
+  ClientNotConnectedError,
+  WalletNotConnectedError,
+  ConfigurationError,
+  AgoraMeshError,
+  AgoraMeshErrorCode,
+} from './errors.js';
 
 // =============================================================================
 // ABI Fragments
@@ -294,15 +301,15 @@ export class PaymentClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient || !publicClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('createEscrow');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'createEscrow');
     }
 
     const tokenAddress = options.tokenAddress ?? addresses.usdc;
     if (!tokenAddress) {
-      throw new Error('Token address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.TOKEN_NOT_CONFIGURED, 'tokenAddress (USDC)', 'createEscrow');
     }
 
     const clientDidHash = didToHash(this.clientDid);
@@ -339,7 +346,7 @@ export class PaymentClient {
     });
 
     if (logs.length === 0) {
-      throw new Error('EscrowCreated event not found in transaction receipt');
+      throw new AgoraMeshError(AgoraMeshErrorCode.ESCROW_EVENT_NOT_FOUND, 'EscrowCreated event not found in transaction receipt — the transaction succeeded but no escrow was created. Check contract state.');
     }
 
     const firstLog = logs[0]!;
@@ -377,10 +384,10 @@ export class PaymentClient {
     const ownerAddress = this.client.getAddress();
 
     if (!walletClient || !publicClient || !ownerAddress) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('fundEscrow');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'fundEscrow');
     }
 
     // Get escrow details to know the amount and token
@@ -431,10 +438,10 @@ export class PaymentClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('confirmDelivery');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'confirmDelivery');
     }
 
     const txHash = await walletClient.writeContract({
@@ -458,10 +465,10 @@ export class PaymentClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('releaseEscrow');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'releaseEscrow');
     }
 
     const txHash = await walletClient.writeContract({
@@ -485,10 +492,10 @@ export class PaymentClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('claimTimeout');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'claimTimeout');
     }
 
     const txHash = await walletClient.writeContract({
@@ -520,10 +527,10 @@ export class PaymentClient {
     const addresses = this.client.getContractAddresses();
 
     if (!walletClient) {
-      throw new Error('Wallet not connected.');
+      throw new WalletNotConnectedError('initiateDispute');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'initiateDispute');
     }
 
     const txHash = await walletClient.writeContract({
@@ -551,10 +558,10 @@ export class PaymentClient {
     const addresses = this.client.getContractAddresses();
 
     if (!publicClient) {
-      throw new Error('Client is not connected.');
+      throw new ClientNotConnectedError('getEscrow');
     }
     if (!addresses.escrow) {
-      throw new Error('Escrow address not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.ESCROW_NOT_CONFIGURED, 'escrowAddress', 'getEscrow');
     }
 
     const result = await publicClient.readContract({

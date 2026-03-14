@@ -12,6 +12,11 @@ import type {
   DiscoveryResult,
 } from './types.js';
 import type { AgoraMeshClient } from './client.js';
+import {
+  AgoraMeshError,
+  AgoraMeshErrorCode,
+  ConfigurationError,
+} from './errors.js';
 
 // =============================================================================
 // URL Validation (SSRF Protection)
@@ -144,7 +149,11 @@ export class DiscoveryClient {
    */
   setNodeUrl(url: string): void {
     if (isPrivateUrl(url)) {
-      throw new Error('Node URL cannot point to a private address');
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.PRIVATE_ADDRESS_BLOCKED,
+        `Node URL "${url}" points to a private/internal address. Use a public URL to prevent SSRF attacks.`,
+        { url },
+      );
     }
     this.nodeUrl = url;
   }
@@ -164,7 +173,11 @@ export class DiscoveryClient {
    */
   setIPFSGateway(gateway: string): void {
     if (isPrivateUrl(gateway)) {
-      throw new Error('IPFS gateway URL cannot point to a private address');
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.PRIVATE_ADDRESS_BLOCKED,
+        `IPFS gateway URL "${gateway}" points to a private/internal address. Use a public gateway (e.g., https://ipfs.io/ipfs) to prevent SSRF attacks.`,
+        { url: gateway },
+      );
     }
     this.ipfsGateway = gateway;
   }
@@ -202,9 +215,7 @@ export class DiscoveryClient {
     options: SearchOptions = {}
   ): Promise<DiscoveryResult[]> {
     if (!this.nodeUrl) {
-      throw new Error(
-        'Node URL not configured. Call setNodeUrl() or pass nodeUrl to constructor.'
-      );
+      throw new ConfigurationError(AgoraMeshErrorCode.NODE_URL_NOT_CONFIGURED, 'nodeUrl', 'search — call setNodeUrl() or pass nodeUrl to constructor');
     }
 
     const {
@@ -248,7 +259,11 @@ export class DiscoveryClient {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Discovery search failed: ${error}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.DISCOVERY_SEARCH_FAILED,
+        `Discovery search failed for query "${query}": ${error}`,
+        { query, nodeUrl: this.nodeUrl, statusCode: response.status },
+      );
     }
 
     // Node returns a direct array of SemanticSearchResult objects
@@ -322,7 +337,7 @@ export class DiscoveryClient {
     options: Omit<SearchOptions, 'tags'> = {}
   ): Promise<DiscoveryResult[]> {
     if (!this.nodeUrl) {
-      throw new Error('Node URL not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.NODE_URL_NOT_CONFIGURED, 'nodeUrl', 'searchByTags — call setNodeUrl() or pass nodeUrl to constructor');
     }
 
     const { minTrust = 0, maxPrice, currency, limit = 20, offset = 0 } = options;
@@ -354,7 +369,11 @@ export class DiscoveryClient {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Discovery search failed: ${error}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.DISCOVERY_SEARCH_FAILED,
+        `Discovery tag search failed for tags [${tags.join(', ')}]: ${error}`,
+        { tags, nodeUrl: this.nodeUrl, statusCode: response.status },
+      );
     }
 
     // Node returns a direct array of CapabilityCard objects
@@ -539,7 +558,11 @@ export class DiscoveryClient {
 
       // SSRF protection: verify the constructed URL doesn't point to a private address
       if (isPrivateUrl(ipfsUrl)) {
-        throw new Error(`SSRF blocked: ${ipfsUrl} points to a private address`);
+        throw new AgoraMeshError(
+          AgoraMeshErrorCode.SSRF_BLOCKED,
+          `SSRF blocked: "${ipfsUrl}" resolves to a private/internal address. Use a public IPFS gateway.`,
+          { url: ipfsUrl },
+        );
       }
 
       const response = await fetch(ipfsUrl, {
@@ -576,7 +599,7 @@ export class DiscoveryClient {
    */
   async announce(card: CapabilityCard, adminToken?: string): Promise<void> {
     if (!this.nodeUrl) {
-      throw new Error('Node URL not configured.');
+      throw new ConfigurationError(AgoraMeshErrorCode.NODE_URL_NOT_CONFIGURED, 'nodeUrl', 'announce — call setNodeUrl() or pass nodeUrl to constructor');
     }
 
     const headers: Record<string, string> = {
@@ -596,7 +619,11 @@ export class DiscoveryClient {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Failed to announce capability card: ${error}`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.DISCOVERY_ANNOUNCE_FAILED,
+        `Failed to announce capability card for "${card.name}": ${error}`,
+        { cardName: card.name, nodeUrl: this.nodeUrl, statusCode: response.status },
+      );
     }
   }
 
@@ -609,9 +636,9 @@ export class DiscoveryClient {
    * @param _did - The agent's DID to remove
    */
   async unannounce(_did: string): Promise<void> {
-    throw new Error(
-      'Agent removal is not yet supported by the node API. ' +
-      'This feature will be available in a future version.'
+    throw new AgoraMeshError(
+      AgoraMeshErrorCode.DISCOVERY_NOT_SUPPORTED,
+      'Agent removal (unannounce) is not yet supported by the node API. This feature will be available in a future version.',
     );
   }
 

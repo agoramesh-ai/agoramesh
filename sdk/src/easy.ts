@@ -33,6 +33,7 @@ import { PaymentClient } from './payment.js';
 import { loadDeployment } from './deployments.js';
 import { keccak256, toHex } from 'viem';
 import type { DiscoveryResult, TrustScore, Skill } from './types.js';
+import { AgoraMeshError, AgoraMeshErrorCode } from './errors.js';
 import { BASE_SEPOLIA_RPC } from './types.js';
 
 // =============================================================================
@@ -250,7 +251,11 @@ export class AgoraMesh {
     task: string
   ): Promise<{ success: boolean; output?: string }> {
     if (!agent.url) {
-      throw new Error(`Agent ${agent.name} has no URL — cannot submit task`);
+      throw new AgoraMeshError(
+        AgoraMeshErrorCode.AGENT_NO_URL,
+        `Agent "${agent.name}" has no URL — cannot submit task. Ensure the agent's capability card includes a valid endpoint URL.`,
+        { agentName: agent.name, agentDid: agent.did },
+      );
     }
 
     const res = await fetch(`${agent.url}/task`, {
@@ -278,7 +283,11 @@ export class AgoraMesh {
     // Try to extract address from DID
     const match = agent.did.match(/0x[a-fA-F0-9]{40}/);
     if (match) return match[0] as `0x${string}`;
-    throw new Error(`Cannot resolve payment address for agent ${agent.name}`);
+    throw new AgoraMeshError(
+      AgoraMeshErrorCode.AGENT_NO_PAYMENT_ADDRESS,
+      `Cannot resolve payment address for agent "${agent.name}" — the DID "${agent.did}" does not contain a valid 0x address. The agent's DID must include an Ethereum address for payment.`,
+      { agentName: agent.name, agentDid: agent.did },
+    );
   }
 }
 

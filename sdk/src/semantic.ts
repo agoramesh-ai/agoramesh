@@ -12,6 +12,7 @@ import type {
   DiscoveryResult,
   Skill,
 } from './types.js';
+import { AgoraMeshError, AgoraMeshErrorCode } from './errors.js';
 
 // =============================================================================
 // Types
@@ -233,7 +234,7 @@ export class SemanticSearchClient {
     const queryEmbedding = embeddings[0];
 
     if (!queryEmbedding) {
-      throw new Error('Failed to generate query embedding');
+      throw new AgoraMeshError(AgoraMeshErrorCode.EMBEDDING_FAILED, 'Failed to generate query embedding in search. Check that the embedding function is properly configured and the API key is valid.');
     }
 
     // Calculate similarities
@@ -279,7 +280,7 @@ export class SemanticSearchClient {
     const queryEmbedding = embeddings[0];
 
     if (!queryEmbedding) {
-      throw new Error('Failed to generate query embedding');
+      throw new AgoraMeshError(AgoraMeshErrorCode.EMBEDDING_FAILED, 'Failed to generate query embedding in rerank. Check that the embedding function is properly configured and the API key is valid.');
     }
 
     // Calculate similarities and sort
@@ -351,7 +352,7 @@ export class SemanticSearchClient {
     const cardEmbedding = embeddings[1];
 
     if (!queryEmbedding || !cardEmbedding) {
-      throw new Error('Failed to generate embeddings');
+      throw new AgoraMeshError(AgoraMeshErrorCode.EMBEDDING_FAILED, 'Failed to generate embeddings in computeSimilarity. Check that the embedding function is properly configured and the API key is valid.');
     }
 
     return this.cosineSimilarity(queryEmbedding, cardEmbedding);
@@ -450,7 +451,7 @@ export class SemanticSearchClient {
    */
   private cosineSimilarity(a: Embedding, b: Embedding): number {
     if (a.length !== b.length) {
-      throw new Error('Embedding dimensions must match');
+      throw new AgoraMeshError(AgoraMeshErrorCode.EMBEDDING_DIMENSION_MISMATCH, 'Embedding dimensions must match — query and document embeddings were generated with different models or configurations. Ensure consistent embedding dimensions across all vectors.');
     }
 
     let dotProduct = 0;
@@ -524,7 +525,7 @@ export function createOpenAIEmbedder(options: OpenAIEmbedderOptions): EmbeddingF
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`OpenAI embedding failed: ${error}`);
+      throw new AgoraMeshError(AgoraMeshErrorCode.OPENAI_EMBEDDING_FAILED, `OpenAI embedding failed: ${error}. Verify your OPENAI_API_KEY is valid and the model name is correct.`, { error: String(error) });
     }
 
     const data = (await response.json()) as {
@@ -574,7 +575,7 @@ export function createCohereEmbedder(options: CohereEmbedderOptions): EmbeddingF
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Cohere embedding failed: ${error}`);
+      throw new AgoraMeshError(AgoraMeshErrorCode.COHERE_EMBEDDING_FAILED, `Cohere embedding failed: ${error}. Verify your COHERE_API_KEY is valid and the model name is correct.`, { error: String(error) });
     }
 
     const data = (await response.json()) as { embeddings: number[][] };

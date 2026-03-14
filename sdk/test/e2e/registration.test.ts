@@ -128,7 +128,7 @@ describe('Agent Registration E2E', () => {
 
       await expect(
         clientWithoutRegistry.registerAgent(capabilityCard, 'ipfs://Qm...')
-      ).rejects.toThrow('TrustRegistry address not configured');
+      ).rejects.toThrow('trustRegistryAddress not configured');
     });
   });
 
