@@ -325,6 +325,12 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         // Enforce minimum quorum: at least 2/3 of selected arbiters must vote
         ArbiterVote[] storage votes = _votes[disputeId];
         uint256 requiredArbiters = getArbiterCount(d.tier, d.appealRound);
+        // Cap to actual selected arbiters to prevent deadlock when pool is undersized
+        uint256 actualArbiters = _arbiters[disputeId].length;
+        if (actualArbiters == 0) revert QuorumNotMet();
+        if (actualArbiters < requiredArbiters) {
+            requiredArbiters = actualArbiters;
+        }
         uint256 minQuorum = (requiredArbiters * 2 + 2) / 3; // ceil(2/3)
         if (votes.length < minQuorum) revert QuorumNotMet();
 
