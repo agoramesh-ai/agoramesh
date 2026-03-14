@@ -1,0 +1,92 @@
+# AgoraMesh - Local Development Docker Compose
+#
+# Quick start:
+#   cp .env.example .env
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# This builds all services from source (no pre-built images).
+# For production deployment, see deploy/production/docker-compose.yml.
+
+services:
+  node:
+    build:
+      context: .
+      dockerfile: node/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:4001:4001"
+    volumes:
+      - agoramesh_data:/app/data
+    environment:
+      - RUST_LOG=${RUST_LOG:-debug}
+      - AGORAMESH_TRUST_PROXY=false
+      - AGORAMESH_API_TOKEN=${AGORAMESH_API_TOKEN:-dev-token-change-me}
+      - AGORAMESH_CORS_ORIGINS=${AGORAMESH_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - AGORAMESH_NODE_DID=${AGORAMESH_NODE_DID:-did:agoramesh:local:dev-node}
+      - AGORAMESH_NODE_NAME=${AGORAMESH_NODE_NAME:-AgoraMesh Dev Node}
+      - AGORAMESH_NODE_DESCRIPTION=Local development node
+      - AGORAMESH_NODE_URL=http://localhost:8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+  bridge:
+    build:
+      context: .
+      dockerfile: bridge/Dockerfile
+    ports:
+      - "127.0.0.1:3402:3402"
+    environment:
+      - NODE_ENV=development
+      - BRIDGE_HOST=0.0.0.0
+      - BRIDGE_REQUIRE_AUTH=false
+      - BRIDGE_API_TOKEN=${BRIDGE_API_TOKEN:-dev-bridge-token}
+      - BRIDGE_CORS_ORIGINS=${BRIDGE_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - API_ENDPOINT=http://node:8080
+      - AGORAMESH_NODE_URL=http://node:8080
+      - AGENT_PRIVATE_KEY=${BRIDGE_AGENT_PRIVATE_KEY:-}
+      - RPC_URL=${RPC_URL:-https://sepolia.base.org}
+      - CHAIN_ID=${CHAIN_ID:-84532}
+      - PROVIDER_DID=${PROVIDER_DID:-did:agoramesh:local:dev-agent}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3402/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    depends_on:
+      node:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    ports:
+      - "127.0.0.1:3403:3403"
+    environment:
+      - NODE_ENV=development
+      - AGORAMESH_NODE_URL=http://node:8080
+      - AGORAMESH_BRIDGE_URL=http://bridge:3402
+      - AGORAMESH_MCP_PORT=3403
+      - AGORAMESH_PUBLIC_URL=http://localhost:8080
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3403/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    depends_on:
+      node:
+        condition: service_healthy
+      bridge:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  agoramesh_data:
