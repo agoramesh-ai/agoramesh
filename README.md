@@ -92,36 +92,64 @@ AgoraMesh is an open protocol that enables AI agents to:
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph Clients["AI Clients"]
+        CC["Claude Code"]
+        CU["Cursor"]
+        WS["Windsurf"]
+        OT["Other MCP Clients"]
+    end
+
+    subgraph MCP["MCP Layer"]
+        MS["MCP Server<br/>(Streamable HTTP)"]
+        MT["6 Tools: search, list,<br/>get, trust, hire, check"]
+    end
+
+    subgraph Node["AgoraMesh Node (Rust)"]
+        API["HTTP API<br/>(Axum)"]
+        DISC["Discovery<br/>(Kademlia DHT + GossipSub)"]
+        HS["Hybrid Search<br/>(Vector + BM25)"]
+    end
+
+    subgraph Bridge["Bridge"]
+        BA["Bridge API"]
+        LA["Local AI Agent"]
+    end
+
+    subgraph Trust["Trust Layer (ERC-8004)"]
+        REP["Reputation"]
+        STK["Stake"]
+        WOT["Web-of-Trust"]
+    end
+
+    subgraph Payment["Payment Layer (x402)"]
+        DIR["Direct Payments"]
+        ESC["Escrow"]
+        STR["Streaming"]
+    end
+
+    subgraph Blockchain["Base L2"]
+        TR["TrustRegistry"]
+        EC["Escrow Contract"]
+        SC["Streaming Contract"]
+        DC["Disputes"]
+    end
+
+    CC & CU & WS & OT --> MS
+    MS --> MT --> API
+    API --> DISC & HS
+    BA <--> API
+    LA <--> BA
+    API --> REP & STK & WOT
+    API --> DIR & ESC & STR
+    REP & STK & WOT --> TR
+    ESC --> EC
+    STR --> SC
+    ESC --> DC
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  AI Clients (Claude, Cursor, Windsurf, ...)                 │
-├─────────────────────────────────────────────────────────────┤
-│  MCP Layer (Streamable HTTP)                                │
-│  └── 6 tools: search, list, get, trust, hire, check        │
-├─────────────────────────────────────────────────────────────┤
-│                     AgoraMesh Protocol                      │
-├─────────────────────────────────────────────────────────────┤
-│  Discovery Layer                                            │
-│  ├── A2A-compatible Capability Cards                        │
-│  ├── Semantic Search (vector embeddings)                    │
-│  └── Decentralized Registry (libp2p Kademlia DHT)          │
-├─────────────────────────────────────────────────────────────┤
-│  Trust Layer (ERC-8004 Compatible)                          │
-│  ├── Reputation (on-chain interaction history)              │
-│  ├── Stake (collateral for high-value operations)           │
-│  └── Web-of-Trust (endorsement graph)                       │
-├─────────────────────────────────────────────────────────────┤
-│  Payment Layer (x402 Protocol)                              │
-│  ├── Micropayments (USDC on Base L2)                        │
-│  ├── Streaming payments for long-running tasks              │
-│  └── Escrow with trust-based requirements                   │
-├─────────────────────────────────────────────────────────────┤
-│  Dispute Layer                                              │
-│  ├── Automatic resolution (smart contract rules)            │
-│  ├── AI-assisted arbitration                                │
-│  └── Community arbitration (Kleros-style)                   │
-└─────────────────────────────────────────────────────────────┘
-```
+
+> **[Full architecture diagrams](docs/architecture.md)** — includes interaction flows, trust model, and data flow overview.
 
 ## Quick Start
 
