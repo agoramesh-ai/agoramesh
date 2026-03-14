@@ -84,7 +84,7 @@ contract DeployLocal is Script {
         c.nftReputation = address(new NFTBoundReputation(c.agentToken, c.usdc, admin));
         console.log("NFTBoundReputation:", c.nftReputation);
 
-        c.erc8004Adapter = address(new ERC8004Adapter(c.trustRegistry, c.agentToken));
+        c.erc8004Adapter = address(new ERC8004Adapter(c.trustRegistry, c.agentToken, admin));
         console.log("ERC8004Adapter:", c.erc8004Adapter);
 
         // 3. Configure roles
