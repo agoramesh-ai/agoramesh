@@ -345,10 +345,10 @@ contract NFTBoundReputation is AccessControlEnumerable, ReentrancyGuard {
         // Success rate component (0-10000)
         uint256 successRate = (data.successfulTransactions * BASIS_POINTS) / data.totalTransactions;
 
-        // Volume factor (logarithmic scaling, caps at $100k)
-        uint256 volumeFactor = data.totalVolumeUsd / 100_000_000; // Convert to $100 units
-        if (volumeFactor > 1000) {
-            volumeFactor = 1000;
+        // Volume factor: multiply before divide to avoid precision loss for small volumes
+        uint256 cappedVolume = data.totalVolumeUsd;
+        if (cappedVolume > 1000 * 100_000_000) {
+            cappedVolume = 1000 * 100_000_000;
         }
 
         // Transaction count factor
@@ -358,7 +358,8 @@ contract NFTBoundReputation is AccessControlEnumerable, ReentrancyGuard {
         }
 
         // Composite: 70% success rate, 15% volume, 15% tx count
-        score = (successRate * 7000 + volumeFactor * 10 * 1500 + txFactor * 10 * 1500) / 10000;
+        // Multiply-then-divide: (cappedVolume * 15000) / 100_000_000 avoids truncation
+        score = (successRate * 7000 + (cappedVolume * 15000) / 100_000_000 + txFactor * 10 * 1500) / 10000;
 
         if (score > BASIS_POINTS) {
             score = BASIS_POINTS;

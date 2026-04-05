@@ -121,7 +121,7 @@ contract DeployAll is Script {
         console.log("  6. CrossChainTrustSync:", c.crossChain);
 
         // 7. VerifiedNamespaces (ENS-inspired registry)
-        c.namespaces = address(new VerifiedNamespaces(admin));
+        c.namespaces = address(new VerifiedNamespaces(admin, usdc, admin));
         console.log("  7. VerifiedNamespaces:", c.namespaces);
 
         // 8. AgentToken (ERC-721 agent ownership)

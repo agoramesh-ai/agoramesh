@@ -3,16 +3,22 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/VerifiedNamespaces.sol";
+import "../src/MockUSDC.sol";
 
 /// @title VerifiedNamespaces Tests
 /// @notice TDD tests for the VerifiedNamespaces contract
 contract VerifiedNamespacesTest is Test {
     VerifiedNamespaces public namespaces;
+    MockUSDC public usdc;
 
     address public admin = address(0x1);
     address public user1 = address(0x2);
     address public user2 = address(0x3);
     address public verifier = address(0x4);
+    address public treasury = address(0x5);
+
+    uint256 public constant REGISTRATION_FEE = 1_000000; // 1 USDC
+    uint256 public constant EXPIRATION_PERIOD = 365 days;
 
     // Test DIDs
     bytes32 public constant DID1 = keccak256("did:agoramesh:base:0x1111");
@@ -33,12 +39,26 @@ contract VerifiedNamespacesTest is Test {
     event MetadataUpdated(bytes32 indexed namespaceHash, string key, string value);
     event RegistrationFeeSet(uint256 fee);
     event VerificationFeeSet(uint256 fee);
+    event NamespaceRenewed(bytes32 indexed namespaceHash, uint256 newExpiresAt);
+    event NamespaceReclaimed(bytes32 indexed namespaceHash, address indexed previousOwner);
+    event TreasurySet(address indexed treasury);
 
     function setUp() public {
+        usdc = new MockUSDC();
+
         vm.startPrank(admin);
-        namespaces = new VerifiedNamespaces(admin);
+        namespaces = new VerifiedNamespaces(admin, address(usdc), treasury);
         namespaces.grantRole(namespaces.VERIFIER_ROLE(), verifier);
         vm.stopPrank();
+
+        // Fund users with USDC and approve
+        usdc.mint(user1, 100_000000); // 100 USDC
+        usdc.mint(user2, 100_000000);
+
+        vm.prank(user1);
+        usdc.approve(address(namespaces), type(uint256).max);
+        vm.prank(user2);
+        usdc.approve(address(namespaces), type(uint256).max);
     }
 
     // ============ Constructor Tests ============
@@ -47,15 +67,36 @@ contract VerifiedNamespacesTest is Test {
         assertTrue(namespaces.hasRole(namespaces.DEFAULT_ADMIN_ROLE(), admin));
     }
 
+    function test_Constructor_SetsPaymentToken() public {
+        assertEq(address(namespaces.paymentToken()), address(usdc));
+    }
+
+    function test_Constructor_SetsTreasury() public {
+        assertEq(namespaces.treasury(), treasury);
+    }
+
     function test_Constructor_RevertsIfAdminIsZero() public {
         vm.expectRevert(VerifiedNamespaces.InvalidAdmin.selector);
-        new VerifiedNamespaces(address(0));
+        new VerifiedNamespaces(address(0), address(usdc), treasury);
+    }
+
+    function test_Constructor_RevertsIfPaymentTokenIsZero() public {
+        vm.expectRevert(VerifiedNamespaces.InvalidAddress.selector);
+        new VerifiedNamespaces(admin, address(0), treasury);
+    }
+
+    function test_Constructor_RevertsIfTreasuryIsZero() public {
+        vm.expectRevert(VerifiedNamespaces.InvalidTreasury.selector);
+        new VerifiedNamespaces(admin, address(usdc), address(0));
     }
 
     // ============ Register Namespace Tests ============
 
     function test_RegisterNamespace_Success() public {
         vm.startPrank(user1);
+
+        uint256 balBefore = usdc.balanceOf(user1);
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
 
         vm.expectEmit(true, true, false, true);
         emit NamespaceRegistered(keccak256(bytes(NS_OPENAI)), user1, NS_OPENAI);
@@ -72,7 +113,22 @@ contract VerifiedNamespacesTest is Test {
         assertGt(registeredAt, 0);
         assertEq(linkedAgents, 0);
 
+        // Fee was collected
+        assertEq(usdc.balanceOf(user1), balBefore - REGISTRATION_FEE);
+        assertEq(usdc.balanceOf(treasury), treasuryBefore + REGISTRATION_FEE);
+
         vm.stopPrank();
+    }
+
+    function test_RegisterNamespace_SetsExpiration() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+
+        // Warp past expiration
+        vm.warp(block.timestamp + EXPIRATION_PERIOD + 1);
+        assertTrue(namespaces.isExpired(NS_OPENAI));
     }
 
     function test_RegisterNamespace_RevertsIfAlreadyExists() public {
@@ -113,6 +169,16 @@ contract VerifiedNamespacesTest is Test {
         // Original case should also resolve
         (owner,,,,,) = namespaces.getNamespace("OpenAI");
         assertEq(owner, user1);
+    }
+
+    function test_RegisterNamespace_RevertsIfInsufficientBalance() public {
+        address poorUser = address(0x99);
+        vm.prank(poorUser);
+        usdc.approve(address(namespaces), type(uint256).max);
+
+        vm.prank(poorUser);
+        vm.expectRevert(); // SafeERC20 will revert
+        namespaces.registerNamespace(NS_OPENAI);
     }
 
     // ============ Transfer Namespace Tests ============
@@ -171,6 +237,21 @@ contract VerifiedNamespacesTest is Test {
         vm.stopPrank();
     }
 
+    function test_VerifyNamespace_ClearsExpiration() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Before verification, it can expire
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+
+        vm.prank(verifier);
+        namespaces.verifyNamespace(NS_OPENAI);
+
+        // After verification, it never expires even after the period
+        vm.warp(block.timestamp + EXPIRATION_PERIOD + 1);
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+    }
+
     function test_VerifyNamespace_RevertsIfNotVerifier() public {
         vm.prank(user1);
         namespaces.registerNamespace(NS_OPENAI);
@@ -212,6 +293,247 @@ contract VerifiedNamespacesTest is Test {
         vm.prank(user2);
         vm.expectRevert();
         namespaces.revokeNamespace(NS_OPENAI);
+    }
+
+    // ============ Renew Namespace Tests ============
+
+    function test_RenewNamespace_Success() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Warp forward 300 days (not expired yet)
+        vm.warp(block.timestamp + 300 days);
+
+        vm.startPrank(user1);
+        uint256 balBefore = usdc.balanceOf(user1);
+
+        namespaces.renewNamespace(NS_OPENAI);
+
+        // Fee was collected
+        assertEq(usdc.balanceOf(user1), balBefore - REGISTRATION_FEE);
+
+        // Should not be expired even after original expiry
+        vm.warp(block.timestamp + 200 days);
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+
+        vm.stopPrank();
+    }
+
+    function test_RenewNamespace_ExtendsFromCurrentExpiry() public {
+        uint256 startTime = block.timestamp;
+
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+        // expiresAt = startTime + 365 days
+
+        // Renew while still active (200 days in)
+        vm.warp(startTime + 200 days);
+        vm.prank(user1);
+        namespaces.renewNamespace(NS_OPENAI);
+        // expiresAt should be (startTime + 365 days) + 365 days = startTime + 730 days
+
+        // At 700 days, should not be expired
+        vm.warp(startTime + 700 days);
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+
+        // At 731 days, should be expired
+        vm.warp(startTime + 731 days);
+        assertTrue(namespaces.isExpired(NS_OPENAI));
+    }
+
+    function test_RenewNamespace_ExtendsFromNowIfAlreadyExpired() public {
+        uint256 startTime = block.timestamp;
+
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Let it expire
+        vm.warp(startTime + EXPIRATION_PERIOD + 100 days);
+        assertTrue(namespaces.isExpired(NS_OPENAI));
+
+        // Renew after expiry
+        vm.prank(user1);
+        namespaces.renewNamespace(NS_OPENAI);
+
+        // Should now be valid
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+
+        // Should expire 365 days from now, not from original expiry
+        vm.warp(startTime + EXPIRATION_PERIOD + 100 days + EXPIRATION_PERIOD + 1);
+        assertTrue(namespaces.isExpired(NS_OPENAI));
+    }
+
+    function test_RenewNamespace_RevertsIfNotOwner() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.prank(user2);
+        vm.expectRevert(VerifiedNamespaces.NotNamespaceOwner.selector);
+        namespaces.renewNamespace(NS_OPENAI);
+    }
+
+    function test_RenewNamespace_RevertsIfVerified() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.prank(verifier);
+        namespaces.verifyNamespace(NS_OPENAI);
+
+        vm.prank(user1);
+        vm.expectRevert(VerifiedNamespaces.NamespaceIsVerified.selector);
+        namespaces.renewNamespace(NS_OPENAI);
+    }
+
+    function test_RenewNamespace_EmitsEvent() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.startPrank(user1);
+        vm.expectEmit(true, false, false, false);
+        emit NamespaceRenewed(keccak256(bytes(NS_OPENAI)), 0); // Don't check data
+        namespaces.renewNamespace(NS_OPENAI);
+        vm.stopPrank();
+    }
+
+    // ============ Reclaim Expired Tests ============
+
+    function test_ReclaimExpired_Success() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        // Link an agent first
+        vm.prank(user1);
+        namespaces.linkAgent(NS_OPENAI, DID1);
+
+        // Warp past expiration
+        vm.warp(block.timestamp + EXPIRATION_PERIOD + 1);
+
+        // Anyone can reclaim
+        vm.prank(user2);
+        vm.expectEmit(true, true, false, false);
+        emit NamespaceReclaimed(keccak256(bytes(NS_OPENAI)), user1);
+        namespaces.reclaimExpired(NS_OPENAI);
+
+        // Namespace is now available
+        assertTrue(namespaces.isNamespaceAvailable(NS_OPENAI));
+
+        // Linked agents are cleared
+        bytes32[] memory agents = namespaces.getLinkedAgents(NS_OPENAI);
+        assertEq(agents.length, 0);
+
+        // Total namespaces decreased
+        assertEq(namespaces.totalNamespaces(), 0);
+    }
+
+    function test_ReclaimExpired_RemovesFromOwnerList() public {
+        vm.startPrank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+        namespaces.registerNamespace(NS_ANTHROPIC);
+        vm.stopPrank();
+
+        assertEq(namespaces.getNamespacesByOwner(user1).length, 2);
+
+        vm.warp(block.timestamp + EXPIRATION_PERIOD + 1);
+        namespaces.reclaimExpired(NS_OPENAI);
+
+        assertEq(namespaces.getNamespacesByOwner(user1).length, 1);
+    }
+
+    function test_ReclaimExpired_RevertsIfNotExpired() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.expectRevert(VerifiedNamespaces.NamespaceNotExpired.selector);
+        namespaces.reclaimExpired(NS_OPENAI);
+    }
+
+    function test_ReclaimExpired_RevertsIfVerified() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.prank(verifier);
+        namespaces.verifyNamespace(NS_OPENAI);
+
+        vm.warp(block.timestamp + EXPIRATION_PERIOD + 1);
+
+        vm.expectRevert(VerifiedNamespaces.NamespaceIsVerified.selector);
+        namespaces.reclaimExpired(NS_OPENAI);
+    }
+
+    function test_ReclaimExpired_NamespaceCanBeReRegistered() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.warp(block.timestamp + EXPIRATION_PERIOD + 1);
+        namespaces.reclaimExpired(NS_OPENAI);
+
+        // Now user2 can register it
+        vm.prank(user2);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        (address owner,,,,,) = namespaces.getNamespace(NS_OPENAI);
+        assertEq(owner, user2);
+    }
+
+    // ============ IsExpired Tests ============
+
+    function test_IsExpired_FalseForNonExistent() public {
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+    }
+
+    function test_IsExpired_FalseForFreshRegistration() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+    }
+
+    function test_IsExpired_FalseForVerified() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.prank(verifier);
+        namespaces.verifyNamespace(NS_OPENAI);
+
+        vm.warp(block.timestamp + EXPIRATION_PERIOD * 10);
+        assertFalse(namespaces.isExpired(NS_OPENAI));
+    }
+
+    function test_IsExpired_TrueAfterPeriod() public {
+        vm.prank(user1);
+        namespaces.registerNamespace(NS_OPENAI);
+
+        vm.warp(block.timestamp + EXPIRATION_PERIOD);
+        assertFalse(namespaces.isExpired(NS_OPENAI)); // Exactly at boundary: not expired
+
+        vm.warp(block.timestamp + 1);
+        assertTrue(namespaces.isExpired(NS_OPENAI)); // Past boundary: expired
+    }
+
+    // ============ Set Treasury Tests ============
+
+    function test_SetTreasury_Success() public {
+        address newTreasury = address(0x99);
+
+        vm.startPrank(admin);
+        vm.expectEmit(true, false, false, false);
+        emit TreasurySet(newTreasury);
+        namespaces.setTreasury(newTreasury);
+        vm.stopPrank();
+
+        assertEq(namespaces.treasury(), newTreasury);
+    }
+
+    function test_SetTreasury_RevertsIfNotAdmin() public {
+        vm.prank(user1);
+        vm.expectRevert();
+        namespaces.setTreasury(address(0x99));
+    }
+
+    function test_SetTreasury_RevertsIfZeroAddress() public {
+        vm.prank(admin);
+        vm.expectRevert(VerifiedNamespaces.InvalidTreasury.selector);
+        namespaces.setTreasury(address(0));
     }
 
     // ============ Link Agent Tests ============
@@ -561,5 +883,15 @@ contract VerifiedNamespacesTest is Test {
         vm.prank(user1);
         vm.expectRevert(VerifiedNamespaces.NamespaceReserved.selector);
         namespaces.registerNamespace(NS_OPENAI);
+    }
+
+    // ============ Fee & Expiration Constants Tests ============
+
+    function test_RegistrationFeeConstant() public {
+        assertEq(namespaces.REGISTRATION_FEE(), 1_000000);
+    }
+
+    function test_ExpirationPeriodConstant() public {
+        assertEq(namespaces.EXPIRATION_PERIOD(), 365 days);
     }
 }

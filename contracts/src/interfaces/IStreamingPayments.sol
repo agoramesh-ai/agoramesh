@@ -156,6 +156,10 @@ interface IStreamingPayments {
     /// @param streamId The stream ID
     function cancel(uint256 streamId) external;
 
+    /// @notice Finalize a stream stuck with rounding dust (admin only)
+    /// @param streamId The stream ID
+    function finalizeStream(uint256 streamId) external;
+
     // ============ View Functions ============
 
     /// @notice Get stream details

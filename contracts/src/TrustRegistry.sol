@@ -485,22 +485,22 @@ contract TrustRegistry is ITrustRegistry, AccessControlEnumerable, ReentrancyGua
         // Success rate component (0-10000)
         uint256 successRate = (data.successfulTransactions * BASIS_POINTS) / data.totalTransactions;
 
-        // Volume factor (logarithmic scaling, caps at $100k)
-        // Simple linear scaling for now: 1 point per $100 volume, max 1000 points
-        uint256 volumeFactor = data.totalVolumeUsd / 100_000_000; // Convert 6-decimal USDC to $100 units
-        if (volumeFactor > 1000) {
-            volumeFactor = 1000;
+        // Volume factor: multiply before divide to avoid precision loss for small volumes
+        // Cap volume contribution: max 1000 points (at $100k volume = 100_000_000_000 in 6-dec USDC)
+        uint256 cappedVolume = data.totalVolumeUsd;
+        if (cappedVolume > 1000 * 100_000_000) {
+            cappedVolume = 1000 * 100_000_000;
         }
 
-        // Transaction count factor (logarithmic scaling)
-        // Simple scaling: 10 points per transaction, max 1000 points
+        // Transaction count factor (linear scaling, 10 points per tx, max 1000)
         uint256 txFactor = data.totalTransactions * 10;
         if (txFactor > 1000) {
             txFactor = 1000;
         }
 
         // Composite: 70% success rate, 15% volume, 15% tx count
-        score = (successRate * 7000 + volumeFactor * 10 * 1500 + txFactor * 10 * 1500) / 10000;
+        // Multiply-then-divide: (cappedVolume * 15000) / 100_000_000 avoids truncation
+        score = (successRate * 7000 + (cappedVolume * 15000) / 100_000_000 + txFactor * 10 * 1500) / 10000;
 
         // Cap at 10000
         if (score > BASIS_POINTS) {

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
+import "@openzeppelin/contracts/access/IAccessControl.sol";
 import "../src/ERC8004Bridge.sol";
 import "../src/interfaces/IERC8004Identity.sol";
 
@@ -115,7 +116,8 @@ contract ERC8004BridgeTest is Test {
     function test_Constructor_SetsRegistries() public {
         assertEq(address(bridge.identityRegistry()), address(identityRegistry));
         assertEq(address(bridge.reputationRegistry()), address(reputationRegistry));
-        assertEq(bridge.owner(), owner);
+        assertTrue(bridge.hasRole(bridge.DEFAULT_ADMIN_ROLE(), owner));
+        assertTrue(bridge.hasRole(bridge.BRIDGE_OPERATOR_ROLE(), owner));
         assertEq(bridge.totalRegistered(), 0);
     }
 
@@ -172,9 +174,12 @@ contract ERC8004BridgeTest is Test {
         vm.stopPrank();
     }
 
-    function test_RegisterAgent_NonOwner_Reverts() public {
+    function test_RegisterAgent_NonOperator_Reverts() public {
+        bytes32 operatorRole = bridge.BRIDGE_OPERATOR_ROLE();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, nonOwner, operatorRole)
+        );
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         bridge.registerAgent(agentTokenId1, agentURI1);
     }
 
@@ -216,12 +221,15 @@ contract ERC8004BridgeTest is Test {
         bridge.updateAgentURI(agentTokenId1, "new-uri");
     }
 
-    function test_UpdateAgentURI_NonOwner_Reverts() public {
+    function test_UpdateAgentURI_NonOperator_Reverts() public {
         vm.prank(owner);
         bridge.registerAgent(agentTokenId1, agentURI1);
 
+        bytes32 operatorRole = bridge.BRIDGE_OPERATOR_ROLE();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, nonOwner, operatorRole)
+        );
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         bridge.updateAgentURI(agentTokenId1, "new-uri");
     }
 
@@ -249,9 +257,12 @@ contract ERC8004BridgeTest is Test {
         vm.stopPrank();
     }
 
-    function test_SubmitFeedback_NonOwner_Reverts() public {
+    function test_SubmitFeedback_NonOperator_Reverts() public {
+        bytes32 operatorRole = bridge.BRIDGE_OPERATOR_ROLE();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, nonOwner, operatorRole)
+        );
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         bridge.submitFeedback(1, 85, "quality", "speed");
     }
 
@@ -286,9 +297,12 @@ contract ERC8004BridgeTest is Test {
         vm.stopPrank();
     }
 
-    function test_SubmitValidation_NonOwner_Reverts() public {
+    function test_SubmitValidation_NonOperator_Reverts() public {
+        bytes32 operatorRole = bridge.BRIDGE_OPERATOR_ROLE();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, nonOwner, operatorRole)
+        );
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         bridge.submitValidation(1, keccak256("req"), 1, "tag");
     }
 
@@ -366,9 +380,12 @@ contract ERC8004BridgeTest is Test {
         bridge.setIdentityRegistry(address(0));
     }
 
-    function test_SetIdentityRegistry_NonOwner_Reverts() public {
+    function test_SetIdentityRegistry_NonAdmin_Reverts() public {
+        bytes32 adminRole = bridge.DEFAULT_ADMIN_ROLE();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, nonOwner, adminRole)
+        );
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         bridge.setIdentityRegistry(address(0x999));
     }
 
@@ -390,9 +407,12 @@ contract ERC8004BridgeTest is Test {
         bridge.setReputationRegistry(address(0));
     }
 
-    function test_SetReputationRegistry_NonOwner_Reverts() public {
+    function test_SetReputationRegistry_NonAdmin_Reverts() public {
+        bytes32 adminRole = bridge.DEFAULT_ADMIN_ROLE();
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, nonOwner, adminRole)
+        );
         vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         bridge.setReputationRegistry(address(0x999));
     }
 
@@ -414,6 +434,35 @@ contract ERC8004BridgeTest is Test {
 
         // No cross-contamination
         assertTrue(erc8004Id1 != erc8004Id2);
+    }
+
+    // ============ Role Separation Tests ============
+
+    function test_OperatorRole_CanRegisterButNotAdmin() public {
+        address operator = address(0x3);
+        bytes32 operatorRole = bridge.BRIDGE_OPERATOR_ROLE();
+        bytes32 adminRole = bridge.DEFAULT_ADMIN_ROLE();
+
+        // Admin grants operator role
+        vm.prank(owner);
+        bridge.grantRole(operatorRole, operator);
+
+        // Operator can register agents
+        vm.prank(operator);
+        uint256 erc8004Id = bridge.registerAgent(agentTokenId1, agentURI1);
+        assertEq(erc8004Id, 1);
+
+        // Operator cannot change registries (admin-only)
+        vm.expectRevert(
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, operator, adminRole)
+        );
+        vm.prank(operator);
+        bridge.setIdentityRegistry(address(0x999));
+    }
+
+    function test_Constructor_ZeroAdmin_Reverts() public {
+        vm.expectRevert(ERC8004Bridge.ZeroAddress.selector);
+        new ERC8004Bridge(address(identityRegistry), address(reputationRegistry), address(0));
     }
 
     // ============ Fuzz Tests ============

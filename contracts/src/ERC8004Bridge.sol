@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import "./interfaces/IERC8004Identity.sol";
 
 /// @title ERC8004Bridge - Bridge Between AgoraMesh and Official ERC-8004 Registries
@@ -10,7 +10,12 @@ import "./interfaces/IERC8004Identity.sol";
 /// @dev Unlike the read-only ERC8004Adapter, this contract writes to the official
 ///      ERC-8004 registries (IdentityRegistry at 0x8004...1e, ReputationRegistry at 0x8004...13).
 ///      It maintains a bidirectional mapping between AgoraMesh token IDs and ERC-8004 agent IDs.
-contract ERC8004Bridge is Ownable {
+contract ERC8004Bridge is AccessControlEnumerable {
+    // ============ Roles ============
+
+    /// @notice Role for bridge operational functions (register, update, feedback, validation)
+    bytes32 public constant BRIDGE_OPERATOR_ROLE = keccak256("BRIDGE_OPERATOR_ROLE");
+
     // ============ Errors ============
 
     error ZeroAddress();
@@ -78,13 +83,17 @@ contract ERC8004Bridge is Ownable {
     /// @notice Initialize the bridge with official ERC-8004 registry addresses
     /// @param _identityRegistry Address of the official ERC-8004 IdentityRegistry
     /// @param _reputationRegistry Address of the official ERC-8004 ReputationRegistry
-    /// @param _owner Address of the contract owner
-    constructor(address _identityRegistry, address _reputationRegistry, address _owner) Ownable(_owner) {
+    /// @param _admin Address of the initial admin (receives DEFAULT_ADMIN_ROLE and BRIDGE_OPERATOR_ROLE)
+    constructor(address _identityRegistry, address _reputationRegistry, address _admin) {
         if (_identityRegistry == address(0)) revert ZeroAddress();
         if (_reputationRegistry == address(0)) revert ZeroAddress();
+        if (_admin == address(0)) revert ZeroAddress();
 
         identityRegistry = IERC8004IdentityRegistry(_identityRegistry);
         reputationRegistry = IERC8004ReputationRegistry(_reputationRegistry);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(BRIDGE_OPERATOR_ROLE, _admin);
     }
 
     // ============ Registration ============
@@ -97,7 +106,7 @@ contract ERC8004Bridge is Ownable {
     /// @return erc8004AgentId The ERC-8004 agent ID assigned by the official registry
     function registerAgent(uint256 agentTokenId, string calldata agentURI)
         external
-        onlyOwner
+        onlyRole(BRIDGE_OPERATOR_ROLE)
         returns (uint256 erc8004AgentId)
     {
         if (agoraMeshToERC8004[agentTokenId] != 0) {
@@ -118,7 +127,7 @@ contract ERC8004Bridge is Ownable {
     /// @notice Update an agent's URI on the official ERC-8004 IdentityRegistry
     /// @param agentTokenId The AgoraMesh token ID
     /// @param newURI The new metadata URI
-    function updateAgentURI(uint256 agentTokenId, string calldata newURI) external onlyOwner {
+    function updateAgentURI(uint256 agentTokenId, string calldata newURI) external onlyRole(BRIDGE_OPERATOR_ROLE) {
         uint256 erc8004AgentId = agoraMeshToERC8004[agentTokenId];
         if (erc8004AgentId == 0) revert AgentNotRegistered(agentTokenId);
 
@@ -138,7 +147,7 @@ contract ERC8004Bridge is Ownable {
     /// @param tag2 Secondary categorization tag
     function submitFeedback(uint256 erc8004AgentId, int128 value, string calldata tag1, string calldata tag2)
         external
-        onlyOwner
+        onlyRole(BRIDGE_OPERATOR_ROLE)
     {
         // Query the ReputationRegistry for the current feedback index
         uint64 lastIndex = reputationRegistry.getLastIndex(erc8004AgentId, address(this));
@@ -164,7 +173,7 @@ contract ERC8004Bridge is Ownable {
     /// @param tag Category tag for the validation
     function submitValidation(uint256 erc8004AgentId, bytes32 requestHash, uint8 response, string calldata tag)
         external
-        onlyOwner
+        onlyRole(BRIDGE_OPERATOR_ROLE)
     {
         emit ValidationSubmitted(erc8004AgentId, requestHash, response, tag);
     }
@@ -225,7 +234,7 @@ contract ERC8004Bridge is Ownable {
 
     /// @notice Update the IdentityRegistry address
     /// @param _identityRegistry New IdentityRegistry address
-    function setIdentityRegistry(address _identityRegistry) external onlyOwner {
+    function setIdentityRegistry(address _identityRegistry) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_identityRegistry == address(0)) revert ZeroAddress();
         identityRegistry = IERC8004IdentityRegistry(_identityRegistry);
         emit IdentityRegistryUpdated(_identityRegistry);
@@ -233,7 +242,7 @@ contract ERC8004Bridge is Ownable {
 
     /// @notice Update the ReputationRegistry address
     /// @param _reputationRegistry New ReputationRegistry address
-    function setReputationRegistry(address _reputationRegistry) external onlyOwner {
+    function setReputationRegistry(address _reputationRegistry) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_reputationRegistry == address(0)) revert ZeroAddress();
         reputationRegistry = IERC8004ReputationRegistry(_reputationRegistry);
         emit ReputationRegistryUpdated(_reputationRegistry);

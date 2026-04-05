@@ -2,12 +2,16 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVerifiedNamespaces.sol";
 
 /// @title VerifiedNamespaces - Verified Namespace Registry for AgoraMesh
 /// @notice Manages organization namespaces for agent verification
 /// @dev Implements IVerifiedNamespaces with ENS-inspired architecture
 contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
+    using SafeERC20 for IERC20;
+
     // ============ Constants ============
 
     /// @notice Role for verifying namespaces
@@ -24,6 +28,12 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
 
     /// @notice Maximum metadata value length (bytes)
     uint256 public constant MAX_METADATA_VALUE_LENGTH = 1024;
+
+    /// @notice Registration fee (1 USDC = 1_000000 with 6 decimals)
+    uint256 public constant REGISTRATION_FEE = 1_000000;
+
+    /// @notice Expiration period for unverified namespaces
+    uint256 public constant EXPIRATION_PERIOD = 365 days;
 
     // ============ State Variables ============
 
@@ -57,6 +67,12 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
     /// @notice Number of verified namespaces
     uint256 private _verifiedCount;
 
+    /// @notice Payment token (USDC)
+    IERC20 public immutable paymentToken;
+
+    /// @notice Treasury address for fee collection
+    address public treasury;
+
     // ============ Errors ============
 
     error InvalidAdmin();
@@ -72,13 +88,22 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
     error InvalidNameCharacter();
     error MetadataKeyTooLong();
     error MetadataValueTooLong();
+    error NamespaceNotExpired();
+    error NamespaceIsVerified();
+    error InvalidTreasury();
 
     // ============ Constructor ============
 
     /// @notice Initialize the VerifiedNamespaces contract
     /// @param _admin Address of the admin
-    constructor(address _admin) {
+    /// @param _paymentToken Address of the payment token (USDC)
+    /// @param _treasury Address of the treasury for fee collection
+    constructor(address _admin, address _paymentToken, address _treasury) {
         if (_admin == address(0)) revert InvalidAdmin();
+        if (_paymentToken == address(0)) revert InvalidAddress();
+        if (_treasury == address(0)) revert InvalidTreasury();
+        paymentToken = IERC20(_paymentToken);
+        treasury = _treasury;
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
@@ -91,6 +116,9 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
         if (_namespaces[nsHash].owner != address(0)) revert NamespaceAlreadyExists();
         if (_reserved[nsHash]) revert NamespaceReserved();
 
+        // Collect registration fee
+        paymentToken.safeTransferFrom(msg.sender, treasury, REGISTRATION_FEE);
+
         _namespaces[nsHash] = NamespaceInfo({
             namespaceHash: nsHash,
             owner: msg.sender,
@@ -98,7 +126,8 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
             isVerified: false,
             isActive: true,
             registeredAt: block.timestamp,
-            verifiedAt: 0
+            verifiedAt: 0,
+            expiresAt: block.timestamp + EXPIRATION_PERIOD
         });
 
         // Track owner's namespaces
@@ -142,6 +171,7 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
         if (!ns.isVerified) {
             ns.isVerified = true;
             ns.verifiedAt = block.timestamp;
+            ns.expiresAt = 0; // Verified namespaces don't expire
             _verifiedCount++;
         }
 
@@ -168,6 +198,62 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
         bytes32 nsHash = _validateAndHashName(name);
         if (_namespaces[nsHash].owner != address(0)) revert NamespaceAlreadyExists();
         _reserved[nsHash] = true;
+    }
+
+    /// @inheritdoc IVerifiedNamespaces
+    function renewNamespace(string calldata name) external override {
+        bytes32 nsHash = _validateAndHashName(name);
+        NamespaceInfo storage ns = _getNamespace(nsHash);
+
+        if (ns.owner != msg.sender) revert NotNamespaceOwner();
+        if (ns.isVerified) revert NamespaceIsVerified(); // Verified namespaces don't need renewal
+
+        // Collect renewal fee
+        paymentToken.safeTransferFrom(msg.sender, treasury, REGISTRATION_FEE);
+
+        // Extend from current expiry or now, whichever is later
+        uint256 base = ns.expiresAt > block.timestamp ? ns.expiresAt : block.timestamp;
+        ns.expiresAt = base + EXPIRATION_PERIOD;
+
+        emit NamespaceRenewed(nsHash, ns.expiresAt);
+    }
+
+    /// @inheritdoc IVerifiedNamespaces
+    function reclaimExpired(string calldata name) external override {
+        bytes32 nsHash = _validateAndHashName(name);
+        NamespaceInfo storage ns = _getNamespace(nsHash);
+
+        if (ns.isVerified) revert NamespaceIsVerified();
+        if (ns.expiresAt == 0 || block.timestamp <= ns.expiresAt) revert NamespaceNotExpired();
+
+        address previousOwner = ns.owner;
+
+        // Remove from previous owner's list
+        _removeFromOwnerList(previousOwner, nsHash);
+
+        // Clear linked agents
+        bytes32[] storage agents = _linkedAgents[nsHash];
+        for (uint256 i = 0; i < agents.length; i++) {
+            _isLinked[nsHash][agents[i]] = false;
+            delete _agentIndex[nsHash][agents[i]];
+        }
+        delete _linkedAgents[nsHash];
+
+        // Reset namespace
+        ns.owner = address(0);
+        ns.isActive = false;
+        ns.expiresAt = 0;
+        _totalNamespaces--;
+
+        emit NamespaceReclaimed(nsHash, previousOwner);
+    }
+
+    /// @notice Set the treasury address (admin only)
+    /// @param _treasury New treasury address
+    function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_treasury == address(0)) revert InvalidTreasury();
+        treasury = _treasury;
+        emit TreasurySet(_treasury);
     }
 
     // ============ Agent Linking Functions ============
@@ -261,6 +347,15 @@ contract VerifiedNamespaces is IVerifiedNamespaces, AccessControlEnumerable {
         NamespaceInfo storage ns = _namespaces[nsHash];
 
         return (ns.owner, ns.name, ns.isVerified, ns.isActive, ns.registeredAt, _linkedAgents[nsHash].length);
+    }
+
+    /// @inheritdoc IVerifiedNamespaces
+    function isExpired(string calldata name) external view override returns (bool) {
+        bytes32 nsHash = _validateAndHashName(name);
+        NamespaceInfo storage ns = _namespaces[nsHash];
+        if (ns.owner == address(0)) return false; // Non-existent namespaces aren't "expired"
+        if (ns.isVerified) return false; // Verified namespaces never expire
+        return ns.expiresAt > 0 && block.timestamp > ns.expiresAt;
     }
 
     /// @inheritdoc IVerifiedNamespaces

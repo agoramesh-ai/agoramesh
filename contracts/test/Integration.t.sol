@@ -11,6 +11,7 @@ import "../src/interfaces/IDisputeResolution.sol";
 import "../src/interfaces/IStreamingPayments.sol";
 import "../src/interfaces/ITrustRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./mocks/VRFCoordinatorV2_5Mock.sol";
 
 /// @notice Mock USDC token for integration testing
 contract IntegrationMockUSDC is ERC20 {
@@ -33,6 +34,11 @@ contract IntegrationTest is Test {
     TieredDisputeResolution public disputeResolution;
     TrustRegistry public trustRegistry;
     IntegrationMockUSDC public usdc;
+    VRFCoordinatorV2_5Mock public vrfCoordinator;
+
+    uint256 public vrfSubId;
+    bytes32 public constant VRF_KEY_HASH = keccak256("test-key-hash");
+    uint256 private _vrfRequestCount;
 
     address public admin = makeAddr("admin");
     address public client = makeAddr("client");
@@ -64,11 +70,27 @@ contract IntegrationTest is Test {
     function setUp() public {
         vm.startPrank(admin);
 
+        // Deploy VRF Coordinator mock
+        vrfCoordinator = new VRFCoordinatorV2_5Mock();
+        vrfSubId = vrfCoordinator.createSubscription();
+        vrfCoordinator.fundSubscription(vrfSubId, 100 ether);
+
         // Deploy contracts
         usdc = new IntegrationMockUSDC();
         trustRegistry = new TrustRegistry(address(usdc), admin);
         escrow = new AgoraMeshEscrow(address(trustRegistry), admin);
-        disputeResolution = new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), admin);
+        disputeResolution = new TieredDisputeResolution(
+            address(escrow),
+            address(trustRegistry),
+            address(usdc),
+            admin,
+            address(vrfCoordinator),
+            vrfSubId,
+            VRF_KEY_HASH
+        );
+
+        // Register dispute resolution as VRF consumer
+        vrfCoordinator.addConsumer(vrfSubId, address(disputeResolution));
 
         // Grant cross-contract roles
         // Escrow needs ORACLE_ROLE on TrustRegistry to record transactions
@@ -131,6 +153,12 @@ contract IntegrationTest is Test {
         usdc.approve(address(escrow), type(uint256).max);
         usdc.approve(address(streaming), type(uint256).max);
         vm.stopPrank();
+    }
+
+    /// @notice Fulfill the next pending VRF request (simulates Chainlink VRF callback)
+    function _fulfillVRF() internal {
+        _vrfRequestCount++;
+        vrfCoordinator.fulfillRandomWords(_vrfRequestCount, address(disputeResolution));
     }
 
     // ================================================================
@@ -405,9 +433,10 @@ contract IntegrationTest is Test {
         // Warp past evidence period
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
 
-        // Oracle submits AI analysis (transitions to VOTING)
+        // Oracle submits AI analysis (transitions to AI_ANALYSIS, awaiting VRF)
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("ai-analysis"), 6000); // suggest 60% client
+        _fulfillVRF();
 
         d = disputeResolution.getDispute(disputeId);
         assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.VOTING));
@@ -481,6 +510,7 @@ contract IntegrationTest is Test {
         // Oracle submits AI analysis
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 7000);
+        _fulfillVRF();
 
         // Arbiters vote for 70/30 split
         vm.prank(arbiter1);
@@ -540,6 +570,7 @@ contract IntegrationTest is Test {
         // First round: Oracle + voting -> favor client
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 10000);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -561,6 +592,7 @@ contract IntegrationTest is Test {
         usdc.approve(address(disputeResolution), appealFee);
         disputeResolution.appeal(disputeId);
         vm.stopPrank();
+        _fulfillVRF();
 
         d = disputeResolution.getDispute(disputeId);
         assertEq(d.appealRound, 1);
@@ -713,6 +745,7 @@ contract IntegrationTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 10000);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -920,6 +953,7 @@ contract IntegrationTest is Test {
         // === Phase 5: AI Analysis + Voting ===
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("ai-report"), 4000);
+        _fulfillVRF();
 
         // Arbiters vote for 40% client / 60% provider
         vm.prank(arbiter1);

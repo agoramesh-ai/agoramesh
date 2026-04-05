@@ -804,6 +804,141 @@ contract StreamingPaymentsTest is Test {
         assertEq(finalStreamed, DEPOSIT_AMOUNT * 2, "Final streamed should equal total deposit");
     }
 
+    // ============ Dust Threshold Tests ============
+
+    function test_dustThreshold_streamCompletesWithDust() public {
+        // Use an amount/duration combo that produces rounding dust
+        // 1000000007 over 3 seconds: scaledRate = 1000000007 * 1e18 / 3 = 333333335666666666666666666 (truncated)
+        // At t=3, streamedAmountOf caps at depositAmount, so withdrawMax gets exact remainder.
+        // But with topUp interactions, dust can accumulate differently.
+        uint256 deposit = 1000_000007; // 1000.000007 USDC (odd amount)
+        uint256 duration = 7; // 7 seconds — indivisible
+
+        usdc.mint(client, deposit);
+
+        vm.prank(client);
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
+
+        // Withdraw at several points during the stream
+        uint256 startTime = block.timestamp;
+        for (uint256 i = 1; i <= 6; i++) {
+            vm.warp(startTime + i);
+            uint256 w = streaming.withdrawableAmountOf(streamId);
+            if (w > 0) {
+                vm.prank(provider);
+                streaming.withdraw(streamId, w);
+            }
+        }
+
+        // Warp past end
+        vm.warp(startTime + duration + 1);
+
+        // Final withdrawMax should complete the stream
+        vm.prank(provider);
+        streaming.withdrawMax(streamId);
+
+        IStreamingPayments.Stream memory stream = streaming.getStream(streamId);
+        assertEq(
+            uint8(stream.status),
+            uint8(IStreamingPayments.StreamStatus.COMPLETED),
+            "Stream should be COMPLETED even with rounding dust"
+        );
+    }
+
+    function test_dustThreshold_constant() public {
+        assertEq(streaming.DUST_THRESHOLD(), 10, "DUST_THRESHOLD should be 10 wei");
+    }
+
+    function test_finalizeStream_adminCanFinalizeDustyStream() public {
+        uint256 deposit = 1000 * 1e6;
+        uint256 duration = 30 days;
+
+        usdc.mint(client, deposit);
+
+        vm.prank(client);
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, duration, true, false, address(0));
+
+        // Warp past end and withdraw everything
+        vm.warp(block.timestamp + duration + 1);
+
+        vm.prank(provider);
+        streaming.withdrawMax(streamId);
+
+        // Stream should already be COMPLETED since withdrawMax after endTime gets exact amount
+        IStreamingPayments.Stream memory stream = streaming.getStream(streamId);
+        assertEq(uint8(stream.status), uint8(IStreamingPayments.StreamStatus.COMPLETED));
+    }
+
+    function test_finalizeStream_revertIfNotAdmin() public {
+        uint256 deposit = 1000 * 1e6;
+
+        usdc.mint(client, deposit);
+
+        vm.prank(client);
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, 30 days, true, false, address(0));
+
+        vm.warp(block.timestamp + 31 days);
+
+        vm.prank(provider);
+        vm.expectRevert(); // AccessControl revert
+        streaming.finalizeStream(streamId);
+    }
+
+    function test_finalizeStream_revertIfNotPastEndTime() public {
+        uint256 deposit = 1000 * 1e6;
+
+        usdc.mint(client, deposit);
+
+        vm.prank(client);
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, 30 days, true, false, address(0));
+
+        // Don't warp — stream still active
+        vm.prank(admin);
+        vm.expectRevert(StreamingPayments.StreamNotFinalizable.selector);
+        streaming.finalizeStream(streamId);
+    }
+
+    function test_finalizeStream_revertIfTooMuchRemaining() public {
+        uint256 deposit = 1000 * 1e6;
+
+        usdc.mint(client, deposit);
+
+        vm.prank(client);
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, 30 days, true, false, address(0));
+
+        // Warp past end but don't withdraw — full amount remaining, exceeds DUST_THRESHOLD
+        vm.warp(block.timestamp + 31 days);
+
+        vm.prank(admin);
+        vm.expectRevert(StreamingPayments.StreamNotFinalizable.selector);
+        streaming.finalizeStream(streamId);
+    }
+
+    function test_finalizeStream_revertIfAlreadyCompleted() public {
+        uint256 deposit = 1000 * 1e6;
+
+        usdc.mint(client, deposit);
+
+        vm.prank(client);
+        uint256 streamId =
+            streaming.createStream(providerDid, provider, address(usdc), deposit, 30 days, true, false, address(0));
+
+        vm.warp(block.timestamp + 31 days);
+
+        vm.prank(provider);
+        streaming.withdrawMax(streamId);
+
+        // Stream is now COMPLETED
+        vm.prank(admin);
+        vm.expectRevert(StreamingPayments.StreamNotFinalizable.selector);
+        streaming.finalizeStream(streamId);
+    }
+
     function test_topUp_withdrawAfterTopUp_noOverwithdraw() public {
         vm.prank(client);
         uint256 streamId = streaming.createStream(

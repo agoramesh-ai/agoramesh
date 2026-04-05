@@ -8,11 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IDisputeResolution.sol";
 import "./interfaces/IAgoraMeshEscrow.sol";
 import "./interfaces/ITrustRegistry.sol";
+import "./interfaces/chainlink/VRFConsumerBaseV2Plus.sol";
+import "./interfaces/chainlink/VRFV2PlusClient.sol";
 
 /// @title TieredDisputeResolution - AgoraMesh Dispute Resolution
 /// @notice Implements tiered dispute resolution: Auto, AI-Assisted, and Community
 /// @dev Follows spec: Tier 1 (<$10), Tier 2 ($10-$1000), Tier 3 (>$1000)
-contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable, ReentrancyGuard {
+///      Uses Chainlink VRF v2.5 for unbiased arbiter selection
+contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable, ReentrancyGuard, VRFConsumerBaseV2Plus {
     using SafeERC20 for IERC20;
 
     // ============ Constants ============
@@ -78,6 +81,23 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     /// @notice Total allocated arbiter rewards (not yet claimed)
     uint256 private _totalAllocatedRewards;
 
+    // ============ VRF Configuration ============
+
+    /// @notice Chainlink VRF subscription ID
+    uint256 public s_subscriptionId;
+
+    /// @notice Key hash identifying the gas lane for VRF requests
+    bytes32 public s_keyHash;
+
+    /// @notice Gas limit for the VRF callback
+    uint32 public constant VRF_CALLBACK_GAS_LIMIT = 500_000;
+
+    /// @notice Number of block confirmations before VRF response
+    uint16 public constant VRF_REQUEST_CONFIRMATIONS = 3;
+
+    /// @notice Mapping from VRF request ID to dispute ID
+    mapping(uint256 => uint256) private _vrfRequestToDispute;
+
     // ============ Errors ============
 
     error InvalidEscrow();
@@ -108,6 +128,8 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     error ArbiterAlreadyRegistered();
     error InvalidArbiterAddress();
     error EscrowNotInDisputedState();
+    error VRFRequestNotFound();
+    error InsufficientArbiterPool();
 
     // ============ Constructor ============
 
@@ -116,7 +138,18 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
     /// @param _trustRegistry Address of the Trust Registry
     /// @param _paymentToken Address of the payment token (USDC)
     /// @param _admin Address of the admin
-    constructor(address _escrow, address _trustRegistry, address _paymentToken, address _admin) {
+    /// @param _vrfCoordinator Address of the Chainlink VRF v2.5 Coordinator
+    /// @param _subscriptionId VRF subscription ID
+    /// @param _keyHash VRF key hash (gas lane identifier)
+    constructor(
+        address _escrow,
+        address _trustRegistry,
+        address _paymentToken,
+        address _admin,
+        address _vrfCoordinator,
+        uint256 _subscriptionId,
+        bytes32 _keyHash
+    ) VRFConsumerBaseV2Plus(_vrfCoordinator) {
         if (_escrow == address(0)) revert InvalidEscrow();
         if (_trustRegistry == address(0)) revert InvalidTrustRegistry();
         if (_paymentToken == address(0)) revert InvalidPaymentToken();
@@ -125,6 +158,9 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         escrow = IAgoraMeshEscrow(_escrow);
         trustRegistry = ITrustRegistry(_trustRegistry);
         paymentToken = IERC20(_paymentToken);
+
+        s_subscriptionId = _subscriptionId;
+        s_keyHash = _keyHash;
 
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
@@ -247,11 +283,10 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         }
 
         d.aiAnalysisCID = analysisCID;
-        d.state = DisputeState.VOTING;
-        d.votingDeadline = block.timestamp + VOTING_PERIOD;
+        d.state = DisputeState.AI_ANALYSIS;
 
-        // Select arbiters for voting
-        _selectArbiters(disputeId);
+        // Request VRF randomness for arbiter selection — transitions to VOTING in callback
+        _requestArbiterSelection(disputeId);
 
         emit AIAnalysisCompleted(disputeId, analysisCID, suggestedClientShare);
     }
@@ -427,14 +462,13 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         // Escalate to Tier 3 and increment round
         d.tier = Tier.COMMUNITY;
         d.appealRound++;
-        d.state = DisputeState.VOTING;
-        d.votingDeadline = block.timestamp + VOTING_PERIOD;
+        d.state = DisputeState.AI_ANALYSIS;
 
         // Clear previous votes
         delete _votes[disputeId];
 
-        // Select new arbiters (more for appeals)
-        _selectArbiters(disputeId);
+        // Request VRF randomness for new arbiter selection — transitions to VOTING in callback
+        _requestArbiterSelection(disputeId);
 
         emit AppealFiled(disputeId, msg.sender, d.appealRound);
     }
@@ -627,9 +661,30 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         return d;
     }
 
-    /// @notice Select arbiters for a dispute
-    /// @dev In production, would use weighted random selection based on stake/trust
-    function _selectArbiters(uint256 disputeId) internal {
+    /// @notice Request VRF randomness for arbiter selection
+    /// @dev Sends a Chainlink VRF v2.5 request; arbiters are selected in fulfillRandomWords callback
+    function _requestArbiterSelection(uint256 disputeId) internal {
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: s_keyHash,
+                subId: s_subscriptionId,
+                requestConfirmations: VRF_REQUEST_CONFIRMATIONS,
+                callbackGasLimit: VRF_CALLBACK_GAS_LIMIT,
+                numWords: 1,
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({ nativePayment: false }))
+            })
+        );
+        _vrfRequestToDispute[requestId] = disputeId;
+
+        emit VRFRandomnessRequested(disputeId, requestId);
+    }
+
+    /// @notice VRF callback — selects arbiters using verified randomness and transitions to VOTING
+    /// @dev Called by the VRF Coordinator via rawFulfillRandomWords
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
+        uint256 disputeId = _vrfRequestToDispute[requestId];
+        if (disputeId == 0) revert VRFRequestNotFound();
+
         Dispute storage d = _disputes[disputeId];
         uint256 count = getArbiterCount(d.tier, d.appealRound);
 
@@ -639,20 +694,37 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
         // Get escrow to exclude parties from arbiter selection
         IAgoraMeshEscrow.Escrow memory e = escrow.getEscrow(d.escrowId);
 
-        // Select arbiters from the eligible pool
-        // In production: weighted random selection from TrustRegistry with Chainlink VRF
-        // For now: select first N eligible arbiters who are not parties
         uint256 poolSize = _eligibleArbiters.length;
+        if (poolSize == 0) revert InsufficientArbiterPool();
+
+        uint256 seed = randomWords[0];
         uint256 selected = 0;
 
-        for (uint256 i = 0; i < poolSize && selected < count; i++) {
-            address candidate = _eligibleArbiters[i];
-            // Skip if candidate is a party to the dispute
-            if (candidate != e.clientAddress && candidate != e.providerAddress) {
-                _arbiters[disputeId].push(candidate);
-                selected++;
-            }
+        // Derive arbiter indices from the VRF seed using keccak256 for each slot.
+        // Use a bounded attempt count to avoid infinite loops if pool is undersized.
+        uint256 maxAttempts = poolSize * 3;
+        for (uint256 attempt = 0; attempt < maxAttempts && selected < count; attempt++) {
+            uint256 index = uint256(keccak256(abi.encode(seed, attempt))) % poolSize;
+            address candidate = _eligibleArbiters[index];
+
+            // Skip parties to the dispute (conflict of interest)
+            if (candidate == e.clientAddress || candidate == e.providerAddress) continue;
+
+            // Skip duplicates (same arbiter drawn twice)
+            if (_isSelectedArbiter(disputeId, candidate)) continue;
+
+            _arbiters[disputeId].push(candidate);
+            selected++;
         }
+
+        // Transition to voting now that arbiters are selected
+        d.state = DisputeState.VOTING;
+        d.votingDeadline = block.timestamp + VOTING_PERIOD;
+
+        emit ArbitersSelected(disputeId, _arbiters[disputeId]);
+
+        // Clean up request mapping
+        delete _vrfRequestToDispute[requestId];
     }
 
     /// @notice Check if an address is a selected arbiter for a dispute
@@ -762,4 +834,24 @@ contract TieredDisputeResolution is IDisputeResolution, AccessControlEnumerable,
 
     /// @notice Emitted when an arbiter claims their reward
     event ArbiterRewardClaimed(address indexed arbiter, uint256 amount);
+
+    /// @notice Emitted when VRF randomness is requested for arbiter selection
+    event VRFRandomnessRequested(uint256 indexed disputeId, uint256 indexed requestId);
+
+    /// @notice Emitted when arbiters are selected via VRF callback
+    event ArbitersSelected(uint256 indexed disputeId, address[] arbiters);
+
+    // ============ VRF Configuration Management ============
+
+    /// @notice Update the VRF subscription ID
+    /// @param _subscriptionId New subscription ID
+    function setVRFSubscriptionId(uint256 _subscriptionId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        s_subscriptionId = _subscriptionId;
+    }
+
+    /// @notice Update the VRF key hash (gas lane)
+    /// @param _keyHash New key hash
+    function setVRFKeyHash(bytes32 _keyHash) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        s_keyHash = _keyHash;
+    }
 }

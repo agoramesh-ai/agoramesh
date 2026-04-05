@@ -6,6 +6,7 @@ import "../src/TieredDisputeResolution.sol";
 import "../src/AgoraMeshEscrow.sol";
 import "../src/TrustRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./mocks/VRFCoordinatorV2_5Mock.sol";
 
 /// @notice Mock USDC token for testing
 contract MockUSDC is ERC20 {
@@ -27,6 +28,7 @@ contract DisputeResolutionTest is Test {
     AgoraMeshEscrow public escrow;
     TrustRegistry public trustRegistry;
     MockUSDC public usdc;
+    VRFCoordinatorV2_5Mock public vrfCoordinator;
 
     address public admin = makeAddr("admin");
     address public client = makeAddr("client");
@@ -35,6 +37,10 @@ contract DisputeResolutionTest is Test {
     address public arbiter1 = makeAddr("arbiter1");
     address public arbiter2 = makeAddr("arbiter2");
     address public arbiter3 = makeAddr("arbiter3");
+
+    uint256 public vrfSubId;
+    bytes32 public constant VRF_KEY_HASH = keccak256("test-key-hash");
+    uint256 private _vrfRequestCount;
 
     bytes32 public clientDid = keccak256("did:agoramesh:base:client");
     bytes32 public providerDid = keccak256("did:agoramesh:base:provider");
@@ -52,11 +58,27 @@ contract DisputeResolutionTest is Test {
     function setUp() public {
         vm.startPrank(admin);
 
+        // Deploy VRF Coordinator mock
+        vrfCoordinator = new VRFCoordinatorV2_5Mock();
+        vrfSubId = vrfCoordinator.createSubscription();
+        vrfCoordinator.fundSubscription(vrfSubId, 100 ether);
+
         // Deploy contracts
         usdc = new MockUSDC();
         trustRegistry = new TrustRegistry(address(usdc), admin);
         escrow = new AgoraMeshEscrow(address(trustRegistry), admin);
-        disputeResolution = new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), admin);
+        disputeResolution = new TieredDisputeResolution(
+            address(escrow),
+            address(trustRegistry),
+            address(usdc),
+            admin,
+            address(vrfCoordinator),
+            vrfSubId,
+            VRF_KEY_HASH
+        );
+
+        // Register dispute resolution as VRF consumer
+        vrfCoordinator.addConsumer(vrfSubId, address(disputeResolution));
 
         // Grant roles
         trustRegistry.grantRole(trustRegistry.ORACLE_ROLE(), address(escrow));
@@ -110,6 +132,12 @@ contract DisputeResolutionTest is Test {
 
         escrow.fundEscrow(escrowId);
         vm.stopPrank();
+    }
+
+    /// @notice Fulfill the next pending VRF request (simulates Chainlink VRF callback)
+    function _fulfillVRF() internal {
+        _vrfRequestCount++;
+        vrfCoordinator.fulfillRandomWords(_vrfRequestCount, address(disputeResolution));
     }
 
     // ============ Tier Determination Tests ============
@@ -392,6 +420,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, analysisCID, 5000); // 50% split
+        _fulfillVRF();
 
         IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
         assertEq(d.aiAnalysisCID, analysisCID);
@@ -434,6 +463,7 @@ contract DisputeResolutionTest is Test {
         // Oracle submits AI analysis (transitions to voting)
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Arbiter votes
         vm.prank(arbiter1);
@@ -460,6 +490,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Warp past voting period
         vm.warp(block.timestamp + VOTING_PERIOD + 1);
@@ -486,6 +517,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // 2 vote for client, 1 for provider = client wins
         vm.prank(arbiter1);
@@ -525,6 +557,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0); // AI says refund
+        _fulfillVRF();
 
         // All vote for client (provider loses)
         vm.prank(arbiter1);
@@ -546,6 +579,7 @@ contract DisputeResolutionTest is Test {
         usdc.approve(address(disputeResolution), appealFee);
         disputeResolution.appeal(disputeId);
         vm.stopPrank();
+        _fulfillVRF();
 
         IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
         assertEq(d.appealRound, 1, "Should be on appeal round 1");
@@ -567,6 +601,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -609,6 +644,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 7000); // 70% client
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.SPLIT, 7000, "");
@@ -652,6 +688,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 10000);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -690,6 +727,7 @@ contract DisputeResolutionTest is Test {
         // Oracle submits AI analysis (transitions to voting)
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Create a random non-arbiter address
         address nonArbiter = makeAddr("nonArbiter");
@@ -720,6 +758,7 @@ contract DisputeResolutionTest is Test {
         // Oracle submits AI analysis (transitions to voting and selects arbiters)
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Get the selected arbiters
         address[] memory selectedArbiters = disputeResolution.getArbiters(disputeId);
@@ -756,6 +795,7 @@ contract DisputeResolutionTest is Test {
         // Oracle submits AI analysis
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Client (a party) should not be able to vote
         vm.prank(client);
@@ -796,6 +836,7 @@ contract DisputeResolutionTest is Test {
         // Submit AI analysis to move to voting
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Skip voting period without any votes
         vm.warp(block.timestamp + VOTING_PERIOD + 1);
@@ -812,6 +853,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Only 1 of 3 arbiters votes (need at least 2 for quorum = 2/3)
         vm.prank(arbiter1);
@@ -831,6 +873,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // 2 of 3 arbiters vote (meets 2/3 quorum)
         vm.prank(arbiter1);
@@ -1051,6 +1094,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         bytes32 justification = keccak256("my justification");
         vm.prank(arbiter1);
@@ -1083,6 +1127,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         address[] memory arbitersAfter = disputeResolution.getArbiters(disputeId);
         assertEq(arbitersAfter.length, 3, "Should have 3 arbiters for Tier 2");
@@ -1268,8 +1313,15 @@ contract DisputeResolutionTest is Test {
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
 
+        // After submitAIAnalysis, state is AI_ANALYSIS (awaiting VRF callback)
+        IDisputeResolution.Dispute memory d1 = disputeResolution.getDispute(disputeId);
+        assertEq(uint256(d1.state), uint256(IDisputeResolution.DisputeState.AI_ANALYSIS), "Should be in AI_ANALYSIS awaiting VRF");
+
+        // VRF callback selects arbiters and transitions to VOTING
+        _fulfillVRF();
+
         IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
-        assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.VOTING), "Should transition to VOTING");
+        assertEq(uint256(d.state), uint256(IDisputeResolution.DisputeState.VOTING), "Should transition to VOTING after VRF");
         assertGt(d.votingDeadline, 0, "Voting deadline should be set");
     }
 
@@ -1289,6 +1341,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -1312,6 +1365,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         vm.expectRevert(TieredDisputeResolution.InvalidClientShare.selector);
@@ -1334,6 +1388,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // 2 vote for provider, 1 for client
         vm.prank(arbiter1);
@@ -1365,6 +1420,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // All 3 vote SPLIT with different proposals: 6000, 8000, 4000
         vm.prank(arbiter1);
@@ -1397,6 +1453,7 @@ contract DisputeResolutionTest is Test {
 
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // 1 client, 1 provider, 1 abstain = tie (abstain doesn't count in split)
         vm.prank(arbiter1);
@@ -1440,6 +1497,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Vote but don't warp past voting period
         vm.prank(arbiter1);
@@ -1480,6 +1538,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -1514,6 +1573,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+        _fulfillVRF();
 
         // All vote for provider (client loses)
         vm.prank(arbiter1);
@@ -1533,6 +1593,7 @@ contract DisputeResolutionTest is Test {
         usdc.approve(address(disputeResolution), appealFee);
         disputeResolution.appeal(disputeId);
         vm.stopPrank();
+        _fulfillVRF();
 
         IDisputeResolution.Dispute memory d = disputeResolution.getDispute(disputeId);
         assertEq(d.appealRound, 1, "Appeal round should be 1");
@@ -1552,6 +1613,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -1572,6 +1634,7 @@ contract DisputeResolutionTest is Test {
         usdc.approve(address(disputeResolution), appealFee);
         disputeResolution.appeal(disputeId);
         vm.stopPrank();
+        _fulfillVRF();
 
         // Votes should be cleared after appeal
         assertEq(disputeResolution.getVotes(disputeId).length, 0, "Votes should be cleared after appeal");
@@ -1590,6 +1653,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+        _fulfillVRF();
 
         vm.prank(arbiter1);
         disputeResolution.castVote(disputeId, IDisputeResolution.Vote.FAVOR_CLIENT, 0, "");
@@ -1609,6 +1673,7 @@ contract DisputeResolutionTest is Test {
         usdc.approve(address(disputeResolution), appealFee);
         disputeResolution.appeal(disputeId);
         vm.stopPrank();
+        _fulfillVRF();
 
         assertEq(disputeResolution.feePool() - poolBefore, appealFee, "Appeal fee should be added to pool");
     }
@@ -1902,6 +1967,7 @@ contract DisputeResolutionTest is Test {
             vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
             vm.prank(oracle);
             disputeResolution.submitAIAnalysis(disputeId, keccak256(abi.encodePacked("analysis", round)), 5000);
+            _fulfillVRF();
 
             // Vote with enough arbiters for quorum
             address[] memory selectedArbiters = disputeResolution.getArbiters(disputeId);
@@ -1925,6 +1991,7 @@ contract DisputeResolutionTest is Test {
                 usdc.approve(address(disputeResolution), appealFee);
                 disputeResolution.appeal(disputeId);
                 vm.stopPrank();
+                _fulfillVRF();
             }
         }
 
@@ -1955,6 +2022,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Try to submit evidence while in VOTING state
         vm.prank(client);
@@ -1979,25 +2047,25 @@ contract DisputeResolutionTest is Test {
     function test_constructor_revertsIfZeroEscrow() public {
         vm.prank(admin);
         vm.expectRevert(TieredDisputeResolution.InvalidEscrow.selector);
-        new TieredDisputeResolution(address(0), address(trustRegistry), address(usdc), admin);
+        new TieredDisputeResolution(address(0), address(trustRegistry), address(usdc), admin, address(vrfCoordinator), vrfSubId, VRF_KEY_HASH);
     }
 
     function test_constructor_revertsIfZeroTrustRegistry() public {
         vm.prank(admin);
         vm.expectRevert(TieredDisputeResolution.InvalidTrustRegistry.selector);
-        new TieredDisputeResolution(address(escrow), address(0), address(usdc), admin);
+        new TieredDisputeResolution(address(escrow), address(0), address(usdc), admin, address(vrfCoordinator), vrfSubId, VRF_KEY_HASH);
     }
 
     function test_constructor_revertsIfZeroPaymentToken() public {
         vm.prank(admin);
         vm.expectRevert(TieredDisputeResolution.InvalidPaymentToken.selector);
-        new TieredDisputeResolution(address(escrow), address(trustRegistry), address(0), admin);
+        new TieredDisputeResolution(address(escrow), address(trustRegistry), address(0), admin, address(vrfCoordinator), vrfSubId, VRF_KEY_HASH);
     }
 
     function test_constructor_revertsIfZeroAdmin() public {
         vm.prank(admin);
         vm.expectRevert(TieredDisputeResolution.InvalidAdmin.selector);
-        new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), address(0));
+        new TieredDisputeResolution(address(escrow), address(trustRegistry), address(usdc), address(0), address(vrfCoordinator), vrfSubId, VRF_KEY_HASH);
     }
 
     function test_getDispute_revertsForNonExistentInternally() public {
@@ -2020,6 +2088,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // Vote FAVOR_PROVIDER - should store 0 for clientShareProposal
         vm.prank(arbiter1);
@@ -2042,6 +2111,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 10000);
+        _fulfillVRF();
 
         // All vote for client
         vm.prank(arbiter1);
@@ -2079,6 +2149,7 @@ contract DisputeResolutionTest is Test {
         vm.warp(block.timestamp + EVIDENCE_PERIOD + 1);
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 0);
+        _fulfillVRF();
 
         // All vote for provider
         vm.prank(arbiter1);
@@ -2170,6 +2241,7 @@ contract DisputeResolutionTest is Test {
         // Oracle submits AI analysis
         vm.prank(oracle);
         disputeResolution.submitAIAnalysis(disputeId, keccak256("analysis"), 5000);
+        _fulfillVRF();
 
         // All 3 arbiters vote
         vm.prank(arbiter1);

@@ -16,6 +16,7 @@ interface IVerifiedNamespaces {
         bool isActive; // Whether the namespace is active
         uint256 registeredAt; // Registration timestamp
         uint256 verifiedAt; // Verification timestamp (0 if not verified)
+        uint256 expiresAt; // Expiration timestamp (0 = never, for verified namespaces)
     }
 
     // ============ Events ============
@@ -47,6 +48,15 @@ interface IVerifiedNamespaces {
     /// @notice Emitted when verification fee is updated
     event VerificationFeeSet(uint256 fee);
 
+    /// @notice Emitted when a namespace is renewed
+    event NamespaceRenewed(bytes32 indexed namespaceHash, uint256 newExpiresAt);
+
+    /// @notice Emitted when an expired namespace is reclaimed
+    event NamespaceReclaimed(bytes32 indexed namespaceHash, address indexed previousOwner);
+
+    /// @notice Emitted when treasury address is updated
+    event TreasurySet(address indexed treasury);
+
     // ============ Registration Functions ============
 
     /// @notice Register a new namespace
@@ -69,6 +79,14 @@ interface IVerifiedNamespaces {
     /// @notice Reserve a namespace (admin only, prevents registration)
     /// @param name The namespace name to reserve
     function reserveNamespace(string calldata name) external;
+
+    /// @notice Renew a namespace registration by paying the fee again
+    /// @param name The namespace name to renew
+    function renewNamespace(string calldata name) external;
+
+    /// @notice Reclaim an expired, unverified namespace (anyone can call)
+    /// @param name The namespace name to reclaim
+    function reclaimExpired(string calldata name) external;
 
     // ============ Agent Linking Functions ============
 
@@ -138,6 +156,11 @@ interface IVerifiedNamespaces {
     /// @param owner The owner address
     /// @return Array of namespace hashes
     function getNamespacesByOwner(address owner) external view returns (bytes32[] memory);
+
+    /// @notice Check if a namespace is expired
+    /// @param name The namespace name
+    /// @return Whether the namespace is expired
+    function isExpired(string calldata name) external view returns (bool);
 
     /// @notice Get the hash for a namespace name
     /// @param name The namespace name

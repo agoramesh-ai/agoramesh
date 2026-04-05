@@ -20,6 +20,10 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     /// @dev Prevents precision loss in ratePerSecond calculation
     uint256 public constant PRECISION = 1e18;
 
+    /// @notice Dust threshold for stream completion (10 wei)
+    /// @dev Streams with remaining amount <= DUST_THRESHOLD are considered complete
+    uint256 public constant DUST_THRESHOLD = 10;
+
     // ============ State Variables ============
 
     /// @notice Reference to the TrustRegistry for agent verification
@@ -87,6 +91,7 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
     error NotCancelable();
     error InvalidTreasury();
     error FeeTooHigh();
+    error StreamNotFinalizable();
 
     // ============ Constructor ============
 
@@ -228,8 +233,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
 
         stream.withdrawnAmount += amount;
 
-        // Check if stream is completed
-        if (stream.withdrawnAmount == stream.depositAmount && block.timestamp >= _adjustedEndTime(streamId)) {
+        // Check if stream is completed (use dust threshold to handle rounding)
+        if (stream.depositAmount - stream.withdrawnAmount <= DUST_THRESHOLD && block.timestamp >= _adjustedEndTime(streamId)) {
             stream.status = StreamStatus.COMPLETED;
             emit StreamCompleted(streamId);
         }
@@ -249,8 +254,8 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
 
         stream.withdrawnAmount += withdrawn;
 
-        // Check if stream is completed
-        if (stream.withdrawnAmount == stream.depositAmount && block.timestamp >= _adjustedEndTime(streamId)) {
+        // Check if stream is completed (use dust threshold to handle rounding)
+        if (stream.depositAmount - stream.withdrawnAmount <= DUST_THRESHOLD && block.timestamp >= _adjustedEndTime(streamId)) {
             stream.status = StreamStatus.COMPLETED;
             emit StreamCompleted(streamId);
         }
@@ -448,6 +453,29 @@ contract StreamingPayments is IStreamingPayments, AccessControlEnumerable, Reent
         if (_feeBp > MAX_FEE_BP) revert FeeTooHigh();
         protocolFeeBp = _feeBp;
         emit ProtocolFeeUpdated(_feeBp);
+    }
+
+    /// @notice Admin function to finalize streams stuck with rounding dust
+    /// @dev Only callable on ACTIVE/PAUSED streams past their end time with dust remaining
+    /// @param streamId The stream ID to finalize
+    function finalizeStream(uint256 streamId) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        Stream storage stream = _streams[streamId];
+        if (stream.status != StreamStatus.ACTIVE && stream.status != StreamStatus.PAUSED) {
+            revert StreamNotFinalizable();
+        }
+        if (block.timestamp < _adjustedEndTime(streamId)) revert StreamNotFinalizable();
+
+        uint256 remaining = stream.depositAmount - stream.withdrawnAmount;
+        if (remaining > DUST_THRESHOLD) revert StreamNotFinalizable();
+
+        // Transfer any remaining dust to the recipient
+        if (remaining > 0) {
+            stream.withdrawnAmount = stream.depositAmount;
+            IERC20(stream.token).safeTransfer(stream.recipient, remaining);
+        }
+
+        stream.status = StreamStatus.COMPLETED;
+        emit StreamCompleted(streamId);
     }
 
     // ============ Internal Functions ============

@@ -75,7 +75,7 @@ contract DeployLocal is Script {
         c.crossChain = address(new CrossChainTrustSync(c.chainRegistry, LZ_ENDPOINT_STUB, admin));
         console.log("CrossChainTrustSync:", c.crossChain);
 
-        c.namespaces = address(new VerifiedNamespaces(admin));
+        c.namespaces = address(new VerifiedNamespaces(admin, c.usdc, admin));
         console.log("VerifiedNamespaces:", c.namespaces);
 
         c.agentToken = address(new AgentToken("AgoraMesh Agents", "AGENT", c.usdc, admin, admin));
