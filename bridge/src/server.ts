@@ -11,7 +11,7 @@ import { ClaudeExecutor } from './executor.js';
 import { ResolvedTaskInput, TaskInputSchema, TaskResult, RichAgentConfig, SandboxInputSchema, MAX_SANDBOX_OUTPUT_LENGTH, SANDBOX_REQUESTS_PER_HOUR, DIDIdentity, FREETIER_ID_PATTERN, TASK_RESULT_TTL, TASK_SYNC_TIMEOUT } from './types.js';
 import { EscrowClient } from './escrow.js';
 import { createX402Middleware, type X402Config } from './middleware/x402.js';
-import { handleA2ARequest, type A2ABridge, type A2ARequestOptions } from './a2a.js';
+import { handleA2ARequest, isStreamingMethod, parseA2ARequestEnvelope, handleA2AStreamingRequest, taskResultToA2ATask, validatePart, buildPromptFromParts, partsToAttachments, toWireState, type A2ABridge, type StreamResponseEvent, type JsonRpcResponse, type A2APart, type A2ATask, type TextPart } from './a2a.js';
 import { isDIDAuthHeader, parseDIDAuthHeader, verifyDIDSignature } from './did-auth.js';
 import { FreeTierLimiter } from './free-tier-limiter.js';
 import { TrustStore } from './trust-store.js';
@@ -711,26 +711,50 @@ export class BridgeServer {
     // A2A JSON-RPC 2.0 handler (shared by POST / and POST /a2a)
     const a2aHandler = async (req: Request, res: Response) => {
       const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
-      const bridge: A2ABridge = {
-        getPendingTask: (taskId) => this.getPendingTask(taskId),
-        getCompletedTask: (taskId) => this.getCompletedTask(taskId),
-        submitTask: async (task) => {
-          const result = await this.submitTask(task);
-          // Record trust for DID:key authenticated requests
-          if (didIdentity) {
-            this.recordTrust(didIdentity.did, result);
+      const bridge = this.buildA2ABridge(didIdentity);
+
+      // Check if request is for a streaming method (SendStreamingMessage, SubscribeToTask)
+      const envelope = parseA2ARequestEnvelope(
+        req.body,
+        req.headers['a2a-version'] as string | undefined,
+      );
+
+      // If parsing failed, envelope is a JsonRpcResponse error (no 'method' field)
+      if (!('method' in envelope)) {
+        res.json(envelope);
+        return;
+      }
+
+      if (isStreamingMethod(envelope.method)) {
+        // SSE streaming response
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'X-Accel-Buffering': 'no', // Disable nginx buffering
+        });
+
+        const writeEvent = (event: StreamResponseEvent | JsonRpcResponse) => {
+          if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify(event)}\n\n`);
           }
-          return result;
-        },
-        cancelTask: (taskId) => this.cancelTaskById(taskId),
-        getCapabilityCard: () => this.buildCapabilityCard(),
-        getStatus: () => ({
-          state: 'operational' as const,
-          uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
-          activeTasks: this.pendingTasks.size,
-          protocols: ['a2a', 'rest', 'websocket'],
-        }),
-      };
+        };
+
+        await handleA2AStreamingRequest(
+          envelope.method,
+          envelope.params,
+          envelope.id,
+          bridge,
+          writeEvent,
+        );
+
+        if (!res.writableEnded) {
+          res.end();
+        }
+        return;
+      }
+
+      // Standard JSON-RPC response
       const response = await handleA2ARequest(req.body, bridge, {
         a2aVersionHeader: req.headers['a2a-version'] as string | undefined,
       });
@@ -997,6 +1021,376 @@ export class BridgeServer {
         ));
       }
     });
+
+    // =========================================================================
+    // A2A v1.0.0 REST endpoints (Google API-style colon actions)
+    // These provide REST alternatives to the JSON-RPC 2.0 endpoint at POST /a2a
+    // =========================================================================
+
+    // POST /message:send — create task from A2A message (colon-action)
+    // Uses regex route because Express interprets ':send' as a named parameter
+    this.app.post(/^\/message:send\/?$/, taskAuthMiddleware, async (req: Request, res: Response) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const message = body.message as Record<string, unknown> | undefined;
+        if (!message || !message.parts || !Array.isArray(message.parts) || message.parts.length === 0) {
+          return res.status(400).json(buildRichError(
+            'Missing message.parts',
+            ErrorCode.INVALID_INPUT,
+            { message: 'Body must include message.parts array with at least one text part.' },
+          ));
+        }
+
+        // Validate and classify all parts
+        const validatedParts: A2APart[] = [];
+        for (const rawPart of message.parts as Array<Record<string, unknown>>) {
+          const result = validatePart(rawPart);
+          if (typeof result === 'string') {
+            return res.status(400).json(buildRichError(result, ErrorCode.INVALID_INPUT));
+          }
+          validatedParts.push(result);
+        }
+
+        const hasText = validatedParts.some((p) => p.type === 'text' && (p as TextPart).text.length > 0);
+        if (!hasText) {
+          return res.status(400).json(buildRichError(
+            'No text part found in message',
+            ErrorCode.INVALID_INPUT,
+          ));
+        }
+
+        const prompt = buildPromptFromParts(validatedParts);
+        const MAX_PROMPT_LENGTH = 100_000;
+        if (prompt.length > MAX_PROMPT_LENGTH) {
+          return res.status(400).json(buildRichError(
+            `Prompt length exceeds maximum of ${MAX_PROMPT_LENGTH} characters`,
+            ErrorCode.INVALID_INPUT,
+          ));
+        }
+
+        const rawTimeout = typeof body.timeout === 'number' ? body.timeout : 300;
+        const timeout = Math.max(1, Math.min(3600, rawTimeout));
+        const taskId = `a2a-${Date.now()}-${randomBytes(4).toString('hex')}`;
+        const attachments = partsToAttachments(validatedParts);
+
+        const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
+        const task: ResolvedTaskInput = {
+          taskId,
+          type: 'prompt',
+          prompt,
+          timeout,
+          clientDid: didIdentity?.did || 'anonymous',
+          ...(attachments.length > 0 ? { attachments } : {}),
+        };
+
+        // Content-Type negotiation: SSE if client accepts text/event-stream
+        if (req.accepts('text/event-stream')) {
+          return this.handleSSETaskExecution(req, res, task, didIdentity);
+        }
+
+        // Synchronous JSON response
+        const result = await this.submitTask(task);
+        if (didIdentity) {
+          this.recordTrust(didIdentity.did, result);
+        }
+        res.json(taskResultToA2ATask(taskId, result));
+      } catch (error) {
+        const safeError = createSafeErrorResponse(error, 'POST /message:send');
+        res.status(400).json(safeError);
+      }
+    });
+
+    // POST /message:stream — SSE streaming for task creation
+    this.app.post(/^\/message:stream\/?$/, taskAuthMiddleware, async (req: Request, res: Response) => {
+      try {
+        const body = req.body as Record<string, unknown>;
+        const message = body.message as Record<string, unknown> | undefined;
+        if (!message || !message.parts || !Array.isArray(message.parts) || message.parts.length === 0) {
+          return res.status(400).json(buildRichError(
+            'Missing message.parts',
+            ErrorCode.INVALID_INPUT,
+            { message: 'Body must include message.parts array with at least one text part.' },
+          ));
+        }
+
+        const validatedParts: A2APart[] = [];
+        for (const rawPart of message.parts as Array<Record<string, unknown>>) {
+          const result = validatePart(rawPart);
+          if (typeof result === 'string') {
+            return res.status(400).json(buildRichError(result, ErrorCode.INVALID_INPUT));
+          }
+          validatedParts.push(result);
+        }
+
+        const hasText = validatedParts.some((p) => p.type === 'text' && (p as TextPart).text.length > 0);
+        if (!hasText) {
+          return res.status(400).json(buildRichError(
+            'No text part found in message',
+            ErrorCode.INVALID_INPUT,
+          ));
+        }
+
+        const prompt = buildPromptFromParts(validatedParts);
+        const MAX_PROMPT_LENGTH = 100_000;
+        if (prompt.length > MAX_PROMPT_LENGTH) {
+          return res.status(400).json(buildRichError(
+            `Prompt length exceeds maximum of ${MAX_PROMPT_LENGTH} characters`,
+            ErrorCode.INVALID_INPUT,
+          ));
+        }
+
+        const rawTimeout = typeof body.timeout === 'number' ? body.timeout : 300;
+        const timeout = Math.max(1, Math.min(3600, rawTimeout));
+        const taskId = `a2a-${Date.now()}-${randomBytes(4).toString('hex')}`;
+        const attachments = partsToAttachments(validatedParts);
+
+        const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
+        const task: ResolvedTaskInput = {
+          taskId,
+          type: 'prompt',
+          prompt,
+          timeout,
+          clientDid: didIdentity?.did || 'anonymous',
+          ...(attachments.length > 0 ? { attachments } : {}),
+        };
+
+        this.handleSSETaskExecution(req, res, task, didIdentity);
+      } catch (error) {
+        const safeError = createSafeErrorResponse(error, 'POST /message:stream');
+        res.status(400).json(safeError);
+      }
+    });
+
+    // GET /tasks — ListTasks endpoint (list all tasks with optional status filter)
+    this.app.get('/tasks', taskAuthMiddleware, (req: Request, res: Response) => {
+      const statusFilter = req.query.status as string | undefined;
+      const didIdentity = (req as DIDRequest).didIdentity as DIDIdentity | undefined;
+      const clientDid = didIdentity?.did || req.headers['x-client-did'] as string;
+
+      const tasks: Array<A2ATask | { id: string; status: { state: string; timestamp: string } }> = [];
+
+      // Collect pending/running tasks
+      if (!statusFilter || statusFilter === 'running') {
+        for (const [taskId, task] of this.pendingTasks) {
+          // Filter by owner if authenticated
+          if (clientDid && this.taskOwners.get(taskId) !== clientDid) continue;
+          tasks.push({
+            id: taskId,
+            status: { state: toWireState('working'), timestamp: new Date().toISOString() },
+          });
+        }
+      }
+
+      // Collect completed tasks
+      const now = Date.now();
+      if (!statusFilter || statusFilter === 'completed' || statusFilter === 'failed') {
+        for (const [taskId, entry] of this.completedTasks) {
+          if (now >= entry.expiresAt) continue;
+          // Filter by owner if authenticated
+          if (clientDid && this.taskOwners.get(taskId) !== clientDid) continue;
+          const state = entry.result.status === 'completed' ? 'completed' : 'failed';
+          if (statusFilter && statusFilter !== state) continue;
+          tasks.push(taskResultToA2ATask(taskId, entry.result));
+        }
+      }
+
+      res.json({ tasks });
+    });
+
+    // GET /tasks/:taskId — alias for GET /task/:taskId (A2A convention)
+    this.app.get('/tasks/:taskId', taskAuthMiddleware, (req: Request<{ taskId: string }>, res: Response) => {
+      const taskId = req.params.taskId;
+      const pollIdentity = (req as DIDRequest).didIdentity;
+      const pollClientDid = req.headers['x-client-did'] as string;
+
+      const owner = this.taskOwners.get(taskId);
+      if (owner) {
+        const isOwner = (pollIdentity?.did === owner) || (pollClientDid === owner);
+        if (!isOwner) {
+          return res.status(403).json(buildRichError(
+            'Forbidden',
+            ErrorCode.FORBIDDEN,
+            { message: 'Authenticated identity must match the task creator.' },
+          ));
+        }
+      }
+
+      const pendingTask = this.pendingTasks.get(taskId);
+      if (pendingTask) {
+        return res.json({
+          id: taskId,
+          status: { state: toWireState('working'), timestamp: new Date().toISOString() },
+        } satisfies Partial<A2ATask>);
+      }
+
+      const completed = this.completedTasks.get(taskId);
+      if (completed) {
+        if (Date.now() < completed.expiresAt) {
+          return res.json(taskResultToA2ATask(taskId, completed.result));
+        }
+        this.completedTasks.delete(taskId);
+        this.taskOwners.delete(taskId);
+      }
+
+      return res.status(404).json(buildRichError('Task not found', ErrorCode.NOT_FOUND));
+    });
+
+    // POST /tasks/:id:cancel — cancel task (A2A uses POST, not DELETE)
+    this.app.post(/^\/tasks\/([^/:]+):cancel\/?$/, taskAuthMiddleware, (req: Request, res: Response) => {
+      const taskId = req.params[0];
+      const task = this.pendingTasks.get(taskId);
+      if (!task) {
+        return res.status(404).json(buildRichError('Task not found', ErrorCode.NOT_FOUND));
+      }
+      const didIdentity = (req as DIDRequest).didIdentity;
+      const clientId = didIdentity?.did || req.headers['x-client-did'] as string;
+      if (!clientId || clientId !== task.clientDid) {
+        return res.status(403).json(buildRichError(
+          'Forbidden',
+          ErrorCode.FORBIDDEN,
+          { message: 'Authenticated identity must match the task creator.' },
+        ));
+      }
+      const cancelled = this.executor.cancelTask(taskId);
+      if (cancelled) {
+        this.pendingTasks.delete(taskId);
+        res.json({
+          id: taskId,
+          status: { state: toWireState('canceled'), message: 'Task canceled by client', timestamp: new Date().toISOString() },
+        });
+      } else {
+        res.status(404).json(buildRichError('Task not found', ErrorCode.NOT_FOUND));
+      }
+    });
+
+    // POST /tasks/:id:subscribe — SSE subscription for task updates
+    this.app.post(/^\/tasks\/([^/:]+):subscribe\/?$/, taskAuthMiddleware, (req: Request, res: Response) => {
+      const taskId = req.params[0];
+      const didIdentity = (req as DIDRequest).didIdentity;
+      const clientDid = didIdentity?.did || req.headers['x-client-did'] as string;
+
+      // Verify ownership
+      const owner = this.taskOwners.get(taskId);
+      if (owner) {
+        const isOwner = (didIdentity?.did === owner) || (clientDid === owner);
+        if (!isOwner) {
+          return res.status(403).json(buildRichError(
+            'Forbidden',
+            ErrorCode.FORBIDDEN,
+            { message: 'Authenticated identity must match the task creator.' },
+          ));
+        }
+      }
+
+      // If task already completed, return the result as a single SSE event
+      const completed = this.completedTasks.get(taskId);
+      if (completed && Date.now() < completed.expiresAt) {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        });
+        const a2aTask = taskResultToA2ATask(taskId, completed.result);
+        res.write(`event: task\ndata: ${JSON.stringify(a2aTask)}\n\n`);
+        res.write(`event: done\ndata: {}\n\n`);
+        return res.end();
+      }
+
+      // If task not found at all
+      if (!this.pendingTasks.has(taskId)) {
+        return res.status(404).json(buildRichError('Task not found', ErrorCode.NOT_FOUND));
+      }
+
+      // Setup SSE stream for pending task
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
+
+      // Send initial status
+      res.write(`event: status\ndata: ${JSON.stringify({ id: taskId, status: { state: toWireState('working'), timestamp: new Date().toISOString() } })}\n\n`);
+
+      // Listen for completion
+      const onResult = (result: TaskResult) => {
+        const a2aTask = taskResultToA2ATask(taskId, result);
+        res.write(`event: task\ndata: ${JSON.stringify(a2aTask)}\n\n`);
+        res.write(`event: done\ndata: {}\n\n`);
+        res.end();
+      };
+
+      const existing = this.taskResultListeners.get(taskId);
+      if (existing) {
+        existing.push(onResult);
+      } else {
+        this.taskResultListeners.set(taskId, [onResult]);
+      }
+
+      // Heartbeat to keep connection alive
+      const heartbeat = setInterval(() => {
+        res.write(`:heartbeat\n\n`);
+      }, 15_000);
+
+      // Cleanup on client disconnect
+      req.on('close', () => {
+        clearInterval(heartbeat);
+        const listeners = this.taskResultListeners.get(taskId);
+        if (listeners) {
+          const idx = listeners.indexOf(onResult);
+          if (idx >= 0) listeners.splice(idx, 1);
+          if (listeners.length === 0) this.taskResultListeners.delete(taskId);
+        }
+      });
+    });
+  }
+
+  /**
+   * Execute a task and stream progress via SSE.
+   * Used by POST /message:send (with Accept: text/event-stream) and POST /message:stream.
+   */
+  private handleSSETaskExecution(req: Request, res: Response, task: ResolvedTaskInput, didIdentity: DIDIdentity | undefined): void {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    // Send submitted event
+    res.write(`event: status\ndata: ${JSON.stringify({ id: task.taskId, status: { state: toWireState('submitted'), timestamp: new Date().toISOString() } })}\n\n`);
+
+    // Heartbeat to keep connection alive
+    const heartbeat = setInterval(() => {
+      res.write(`:heartbeat\n\n`);
+    }, 15_000);
+
+    let closed = false;
+    req.on('close', () => {
+      closed = true;
+      clearInterval(heartbeat);
+    });
+
+    // Send working event and start execution
+    res.write(`event: status\ndata: ${JSON.stringify({ id: task.taskId, status: { state: toWireState('working'), timestamp: new Date().toISOString() } })}\n\n`);
+
+    this.submitTask(task).then((result) => {
+      if (didIdentity) {
+        this.recordTrust(didIdentity.did, result);
+      }
+      if (!closed) {
+        const a2aTask = taskResultToA2ATask(task.taskId, result);
+        res.write(`event: task\ndata: ${JSON.stringify(a2aTask)}\n\n`);
+        res.write(`event: done\ndata: {}\n\n`);
+        clearInterval(heartbeat);
+        res.end();
+      }
+    }).catch((error) => {
+      if (!closed) {
+        const msg = error instanceof Error ? error.message : 'Task execution failed';
+        res.write(`event: error\ndata: ${JSON.stringify({ error: msg })}\n\n`);
+        clearInterval(heartbeat);
+        res.end();
+      }
+    });
   }
 
   private setupWebSocket() {
@@ -1192,6 +1586,51 @@ export class BridgeServer {
     }
   }
 
+  /**
+   * Build an A2ABridge object wired to this server's task infrastructure.
+   * Supports SSE streaming via onTaskComplete for SubscribeToTask.
+   */
+  private buildA2ABridge(didIdentity: DIDIdentity | undefined): A2ABridge {
+    return {
+      getPendingTask: (taskId) => this.getPendingTask(taskId),
+      getCompletedTask: (taskId) => this.getCompletedTask(taskId),
+      submitTask: async (task) => {
+        const result = await this.submitTask(task);
+        // Store result for SubscribeToTask and GetTask polling
+        this.storeCompletedTask(task.taskId, result);
+        if (didIdentity) {
+          this.recordTrust(didIdentity.did, result);
+        }
+        return result;
+      },
+      cancelTask: (taskId) => this.cancelTaskById(taskId),
+      getCapabilityCard: () => this.buildCapabilityCard(),
+      getStatus: () => ({
+        state: 'operational' as const,
+        uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
+        activeTasks: this.pendingTasks.size,
+        protocols: ['a2a', 'rest', 'websocket'],
+      }),
+      onTaskComplete: (taskId, callback) => {
+        const existing = this.taskResultListeners.get(taskId);
+        if (existing) {
+          existing.push(callback);
+        } else {
+          this.taskResultListeners.set(taskId, [callback]);
+        }
+        // Return unsubscribe function
+        return () => {
+          const list = this.taskResultListeners.get(taskId);
+          if (list) {
+            const idx = list.indexOf(callback);
+            if (idx >= 0) list.splice(idx, 1);
+            if (list.length === 0) this.taskResultListeners.delete(taskId);
+          }
+        };
+      },
+    };
+  }
+
   cancelTaskById(taskId: string): boolean {
     const cancelled = this.executor.cancelTask(taskId);
     if (cancelled) {
@@ -1359,6 +1798,9 @@ export class BridgeServer {
       ? { ...cfg.capabilities }
       : {};
 
+    // SSE streaming support (A2A v1.0.0)
+    capabilities.streaming = true;
+
     // Declare AgoraMesh extensions
     if (!capabilities.extensions) {
       capabilities.extensions = [
@@ -1478,6 +1920,12 @@ export class BridgeServer {
 - Poll result: GET ${baseUrl}/task/{taskId}
 - Extended card (auth): GET ${baseUrl}/extendedAgentCard
 - A2A JSON-RPC: POST ${baseUrl}/a2a
+- A2A SSE Streaming: POST ${baseUrl}/a2a (method: SendStreamingMessage or SubscribeToTask)
+- A2A REST: POST ${baseUrl}/message:send, POST ${baseUrl}/message:stream
+- List tasks: GET ${baseUrl}/tasks
+- Get task (A2A): GET ${baseUrl}/tasks/{taskId}
+- Cancel task (A2A): POST ${baseUrl}/tasks/{taskId}:cancel
+- Subscribe task (A2A): POST ${baseUrl}/tasks/{taskId}:subscribe
 - Sandbox (no auth): POST ${baseUrl}/sandbox
 
 ## Authentication (simplest first)
