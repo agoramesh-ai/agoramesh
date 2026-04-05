@@ -1202,7 +1202,7 @@ export class BridgeServer {
 
       // Collect pending/running tasks
       if (!statusFilter || statusFilter === 'running') {
-        for (const [taskId, task] of this.pendingTasks) {
+        for (const [taskId, _task] of this.pendingTasks) {
           // Filter by owner if authenticated
           if (clientDid && this.taskOwners.get(taskId) !== clientDid) continue;
           tasks.push({

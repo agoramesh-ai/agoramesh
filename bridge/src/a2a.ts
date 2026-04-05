@@ -183,7 +183,7 @@ export function isTerminalState(state: A2ATaskState): boolean {
  * Validate a state transition. Returns true if the transition is valid.
  * Terminal states (completed, failed, canceled, rejected) cannot transition to any other state.
  */
-export function isValidStateTransition(from: A2ATaskState, to: A2ATaskState): boolean {
+export function isValidStateTransition(from: A2ATaskState, _to: A2ATaskState): boolean {
   if (TERMINAL_STATES.has(from)) {
     return false; // Terminal states cannot transition
   }
