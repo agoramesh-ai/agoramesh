@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   AgoraMeshError,
+  AgoraMeshErrorCode,
   EscrowNotFoundError,
   EscrowOperationError,
   PaymentValidationError,
@@ -25,16 +26,16 @@ import {
 
 describe('AgoraMeshError', () => {
   it('should set message, code, and name', () => {
-    const err = new AgoraMeshError('test error', 'TEST_CODE');
+    const err = new AgoraMeshError(AgoraMeshErrorCode.CLIENT_NOT_CONNECTED, 'test error');
     expect(err.message).toBe('test error');
-    expect(err.code).toBe('TEST_CODE');
+    expect(err.code).toBe(AgoraMeshErrorCode.CLIENT_NOT_CONNECTED);
     expect(err.name).toBe('AgoraMeshError');
     expect(err instanceof Error).toBe(true);
   });
 
   it('should store cause', () => {
     const cause = new Error('root cause');
-    const err = new AgoraMeshError('wrapper', 'WRAP', cause);
+    const err = new AgoraMeshError(AgoraMeshErrorCode.CLIENT_NOT_CONNECTED, 'wrapper', undefined, cause);
     expect(err.cause).toBe(cause);
   });
 });
@@ -44,7 +45,7 @@ describe('EscrowNotFoundError', () => {
     const err = new EscrowNotFoundError('42');
     expect(err.message).toContain('42');
     expect(err.escrowId).toBe('42');
-    expect(err.code).toBe('ESCROW_NOT_FOUND');
+    expect(err.code).toBe(AgoraMeshErrorCode.ESCROW_NOT_FOUND);
     expect(err.name).toBe('EscrowNotFoundError');
   });
 
@@ -59,7 +60,7 @@ describe('EscrowOperationError', () => {
   it('should store operation name', () => {
     const err = new EscrowOperationError('failed to fund', 'fundEscrow');
     expect(err.operation).toBe('fundEscrow');
-    expect(err.code).toBe('ESCROW_OPERATION_FAILED');
+    expect(err.code).toBe(AgoraMeshErrorCode.ESCROW_OPERATION_FAILED);
     expect(err.name).toBe('EscrowOperationError');
   });
 
@@ -75,7 +76,7 @@ describe('PaymentValidationError', () => {
     const details = { amount: '100', expected: '200' };
     const err = new PaymentValidationError('insufficient', details);
     expect(err.details).toEqual(details);
-    expect(err.code).toBe('PAYMENT_VALIDATION_FAILED');
+    expect(err.code).toBe(AgoraMeshErrorCode.PAYMENT_VALIDATION_FAILED);
     expect(err.name).toBe('PaymentValidationError');
   });
 });
@@ -84,7 +85,7 @@ describe('PaymentParseError', () => {
   it('should store raw payload', () => {
     const err = new PaymentParseError('invalid JSON', 'not-json');
     expect(err.rawPayload).toBe('not-json');
-    expect(err.code).toBe('PAYMENT_PARSE_FAILED');
+    expect(err.code).toBe(AgoraMeshErrorCode.PAYMENT_PARSE_FAILED);
     expect(err.name).toBe('PaymentParseError');
   });
 });
@@ -93,7 +94,7 @@ describe('RegistrationError', () => {
   it('should store DID', () => {
     const err = new RegistrationError('already registered', 'did:agoramesh:base:agent1');
     expect(err.did).toBe('did:agoramesh:base:agent1');
-    expect(err.code).toBe('REGISTRATION_FAILED');
+    expect(err.code).toBe(AgoraMeshErrorCode.REGISTRATION_FAILED);
     expect(err.name).toBe('RegistrationError');
   });
 });
@@ -140,14 +141,14 @@ describe('Result pattern', () => {
     });
 
     it('should return false for failure result', () => {
-      const result: Result<number> = failure(new AgoraMeshError('err', 'ERR'));
+      const result: Result<number> = failure(new AgoraMeshError(AgoraMeshErrorCode.CLIENT_NOT_CONNECTED, 'err'));
       expect(isSuccess(result)).toBe(false);
     });
   });
 
   describe('isFailure()', () => {
     it('should return true for failure result', () => {
-      const result: Result<number> = failure(new AgoraMeshError('err', 'ERR'));
+      const result: Result<number> = failure(new AgoraMeshError(AgoraMeshErrorCode.CLIENT_NOT_CONNECTED, 'err'));
       expect(isFailure(result)).toBe(true);
     });
 

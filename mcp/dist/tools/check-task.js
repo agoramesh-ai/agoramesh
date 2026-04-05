@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatTaskResult } from './format.js';
 export function registerCheckTask(server, nodeClient) {
     server.registerTool('check_task', {
         description: 'Check the status of a previously submitted task. Returns the current status, output (if completed), or error (if failed).',
@@ -13,28 +14,9 @@ export function registerCheckTask(server, nodeClient) {
     }, async (args) => {
         try {
             const result = await nodeClient.getTask(args.task_id);
-            if (result.status === 'failed') {
-                const lines = [
-                    `# Task Status`,
-                    '',
-                    `- **Task ID**: ${result.taskId}`,
-                    `- **Status**: ${result.status}`,
-                    `- **Error**: ${result.error ?? 'Unknown error'}`,
-                ];
-                return { isError: true, content: [{ type: 'text', text: lines.join('\n') }] };
-            }
-            const lines = [
-                `# Task Status`,
-                '',
-                `- **Task ID**: ${result.taskId}`,
-                `- **Status**: ${result.status}`,
-            ];
-            if (result.duration !== undefined)
-                lines.push(`- **Duration**: ${result.duration}s`);
-            if (result.output) {
-                lines.push('', '## Output', '', result.output);
-            }
-            return { content: [{ type: 'text', text: lines.join('\n') }] };
+            const text = formatTaskResult(result, 'Task Status');
+            const isError = result.status === 'failed';
+            return { isError, content: [{ type: 'text', text }] };
         }
         catch (err) {
             const message = err instanceof Error ? err.message : String(err);

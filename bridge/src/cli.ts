@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import 'dotenv/config';
+import { readFileSync, existsSync } from 'node:fs';
 import { BridgeServer, BridgeServerConfig } from './server.js';
 import { AgentConfig } from './types.js';
 import { EscrowClient, didToHash } from './escrow.js';
@@ -7,6 +8,19 @@ import { loadAgentCardConfig } from './config.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { X402Config } from './middleware/x402.js';
 import { validateBridgeConfig, parseBool } from './validate-config.js';
+
+/**
+ * Resolve Docker secrets into process.env. Docker mounts secrets as files
+ * under /run/secrets/. If the file exists, it takes priority over the env var
+ * (env var serves as fallback for non-Docker environments).
+ */
+function resolveDockerSecrets(): void {
+  const secretPath = '/run/secrets/agent_private_key';
+  if (existsSync(secretPath)) {
+    process.env.AGENT_PRIVATE_KEY = readFileSync(secretPath, 'utf-8').trim();
+    console.log('[Bridge] Loaded AGENT_PRIVATE_KEY from Docker secret');
+  }
+}
 
 function loadConfig(): AgentConfig {
   const required = (key: string): string => {
@@ -34,6 +48,9 @@ function loadConfig(): AgentConfig {
 async function main() {
   console.log('🚀 AgoraMesh Bridge - Claude Code Worker');
   console.log('=========================================\n');
+
+  // Load secrets from Docker secret files (if running in Docker with secrets)
+  resolveDockerSecrets();
 
   // Validate configuration before starting
   const configErrors = validateBridgeConfig(process.env as Record<string, string | undefined>);

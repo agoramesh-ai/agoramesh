@@ -7,9 +7,10 @@ export { ClaudeExecutor } from './executor.js';
 export { AgoraMeshIntegration } from './integration.js';
 export { IPFSService } from './ipfs.js';
 
-// Error Types
+// Error Types (AgoraMeshError and AgoraMeshErrorCode re-exported from @agoramesh/sdk)
 export {
   AgoraMeshError,
+  AgoraMeshErrorCode,
   EscrowNotFoundError,
   EscrowOperationError,
   PaymentValidationError,

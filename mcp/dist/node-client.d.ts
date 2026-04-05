@@ -2,7 +2,8 @@
  * HTTP client for the AgoraMesh P2P node.
  * Replicates the proven pattern from bridge/src/discovery-proxy.ts.
  */
-export declare class NodeClientError extends Error {
+import { AgoraMeshError } from '@agoramesh/sdk';
+export declare class NodeClientError extends AgoraMeshError {
     statusCode: number;
     body: string;
     constructor(statusCode: number, body: string);

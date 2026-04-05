@@ -57,13 +57,17 @@ services:
       - BRIDGE_CORS_ORIGINS=${BRIDGE_CORS_ORIGINS:-}
       - API_ENDPOINT=http://node:8080
       - AGORAMESH_NODE_URL=http://node:8080
-      - AGENT_PRIVATE_KEY=${BRIDGE_AGENT_PRIVATE_KEY}
+      # AGENT_PRIVATE_KEY is loaded from Docker secret (see secrets section below).
+      # Env-var fallback kept for non-Docker environments:
+      - AGENT_PRIVATE_KEY=${BRIDGE_AGENT_PRIVATE_KEY:-}
       - RPC_URL=https://sepolia.base.org
       - CHAIN_ID=84532
       - PROVIDER_DID=did:agoramesh:base-sepolia:agent-001
       - ESCROW_ADDRESS=0x7A582cf524DF32661CE8aEC8F642567304827317
       - ESCROW_RPC_URL=https://sepolia.base.org
       - ESCROW_CHAIN_ID=84532
+    secrets:
+      - agent_private_key
     restart: unless-stopped
     mem_limit: 1g
     depends_on:
@@ -93,3 +97,7 @@ services:
 
 volumes:
   agoramesh_data:
+
+secrets:
+  agent_private_key:
+    file: ./secrets/agent_private_key

@@ -39,6 +39,7 @@ export enum AgoraMeshErrorCode {
   DISCOVERY_SEARCH_FAILED = 'AGORA_DISCOVERY_SEARCH_FAILED',
   DISCOVERY_ANNOUNCE_FAILED = 'AGORA_DISCOVERY_ANNOUNCE_FAILED',
   DISCOVERY_NOT_SUPPORTED = 'AGORA_DISCOVERY_NOT_SUPPORTED',
+  DISCOVERY_TIMEOUT = 'AGORA_DISCOVERY_TIMEOUT',
   SSRF_BLOCKED = 'AGORA_SSRF_BLOCKED',
   PRIVATE_ADDRESS_BLOCKED = 'AGORA_PRIVATE_ADDRESS_BLOCKED',
 
@@ -58,6 +59,21 @@ export enum AgoraMeshErrorCode {
   // Agent errors (8xx)
   AGENT_NO_URL = 'AGORA_AGENT_NO_URL',
   AGENT_NO_PAYMENT_ADDRESS = 'AGORA_AGENT_NO_PAYMENT_ADDRESS',
+
+  // Escrow errors (9xx)
+  ESCROW_NOT_FOUND = 'AGORA_ESCROW_NOT_FOUND',
+  ESCROW_OPERATION_FAILED = 'AGORA_ESCROW_OPERATION_FAILED',
+
+  // Bridge payment errors (10xx)
+  PAYMENT_VALIDATION_FAILED = 'AGORA_PAYMENT_VALIDATION_FAILED',
+  PAYMENT_PARSE_FAILED = 'AGORA_PAYMENT_PARSE_FAILED',
+
+  // Registration errors (11xx)
+  REGISTRATION_FAILED = 'AGORA_REGISTRATION_FAILED',
+
+  // Node/network errors (12xx)
+  NODE_REQUEST_FAILED = 'AGORA_NODE_REQUEST_FAILED',
+  BRIDGE_NOT_CONFIGURED = 'AGORA_BRIDGE_NOT_CONFIGURED',
 }
 
 /**
@@ -74,8 +90,9 @@ export class AgoraMeshError extends Error {
     code: AgoraMeshErrorCode,
     message: string,
     context?: Record<string, unknown>,
+    cause?: Error,
   ) {
-    super(message);
+    super(message, cause ? { cause } : undefined);
     this.name = 'AgoraMeshError';
     this.code = code;
     this.context = context;

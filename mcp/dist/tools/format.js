@@ -48,3 +48,22 @@ export function formatAgentList(agents, heading) {
     const body = agents.map(formatAgent).join('\n\n');
     return `${header}\n${body}`;
 }
+export function formatTaskResult(result, heading) {
+    const lines = [
+        `# ${heading}`,
+        '',
+        `- **Task ID**: ${result.taskId}`,
+        `- **Status**: ${result.status}`,
+    ];
+    if (result.status === 'failed') {
+        lines.push(`- **Error**: ${result.error ?? 'Unknown error'}`);
+    }
+    else {
+        if (result.duration !== undefined)
+            lines.push(`- **Duration**: ${result.duration}s`);
+        if (result.output) {
+            lines.push('', '## Output', '', result.output);
+        }
+    }
+    return lines.join('\n');
+}

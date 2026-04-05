@@ -121,20 +121,33 @@ function isPrivateUrl(urlStr: string): boolean {
 /** Default IPFS gateway URL */
 const DEFAULT_IPFS_GATEWAY = 'https://ipfs.io/ipfs';
 
+/** Default fetch timeout in milliseconds (10 seconds) */
+const DEFAULT_TIMEOUT = 10_000;
+
 export class DiscoveryClient {
   private readonly client: AgoraMeshClient;
   private nodeUrl: string | null = null;
   private ipfsGateway: string = DEFAULT_IPFS_GATEWAY;
+  private readonly timeout: number;
 
   /**
    * Create a new DiscoveryClient.
    *
    * @param client - The AgoraMesh client instance
    * @param nodeUrl - Optional AgoraMesh node URL for P2P discovery
+   * @param timeout - Optional fetch timeout in milliseconds (default: 10000)
    */
-  constructor(client: AgoraMeshClient, nodeUrl?: string) {
+  constructor(client: AgoraMeshClient, nodeUrl?: string, timeout?: number) {
     this.client = client;
     this.nodeUrl = nodeUrl ?? null;
+    this.timeout = timeout ?? DEFAULT_TIMEOUT;
+  }
+
+  /**
+   * Get the configured fetch timeout in milliseconds.
+   */
+  getTimeout(): number {
+    return this.timeout;
   }
 
   // ===========================================================================
@@ -247,15 +260,21 @@ export class DiscoveryClient {
     }
 
     // Make request to semantic search endpoint
-    const response = await fetch(
-      `${this.nodeUrl}/agents/semantic?${params.toString()}`,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-      }
-    );
+    let response: Response;
+    try {
+      response = await fetch(
+        `${this.nodeUrl}/agents/semantic?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+          signal: AbortSignal.timeout(this.timeout),
+        }
+      );
+    } catch (error) {
+      throw this.wrapTimeoutError(error, `Discovery search for "${query}"`);
+    }
 
     if (!response.ok) {
       const error = await response.text();
@@ -357,15 +376,21 @@ export class DiscoveryClient {
       params.set('currency', currency);
     }
 
-    const response = await fetch(
-      `${this.nodeUrl}/agents?${params.toString()}`,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-      }
-    );
+    let response: Response;
+    try {
+      response = await fetch(
+        `${this.nodeUrl}/agents?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+          signal: AbortSignal.timeout(this.timeout),
+        }
+      );
+    } catch (error) {
+      throw this.wrapTimeoutError(error, `Discovery tag search for [${tags.join(', ')}]`);
+    }
 
     if (!response.ok) {
       const error = await response.text();
@@ -478,6 +503,7 @@ export class DiscoveryClient {
         headers: {
           Accept: 'application/json',
         },
+        signal: AbortSignal.timeout(this.timeout),
       });
 
       if (!response.ok) {
@@ -514,6 +540,7 @@ export class DiscoveryClient {
           headers: {
             Accept: 'application/json',
           },
+          signal: AbortSignal.timeout(this.timeout),
         }
       );
 
@@ -570,6 +597,7 @@ export class DiscoveryClient {
         headers: {
           Accept: 'application/json',
         },
+        signal: AbortSignal.timeout(this.timeout),
       });
 
       if (!response.ok) {
@@ -611,11 +639,17 @@ export class DiscoveryClient {
       headers['Authorization'] = `Bearer ${adminToken}`;
     }
 
-    const response = await fetch(`${this.nodeUrl}/agents`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(card),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.nodeUrl}/agents`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(card),
+        signal: AbortSignal.timeout(this.timeout),
+      });
+    } catch (error) {
+      throw this.wrapTimeoutError(error, `Announce capability card for "${card.name}"`);
+    }
 
     if (!response.ok) {
       const error = await response.text();
@@ -643,6 +677,28 @@ export class DiscoveryClient {
   }
 
   // ===========================================================================
+  // Internal Helpers
+  // ===========================================================================
+
+  /**
+   * Wrap a fetch error as a descriptive AgoraMeshError if it's a timeout,
+   * otherwise re-throw the original error.
+   */
+  private wrapTimeoutError(error: unknown, operation: string): AgoraMeshError {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return new AgoraMeshError(
+        AgoraMeshErrorCode.DISCOVERY_TIMEOUT,
+        `${operation} timed out after ${this.timeout}ms. The node may be unresponsive.`,
+        { timeoutMs: this.timeout, operation },
+      );
+    }
+    if (error instanceof AgoraMeshError) {
+      return error;
+    }
+    throw error;
+  }
+
+  // ===========================================================================
   // Utilities
   // ===========================================================================
 
@@ -663,6 +719,7 @@ export class DiscoveryClient {
         headers: {
           Accept: 'application/json',
         },
+        signal: AbortSignal.timeout(this.timeout),
       });
 
       return response.ok;

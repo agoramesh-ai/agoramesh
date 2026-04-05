@@ -1,22 +1,14 @@
 /**
  * AgoraMesh Bridge Error Types
  *
- * Provides typed errors for better debugging and error recovery.
+ * Bridge-specific error subclasses using the SDK's AgoraMeshErrorCode
+ * as the single source of truth for error codes.
  */
 
-/**
- * Base class for all AgoraMesh bridge errors.
- */
-export class AgoraMeshError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly cause?: Error
-  ) {
-    super(message);
-    this.name = 'AgoraMeshError';
-  }
-}
+import { AgoraMeshError, AgoraMeshErrorCode } from '@agoramesh/sdk';
+
+// Re-export SDK error types so bridge consumers can use them directly
+export { AgoraMeshError, AgoraMeshErrorCode };
 
 /**
  * Error thrown when an escrow is not found.
@@ -26,7 +18,12 @@ export class EscrowNotFoundError extends AgoraMeshError {
     public readonly escrowId: string,
     cause?: Error
   ) {
-    super(`Escrow not found: ${escrowId}`, 'ESCROW_NOT_FOUND', cause);
+    super(
+      AgoraMeshErrorCode.ESCROW_NOT_FOUND,
+      `Escrow not found: ${escrowId}`,
+      { escrowId },
+      cause,
+    );
     this.name = 'EscrowNotFoundError';
   }
 }
@@ -40,7 +37,12 @@ export class EscrowOperationError extends AgoraMeshError {
     public readonly operation: string,
     cause?: Error
   ) {
-    super(message, 'ESCROW_OPERATION_FAILED', cause);
+    super(
+      AgoraMeshErrorCode.ESCROW_OPERATION_FAILED,
+      message,
+      { operation },
+      cause,
+    );
     this.name = 'EscrowOperationError';
   }
 }
@@ -54,7 +56,12 @@ export class PaymentValidationError extends AgoraMeshError {
     public readonly details?: Record<string, unknown>,
     cause?: Error
   ) {
-    super(message, 'PAYMENT_VALIDATION_FAILED', cause);
+    super(
+      AgoraMeshErrorCode.PAYMENT_VALIDATION_FAILED,
+      message,
+      details,
+      cause,
+    );
     this.name = 'PaymentValidationError';
   }
 }
@@ -68,7 +75,12 @@ export class PaymentParseError extends AgoraMeshError {
     public readonly rawPayload?: string,
     cause?: Error
   ) {
-    super(message, 'PAYMENT_PARSE_FAILED', cause);
+    super(
+      AgoraMeshErrorCode.PAYMENT_PARSE_FAILED,
+      message,
+      rawPayload ? { rawPayload } : undefined,
+      cause,
+    );
     this.name = 'PaymentParseError';
   }
 }
@@ -82,7 +94,12 @@ export class RegistrationError extends AgoraMeshError {
     public readonly did: string,
     cause?: Error
   ) {
-    super(message, 'REGISTRATION_FAILED', cause);
+    super(
+      AgoraMeshErrorCode.REGISTRATION_FAILED,
+      message,
+      { did },
+      cause,
+    );
     this.name = 'RegistrationError';
   }
 }

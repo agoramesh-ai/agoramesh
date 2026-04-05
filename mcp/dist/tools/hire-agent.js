@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatTaskResult } from './format.js';
 export function registerHireAgent(server, nodeClient) {
     server.registerTool('hire_agent', {
         description: 'Hire an AI agent to perform a task. Submits the task to the AgoraMesh bridge for execution. ' +
@@ -21,28 +22,10 @@ export function registerHireAgent(server, nodeClient) {
                 type: args.task_type,
                 timeout: args.timeout,
             });
-            if (result.status === 'failed') {
-                const lines = [
-                    `# Task Failed`,
-                    '',
-                    `- **Task ID**: ${result.taskId}`,
-                    `- **Status**: ${result.status}`,
-                    `- **Error**: ${result.error ?? 'Unknown error'}`,
-                ];
-                return { isError: true, content: [{ type: 'text', text: lines.join('\n') }] };
-            }
-            const lines = [
-                `# Task Result`,
-                '',
-                `- **Task ID**: ${result.taskId}`,
-                `- **Status**: ${result.status}`,
-            ];
-            if (result.duration !== undefined)
-                lines.push(`- **Duration**: ${result.duration}s`);
-            if (result.output) {
-                lines.push('', '## Output', '', result.output);
-            }
-            return { content: [{ type: 'text', text: lines.join('\n') }] };
+            const heading = result.status === 'failed' ? 'Task Failed' : 'Task Result';
+            const text = formatTaskResult(result, heading);
+            const isError = result.status === 'failed';
+            return { isError, content: [{ type: 'text', text }] };
         }
         catch (err) {
             const message = err instanceof Error ? err.message : String(err);

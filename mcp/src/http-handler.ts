@@ -18,6 +18,8 @@ export interface McpHttpHandlerOptions {
   corsOrigin?: string;
   /** Maximum body size in bytes. Defaults to 1MB (1048576). */
   maxBodySize?: number;
+  /** Allowed Origin headers for DNS rebinding protection. Comma-separated. Defaults to localhost origins. */
+  allowedOrigins?: string;
 }
 
 /** Default maximum body size: 1MB */
@@ -36,9 +38,22 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
  * Create an HTTP request handler for the MCP server.
  * Returns a standard Node.js HTTP request listener.
  */
+/** Default allowed origins for DNS rebinding protection */
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost,http://127.0.0.1,https://localhost,https://127.0.0.1';
+
+/** Parse allowed origins from comma-separated string into a Set */
+function parseAllowedOrigins(origins: string): Set<string> {
+  return new Set(
+    origins.split(',').map((o) => o.trim()).filter(Boolean),
+  );
+}
+
 export function createMcpRequestHandler(options: McpHttpHandlerOptions) {
-  const { nodeUrl, bridgeUrl, publicUrl = 'https://api.agoramesh.ai', authToken, corsOrigin, maxBodySize } = options;
+  const { nodeUrl, bridgeUrl, publicUrl = 'https://api.agoramesh.ai', authToken, corsOrigin, maxBodySize, allowedOrigins } = options;
   const MAX_BODY_SIZE = maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
+
+  // DNS rebinding protection: parse allowed origins
+  const allowedOriginSet = parseAllowedOrigins(allowedOrigins ?? DEFAULT_ALLOWED_ORIGINS);
 
   /** Constant-time token comparison */
   function isTokenValid(provided: string): boolean {
@@ -111,6 +126,19 @@ export function createMcpRequestHandler(options: McpHttpHandlerOptions) {
 
     // MCP endpoint
     if (url.pathname === '/mcp') {
+      // Origin header validation: prevent DNS rebinding attacks (MCP spec MUST)
+      const origin = req.headers.origin;
+      if (origin && !allowedOriginSet.has(origin)) {
+        console.error(`[MCP] Rejected request from disallowed origin: ${origin}`);
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32600, message: `Origin ${origin} not allowed` },
+        }));
+        return;
+      }
+
       // Authentication check: if authToken is configured, require Bearer token
       if (authToken) {
         const authHeader = req.headers.authorization;

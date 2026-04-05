@@ -113,13 +113,25 @@ else
     echo "docker-compose.yml already exists in /opt/agoramesh/, skipping."
 fi
 
-# Reminder for .env
+# Docker secrets directory (preferred over env vars for private keys)
+echo "--- Setting up Docker secrets directory ---"
+mkdir -p /opt/agoramesh/secrets
+chmod 700 /opt/agoramesh/secrets
+if [ ! -f /opt/agoramesh/secrets/agent_private_key ]; then
+    echo ""
+    echo "WARNING: /opt/agoramesh/secrets/agent_private_key does not exist."
+    echo "Create it with:"
+    echo "  echo -n '0xYOUR_PRIVATE_KEY' > /opt/agoramesh/secrets/agent_private_key"
+    echo "  chmod 600 /opt/agoramesh/secrets/agent_private_key"
+    echo ""
+fi
+
+# Reminder for .env (API tokens — private key now uses Docker secrets above)
 if [ ! -f /opt/agoramesh/.env ]; then
     echo ""
     echo "WARNING: /opt/agoramesh/.env does not exist."
     echo "Create it with:"
-    echo "  echo 'BRIDGE_AGENT_PRIVATE_KEY=0x...' > /opt/agoramesh/.env"
-    echo "  echo 'BRIDGE_API_TOKEN=change-me' >> /opt/agoramesh/.env"
+    echo "  echo 'BRIDGE_API_TOKEN=change-me' > /opt/agoramesh/.env"
     echo "  echo 'AGORAMESH_API_TOKEN=change-me' >> /opt/agoramesh/.env"
     echo "  chmod 600 /opt/agoramesh/.env"
     echo ""
@@ -142,9 +154,10 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Create /opt/agoramesh/.env with BRIDGE_AGENT_PRIVATE_KEY"
-echo "  2. Run certbot command above for TLS"
-echo "  3. Add deploy SSH key to GitHub secrets (DEPLOY_SSH_KEY, DEPLOY_HOST)"
-echo "  4. Push to master to trigger first deployment"
-echo "  5. After first push: make GHCR packages public in GitHub Settings > Packages"
+echo "  1. Create /opt/agoramesh/secrets/agent_private_key with the bridge private key"
+echo "  2. Create /opt/agoramesh/.env with BRIDGE_API_TOKEN and AGORAMESH_API_TOKEN"
+echo "  3. Run certbot command above for TLS"
+echo "  4. Add deploy SSH key to GitHub secrets (DEPLOY_SSH_KEY, DEPLOY_HOST)"
+echo "  5. Push to master to trigger first deployment"
+echo "  6. After first push: make GHCR packages public in GitHub Settings > Packages"
 echo ""

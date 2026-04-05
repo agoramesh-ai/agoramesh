@@ -110,6 +110,130 @@ function rawGetWithHeaders(
   });
 }
 
+describe('MCP Origin header validation (DNS rebinding protection)', () => {
+  describe('with default allowed origins', () => {
+    let httpServer: Server;
+    let port: number;
+
+    beforeAll(async () => {
+      const handler = createMcpRequestHandler({
+        nodeUrl: 'https://api.agoramesh.ai',
+      });
+      httpServer = createHttpServer(handler);
+      await new Promise<void>((resolve) => {
+        httpServer.listen(0, () => resolve());
+      });
+      port = (httpServer.address() as { port: number }).port;
+    });
+
+    afterAll(async () => {
+      await new Promise<void>((resolve) => {
+        httpServer.close(() => resolve());
+      });
+    });
+
+    it('allows requests without Origin header (CLI/non-browser clients)', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1, params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } } }),
+      );
+      expect(res.status).not.toBe(403);
+    });
+
+    it('allows requests from http://localhost', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1, params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } } }),
+        { Origin: 'http://localhost' },
+      );
+      expect(res.status).not.toBe(403);
+    });
+
+    it('allows requests from http://127.0.0.1', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1, params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } } }),
+        { Origin: 'http://127.0.0.1' },
+      );
+      expect(res.status).not.toBe(403);
+    });
+
+    it('rejects requests from disallowed origin with 403', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
+        { Origin: 'https://evil.example.com' },
+      );
+      expect(res.status).toBe(403);
+      const body = JSON.parse(res.body);
+      expect(body.jsonrpc).toBe('2.0');
+      expect(body.error.code).toBe(-32600);
+      expect(body.error.message).toContain('not allowed');
+    });
+
+    it('rejects requests from localhost with port in Origin', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
+        { Origin: 'http://localhost:9999' },
+      );
+      // localhost:9999 is not in the default list (only http://localhost without port)
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe('with custom allowed origins', () => {
+    let httpServer: Server;
+    let port: number;
+
+    beforeAll(async () => {
+      const handler = createMcpRequestHandler({
+        nodeUrl: 'https://api.agoramesh.ai',
+        allowedOrigins: 'https://app.example.com,http://localhost:3000',
+      });
+      httpServer = createHttpServer(handler);
+      await new Promise<void>((resolve) => {
+        httpServer.listen(0, () => resolve());
+      });
+      port = (httpServer.address() as { port: number }).port;
+    });
+
+    afterAll(async () => {
+      await new Promise<void>((resolve) => {
+        httpServer.close(() => resolve());
+      });
+    });
+
+    it('allows requests from custom allowed origin', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1, params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } } }),
+        { Origin: 'https://app.example.com' },
+      );
+      expect(res.status).not.toBe(403);
+    });
+
+    it('allows requests from custom localhost with port', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1, params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'test', version: '1.0' } } }),
+        { Origin: 'http://localhost:3000' },
+      );
+      expect(res.status).not.toBe(403);
+    });
+
+    it('rejects default localhost when custom origins replace defaults', async () => {
+      const res = await rawPost(
+        `http://localhost:${port}/mcp`,
+        JSON.stringify({ jsonrpc: '2.0', method: 'initialize', id: 1 }),
+        { Origin: 'http://localhost' },
+      );
+      // Custom origins replace defaults — http://localhost is no longer allowed
+      expect(res.status).toBe(403);
+    });
+  });
+});
+
 describe('MCP CORS configuration (H-5)', () => {
   it('defaults to agoramesh.ai origin in production', async () => {
     const handler = createMcpRequestHandler({

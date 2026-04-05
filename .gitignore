@@ -21,6 +21,9 @@ frontend/src/generated/
 **/.env.*.local
 !.env.example
 
+# Docker secrets directory
+secrets/
+
 # Broadcast (deployment transactions)
 contracts/broadcast/
 

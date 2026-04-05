@@ -13,8 +13,9 @@ const bridgeUrl = process.env.AGORAMESH_BRIDGE_URL || undefined;
 const publicUrl = process.env.AGORAMESH_PUBLIC_URL || 'https://api.agoramesh.ai';
 const authToken = process.env.AGORAMESH_MCP_AUTH_TOKEN || undefined;
 const corsOrigin = process.env.AGORAMESH_CORS_ORIGIN || undefined;
+const allowedOrigins = process.env.MCP_ALLOWED_ORIGINS || undefined;
 
-const handler = createMcpRequestHandler({ nodeUrl, bridgeUrl, publicUrl, authToken, corsOrigin });
+const handler = createMcpRequestHandler({ nodeUrl, bridgeUrl, publicUrl, authToken, corsOrigin, allowedOrigins });
 const httpServer = createHttpServer(handler);
 
 httpServer.listen(port, () => {

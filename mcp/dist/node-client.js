@@ -2,13 +2,14 @@
  * HTTP client for the AgoraMesh P2P node.
  * Replicates the proven pattern from bridge/src/discovery-proxy.ts.
  */
+import { AgoraMeshError, AgoraMeshErrorCode } from '@agoramesh/sdk';
 const DEFAULT_TIMEOUT = 5000;
 const BRIDGE_TIMEOUT = 65000; // Bridge sync timeout is 60s, give 5s buffer
-export class NodeClientError extends Error {
+export class NodeClientError extends AgoraMeshError {
     statusCode;
     body;
     constructor(statusCode, body) {
-        super(`P2P node returned ${statusCode}: ${body}`);
+        super(AgoraMeshErrorCode.NODE_REQUEST_FAILED, `P2P node returned ${statusCode}: ${body}`, { statusCode, body });
         this.statusCode = statusCode;
         this.body = body;
         this.name = 'NodeClientError';
@@ -64,7 +65,7 @@ export class NodeClient {
     }
     async submitTask(input) {
         if (!this.bridgeUrl)
-            throw new Error('Bridge URL not configured');
+            throw new AgoraMeshError(AgoraMeshErrorCode.BRIDGE_NOT_CONFIGURED, 'Bridge URL not configured');
         const url = `${this.bridgeUrl}/task?wait=true`;
         const response = await fetch(url, {
             method: 'POST',
@@ -89,7 +90,7 @@ export class NodeClient {
     }
     async getTask(taskId) {
         if (!this.bridgeUrl)
-            throw new Error('Bridge URL not configured');
+            throw new AgoraMeshError(AgoraMeshErrorCode.BRIDGE_NOT_CONFIGURED, 'Bridge URL not configured');
         const url = `${this.bridgeUrl}/task/${taskId}`;
         const response = await fetch(url, {
             method: 'GET',
