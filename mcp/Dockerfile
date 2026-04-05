@@ -8,13 +8,20 @@ FROM node:22-alpine3.21 AS builder
 
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
+# Copy SDK first (MCP depends on it via file:../sdk)
+COPY sdk/package*.json /sdk/
+RUN cd /sdk && npm ci
+COPY sdk/src/ /sdk/src/
+COPY sdk/tsconfig.json /sdk/
+RUN cd /sdk && npm run build
+
+# Install MCP dependencies
+COPY mcp/package*.json ./
 RUN npm ci
 
 # Copy source and build
-COPY tsconfig.json ./
-COPY src/ ./src/
+COPY mcp/tsconfig.json ./
+COPY mcp/src/ ./src/
 RUN npm run build
 
 # ==============================================================================

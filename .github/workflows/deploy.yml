@@ -32,7 +32,7 @@ jobs:
             dockerfile: bridge/Dockerfile
             image: ghcr.io/agoramesh-ai/agoramesh-bridge
           - component: mcp
-            context: ./mcp
+            context: .
             dockerfile: mcp/Dockerfile
             image: ghcr.io/agoramesh-ai/agoramesh-mcp
     steps:
